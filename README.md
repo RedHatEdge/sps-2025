@@ -105,8 +105,11 @@ First, mount the appliance ISO to the target installation host, and boot from it
 Once complete, the device can be shut down:
 ![Appliance Copied](./.images/appliance-copied.png)
 
-Now, mount the agentconfig ISO to the device, and boot **from the device where the appliance was deployed**, selecting `Agent Based Installer`:
+Now, mount the agentconfig ISO to the device, and boot **from the device where the appliance was deployed**, selecting `Agent-Based Installer`:
 ![Appliance Boot Options](./.images/appliance-boot-options.png)
 
 The appliance will boot, scan for the agentconfig, and perform a cluster install:
 
+> Note:
+>
+> It may take a few moments for the appliance to find the agentconfig and read it in - be patient.
