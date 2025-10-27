@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+metadata:
+  name: {{ openshift_install_settings.cluster_name }}
+baseDomain: {{ openshift_install_settings.base_domain }}
+controlPlane:
+  name: master
+  replicas: 1
+compute:
+- name: worker
+  replicas: 0
+networking:
+  networkType: OVNKubernetes
+  machineNetwork:
+  - cidr: {{ openshift_install_settings.machine_network }}
+platform:
+  none: {}
+pullSecret: '{{ pull_secret }}'
+sshKey: '{{ ssh_key }}'

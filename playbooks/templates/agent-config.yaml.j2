@@ -1,0 +1,37 @@
+---
+apiVersion: v1alpha1
+kind: AgentConfig
+rendezvousIP: {{ openshift_install_settings.network_config.interfaces[0].ip_address }}
+metadata:
+  name: {{ openshift_install_settings.cluster_name }}
+hosts:
+  - hostname: node0
+    interfaces:
+      - name: {{ openshift_install_settings.network_config.interfaces[0].name }}
+        macAddress: {{ openshift_install_settings.network_config.interfaces[0].mac_address }}
+    networkConfig:
+      interfaces:
+        - name: {{ openshift_install_settings.network_config.interfaces[0].name }}
+          type: ethernet
+          state: up
+          mac-address: {{ openshift_install_settings.network_config.interfaces[0].mac_address }}
+          ipv4:
+            enabled: true
+            address:
+              - ip: {{ openshift_install_settings.network_config.interfaces[0].ip_address }}
+                prefix-length: {{ openshift_install_settings.network_config.interfaces[0].prefix_length }}
+            dhcp: false
+      dns-resolver:
+        config:
+          server:
+{% for dns_server in openshift_install_settings.network_config.dns_servers %}
+            - {{ dns_server }}
+{% endfor %}
+      routes:
+        config:
+{% for route in openshift_install_settings.network_config.routes %}
+          - destination: {{ route.destination }}
+            next-hop-address: {{ route.next_hop_address }}
+            next-hop-interface: {{ route.next_hop_interface }}
+            table-id: {{ route.table_id }}
+{% endfor %}

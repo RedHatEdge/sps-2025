@@ -1,0 +1,27 @@
+---
+apiVersion: v1beta1
+kind: ApplianceConfig
+ocpRelease:
+  version: {{ openshift_base_settings.version }}
+  channel: {{ openshift_base_settings.channel }}
+  cpuArchitecture: {{ openshift_base_settings.cpu_architecture }}
+pullSecret: '{{ pull_secret }}'
+sshKey: '{{ ssh_key }}'
+userCorePass: '{{ core_user_password }}'
+imageRegistry:
+  uri: docker.io/library/registry:2
+  port: 5005
+enableDefaultSources: true
+stopLocalRegistry: false
+{% if appliance_additional_content %}
+{% if appliance_additional_content.additional_images %}
+additionalImages:
+{% for image in appliance_additional_content.additional_images %}
+  - name: {{ image.name }}
+{% endfor %}
+{% endif %}
+{% if appliance_additional_content.operators %}
+operators:
+{{ appliance_additional_content.operators | from_yaml | to_nice_yaml }}
+{% endif %}
+{% endif %}
