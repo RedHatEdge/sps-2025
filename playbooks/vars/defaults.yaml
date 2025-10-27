@@ -1,0 +1,58 @@
+---
+
+appliance_builder_image: registry.redhat.io/assisted/agent-preinstall-image-builder-rhel9:1.0-1714506949
+appliance_build_dir: "/home/{{ ansible_user }}/appliance-build"
+openshift_install_dir: "/home/{{ ansible_user }}/openshift-install"
+resource_dir: "/home/{{ ansible_user }}/resources"
+
+rebuild_appliance_raw: false
+rebuild_appliance_iso: false
+
+rebuild_agent_iso: false
+
+openshift_base_settings:
+  version: 4.19.16
+  channel: stable
+  cpu_architecture: x86_64
+
+appliance_additional_content:
+  additional_images:
+    - name: registry.redhat.io/ansible-automation-platform-26/ee-minimal-rhel9@sha256:a17ebe09a69f28a183068c3597467311ba9ed77f1c3a42864404d5e343f7c2de
+    - name: registry.redhat.io/ansible-automation-platform-26/ee-supported-rhel9@sha256:8b51f6026000a9f63e8d548e5d4c7b630425bc4504819ceeef97eea691653cd2
+  operators:
+    - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
+      packages:
+        - name: ansible-automation-platform-operator
+          channels:
+            - name: stable-2.6
+        - name: kubernetes-nmstate-operator
+          channels:
+            - name: stable
+        - name: kubevirt-hyperconverged
+          channels:
+            - name: stable
+        - name: lvms-operator
+          channels:
+            - name: stable-4.19
+        - name: ocs-client-operator
+          channels:
+            - name: stable-4.19
+        - name: ocs-operator
+          channels:
+            - name: stable-4.19
+        - name: odf-csi-addons-operator 
+          channels:
+            - name: stable-4.19
+        - name: odf-dependencies
+          channels:
+            - name: stable-4.19
+        - name: odf-operator
+          channels:
+            - name: stable-4.19
+        - name: openshift-gitops-operator
+          channels:
+            - name: latest
+
+agent_install_config_files:
+  - agent-config.yaml
+  - install-config.yaml
