@@ -1,0 +1,88 @@
+---
+
+- name: Create appliance ISO
+  hosts:
+    - helper
+  vars_files:
+    - vars/defaults.yaml
+  module_defaults:
+    ansible.builtin.stat:
+      get_checksum: false
+    containers.podman.podman_container:
+      remove: true
+      interactive: true
+      detach: false
+      privileged: true
+      volumes:
+        - "{{ appliance_build_dir }}:/assets:Z"
+  pre_tasks:
+    - name: Ensure vars are set
+      ansible.builtin.assert:
+        that:
+          - pull_secret is defined
+          - ssh_key is defined
+          - core_user_password is defined
+        fail_msg: "Ensure all vars are defined - review the README for details."
+  tasks:
+    - name: Create required directories
+      ansible.builtin.file:
+        path: "{{ directory }}"
+        state: directory
+      loop:
+        - "{{ appliance_build_dir }}"
+        - "{{ openshift_install_dir }}"
+        - "{{ resource_dir }}"
+      loop_control:
+        loop_var: directory
+    - name: Push out pull secret
+      ansible.builtin.copy:
+        content: "{{ pull_secret | from_json | to_json }}"
+        dest: "{{ resource_dir }}/pull-secret.json"
+    - name: Pull {{ appliance_builder_image }}
+      containers.podman.podman_image:
+        name: "{{ appliance_builder_image }}"
+        auth_file: "{{ resource_dir }}/pull-secret.json"
+      become: true
+    - name: Push out the appliance config
+      ansible.builtin.template:
+        src: templates/appliance-config.yaml.j2
+        dest: "{{ appliance_build_dir }}/appliance-config.yaml"
+    - name: Check if appliance.raw exists
+      ansible.builtin.stat:
+        path: "{{ appliance_build_dir }}/appliance.raw"
+      register: _appliance_raw
+    - name: Check if appliance.iso exists
+      ansible.builtin.stat:
+        path: "{{ appliance_build_dir }}/appliance.iso"
+      register: _appliance_iso
+    - name: Run appliance building steps with become
+      become: true
+      block:
+        - name: Build the appliance image
+          containers.podman.podman_container:
+            name: appliance-builder
+            image: "{{ appliance_builder_image }}"
+            network:
+              - host
+            command: build
+          when:
+            - not (_appliance_raw.stat.exists) or
+              rebuild_appliance_raw
+        - name: Build the appliance iso
+          containers.podman.podman_container:
+            name: appliance-iso-builder
+            image: "{{ appliance_builder_image }}"
+            command: "build iso --target-device {{ openshift_install_settings.device }}"       
+          when:
+            - not (_appliance_iso.stat.exists) or
+              rebuild_appliance_iso
+  post_tasks:
+    - name: Print out information
+      ansible.builtin.debug:
+        msg:
+          - "Appliance build complete."
+          - "The raw appliance image is available at: {{ appliance_build_dir }}/appliance.raw"
+          - "The appliance ISO is available at: {{ appliance_build_dir }}/appliance.iso"
+          - "Boot the appliance ISO using your preferred method: flash drive, BMC, etc"
+          - "To rebuild the raw appliance image, re-run the playbook with: '--extra-vars rebuild_appliance_raw=true'"
+          - "To rebuild the appliance iso, re-run the playbook with: '--extra-vars rebuild_appliance_iso=true'"

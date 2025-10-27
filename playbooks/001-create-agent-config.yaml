@@ -1,0 +1,65 @@
+---
+
+- name: Create agent config ISO
+  hosts:
+    - helper
+  vars_files:
+    - vars/defaults.yaml
+  pre_tasks:
+    - name: Ensure vars are set
+      ansible.builtin.assert:
+        that:
+          - pull_secret is defined
+          - ssh_key is defined
+          - openshift_install_settings.device is defined
+        fail_msg: "Ensure all vars are defined - review the README for details."
+    - name: Wipe out existing agent install if requested
+      ansible.builtin.file:
+        path: "{{ to_delete }}"
+        state: absent
+      loop:
+        - "{{ openshift_install_dir }}"
+        - "{{ resource_dir }}/openshift-install-linux.tar.gz"
+      loop_control:
+       loop_var: to_delete
+      when:
+        - rebuild_agent_iso
+  tasks:
+    - name: Create required directories
+      ansible.builtin.file:
+        path: "{{ directory }}"
+        state: directory
+      loop:
+        - "{{ openshift_install_dir }}"
+        - "{{ resource_dir }}"
+      loop_control:
+        loop_var: directory
+    - name: Download openshift-install version {{ openshift_base_settings.version }}
+      ansible.builtin.get_url:
+        url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/{{ openshift_base_settings.version }}/openshift-install-linux.tar.gz"
+        dest: "{{ resource_dir }}/"
+    - name: Extract openshift-install
+      ansible.builtin.unarchive:
+        src: "{{ resource_dir }}/openshift-install-linux.tar.gz"
+        dest: "{{ resource_dir }}"
+        remote_src: true
+    - name: Copy out config files for agent install
+      ansible.builtin.template:
+        src: "templates/{{ template_file }}.j2"
+        dest: "{{ openshift_install_dir }}/{{ template_file }}"
+      loop: "{{ agent_install_config_files }}"
+      loop_control:
+        loop_var: template_file
+    - name: Create agent config ISO
+      ansible.builtin.shell:
+        cmd: "{{ resource_dir }}/openshift-install agent create config-image --dir={{ openshift_install_dir }}"
+      args:
+        creates: "{{ openshift_install_dir }}/agentconfig.noarch.iso"
+  post_tasks:
+    - name: Print out information
+      ansible.builtin.debug:
+        msg:
+          - "Agent config ISO generation is complete."
+          - "The ISO is available at: {{ openshift_install_dir }}/agentconfig.noarch.iso"
+          - "To perform an appliance-based agent install, boot the appliance with the agentconfig ISO mounted."
+          - "Note: The agentconfig ISO is NOT BOOTABLE - boot from the appliance, with the agentconfig ISO mounted."
