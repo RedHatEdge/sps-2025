@@ -7,3 +7,4 @@ inventory.yaml
 *.log
 *.iso
 build-args.txt
+kickstarts/josh-testing.ks
