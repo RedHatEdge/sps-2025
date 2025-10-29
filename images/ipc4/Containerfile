@@ -75,7 +75,7 @@ RUN firewall-offline-cmd --zone=public --add-port=22/tcp && \
 # IPC4 Args
 ARG INTERNAL_INTERFACE
 ARG EXTERNAL_INTERFACE
-ARG STORAGE_DEVICE
+ARG HOSTNAME=ipc4
 
 # IPC4 app args
 ARG GITEA_ADMIN_PASSWORD
@@ -131,19 +131,23 @@ RUN systemctl enable microshift-make-rshared.service
 ## Network setup
 COPY setup-network.sh /usr/local/bin/setup-network.sh
 RUN chmod +x /usr/local/bin/setup-network.sh
-COPY setup-network.service /etc/systemd/system/networking-setup.service
 RUN sed -i "s/EXTERNAL_INTERFACE/${EXTERNAL_INTERFACE}/g" /usr/local/bin/setup-network.sh
 RUN sed -i "s/INTERNAL_INTERFACE/${INTERNAL_INTERFACE}/g" /usr/local/bin/setup-network.sh
+COPY setup-network.service /etc/systemd/system/networking-setup.service
 RUN systemctl enable networking-setup.service
 
 ## Storage setup
 COPY setup-storage.sh /usr/local/bin/setup-storage.sh
 RUN chmod +x /usr/local/bin/setup-storage.sh
-RUN sed -i "s|STORAGE_DEVICE|${STORAGE_DEVICE}|g" /usr/local/bin/setup-network.sh
+COPY setup-storage.service /etc/systemd/system/storage-setup.service
+RUN systemctl enable storage-setup.service
 
 ## Set graphical
 RUN systemctl set-default graphical.target
 RUN systemctl enable cockpit.socket
+
+# Set hostname
+RUN echo "${HOSTNAME}" > /etc/hostname
 
 # Cleanup
 RUN subscription-manager clean
