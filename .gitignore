@@ -6,3 +6,4 @@ inventory.yaml
 *scratch*
 *.log
 *.iso
+build-args.txt
