@@ -11,105 +11,61 @@ The setup for this demo is broken up into several parts:
 3. Setup the NVIDIA Jetson
 
 ### Basic setup
-A basic x86 Linux-ish system with sufficient disk space (~250GB) available should be able to handle the setup of the demos.
+A basic x86 Linux-ish system with sufficient disk space and podman should be able to handle the setup of the demos. You will also need a flash drive, or method to mount installation ISOs to devices.
 
-Most of the following automation is written in Ansible in an attempt to make the things easy to get going. To prepare a system to run this automation, a virtual environment should be set up, and ansible-navigator installed. Then, a few basic variables need to be supplied.
+### Setting basic variables
+Create a copy of the `build-args.txt.example` file, and populate it with your information:
+```
+# RSHM args
+RHSM_ORG=123456789
+RHSM_AK=ak-whatever
 
-#### Setting up an virtual environment
-Use the following to setup a virtual environment where ansible-navigator can run:
+# IPC4 Args
+INTERNAL_INTERFACE=enp2s0
+EXTERNAL_INTERFACE=enp0s31f6
+
+# IPC4 app args
+GITEA_ADMIN_PASSWORD=your-password-here
+
+# OCP install args
+# Note: Don't single-quote your pull secret
+PULL_SECRET=your-pull-secret
+ACP_INSTALL_DEVICE=/dev/sda
+ACP_INTERFACE_NAME=enp3s0
+ACP_INTERFACE_MAC_ADDRESS=11:22:33:44:55:66
+COREOS_SSH_KEY=ssh-ed25519 blahblahblah you@your-computer
+```
+
+### Setup IPC4
+Assuming your values are correct in your args file, all that needs to be done is to build the IPC4 image and install the device - all other steps are handled through containers on Microshift.
+
+To build the image, run:
 ```bash
-git clone https://github.com/RedHatEdge/sps-2025.git
-cd sps-2025
-python -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install ansible-navigator
+ podman build images/ipc4/ --tag localhost/ipc4:latest --build-arg-file=build-args.txt
 ```
 
-Any relatively current version of ansible-navigator should do, however this was specifically written/tested on `ansible-navigator 25.9.0`.
+To create an installation ISO, a script is available in the [scripts](scripts/) directory, which takes 4 arguments:
+1. The image to add to the ISO
+2. A path to a kickstart file
+3. A path to a RHEL boot ISO
+4. Where to output the created ISO
 
-> Note:
->
-> ansible-navigator requires a container engine, preferrably podman.
+An example kickstart file is available in the [kickstarts](kickstarts/) directory.
 
-#### Setting basic variables
-Two main files must be created to feed into the playbooks: an inventory (`inventory.yaml`) file and an extra-vars (`extra-vars.yaml`) file.
-
-If you're familiar with Ansible, feel free to setup your own files, however the following examples will get you close:
-
-```yaml
---- # inventory.yaml
----
-all:
-  hosts:
-    helper:
-      ansible_host: 1.2.3.4
-      ansible_user: your-username
-      ansible_become_password: 'your-password'
+Example script run:
+```bash
+scripts/create-iso.sh localhost/ipc4:latest  $(pwd)/kickstarts/home-testing.ks ~/Downloads/rhel-9.6-x86_64-boot.iso $(pwd)/test.iso
 ```
 
-> Note:
->
-> Do NOT use `root` for the `ansible_user` - instead, use a user that can sudo. If you use `root`, the playbooks will fail.
+Mount the ISO to the device using your preferred method (probably USB drive), boot from it, and wait a few moments for the install to complete.
 
-```yaml # extra-vars.yaml
----
-pull_secret: 'your-pull-secret'
-ssh_key: 'ssh-ed25519 whateverkey1234 you@your-laptop'
-core_user_password: 'a-good-password-here'
-
-openshift_install_settings:
-  device: /dev/sda
-  cluster_name: cluster
-  base_domain: your-url.com
-  machine_network: 192.168.1.0/24 # Ensure your node is in this subnet
-  network_config:
-    interfaces:
-      - name: eno1
-        mac_address: c8:4b:d6:ab:bd:91
-        ip_address: 192.168.1.10
-        prefix_length: 24
-    dns_servers:
-      - 192.168.1.1
-    routes:
-      - destination: 0.0.0.0/0
-        next_hop_address: 192.168.1.1
-        next_hop_interface: eno1
-        table_id: 254
+To see progress during the installation, switch to one of the other panes using `alt` + `ctrl` +`F2`, and run:
+```bash
+tail -f /tmp/anaconda.log
 ```
 
-Once these files are created, installation can proceed.
-
-### Setup Bootstrap
+Once the device reboots, everything should start up on its own.
 
 ### Setup the ACP
-The ACP setup is based on the [OpenShift Appliance](https://access.redhat.com/articles/7065136), which puts installation and additional content onto disk before the cluster install, allowing for disconnected (or limited connected) installs.
+The ACP setup is an agent-based install using a local mirror registry located on IPC4. A job on IPC4 will generate the installation ISO for you, all you need to do is download it, mount it to the target installation device, and boot from it. The install should happen automatically from there.
 
-There are two main pieces to the installation: the appliance image, and the agentconfig.
-
-First, create the appliance image:
-```
-ansible-navigator run playbooks/000-create-appliance-image.yaml --inventory inventory.yaml --extra-vars @extra-vars.yaml --execution-environment-image quay.io/jswanson/sps-ee:2025 --mode stdout -vv
-```
-
-Expect this to take ~15-20 minutes on a gigabit connection.
-
-Next, create the agentconfig:
-```
-ansible-navigator run playbooks/000-create-agent-config.yaml --inventory inventory.yaml --extra-vars @extra-vars.yaml --execution-environment-image quay.io/jswanson/sps-ee:2025 --mode stdout -vv
-```
-
-First, mount the appliance ISO to the target installation host, and boot from it. The iso will boot into CoreOS and begin copying content to specified installation device:
-![Appliance Copying](./.images/appliance-copying.png)
-
-Once complete, the device can be shut down:
-![Appliance Copied](./.images/appliance-copied.png)
-
-Now, mount the agentconfig ISO to the device, and boot **from the device where the appliance was deployed**, selecting `Agent-Based Installer`:
-![Appliance Boot Options](./.images/appliance-boot-options.png)
-
-The appliance will boot, scan for the agentconfig, and perform a cluster install:
-
-> Note:
->
-> It may take a few moments for the appliance to find the agentconfig and read it in - be patient.
