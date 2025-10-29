@@ -35,7 +35,7 @@ bring_down_if_up "EXTERNAL_INTERFACE"
 bring_down_if_up "lan"
 
 # Modify or create connections
-retry "nmcli connection modify EXTERNAL_INTERFACE connection.zone external || true"
+retry "nmcli connection modify EXTERNAL_INTERFACE connection.zone external ipv4.dhcp-send-hostname no ipv6.dhcp-send-hostname no ipv4.dhcp-hostname ipc4 ipv4.dhcp-hostname ipc4 || true"
 
 # Add LAN connection if it doesn't exist
 if ! nmcli -t -f NAME con show | grep -qx "lan"; then
