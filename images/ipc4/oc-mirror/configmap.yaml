@@ -1,0 +1,47 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oc-mirror-configmap
+data: 
+  imagesetconfiguration.yaml: |
+    ---
+    kind: ImageSetConfiguration
+    apiVersion: mirror.openshift.io/v1alpha2
+    archiveSize: 4
+    storageConfig:
+      registry:
+        imageURL: registry.oc-mirror.svc.cluster.local:5000/mirror/oc-mirror-metadata
+        skipTLS: true
+    mirror:
+      platform:
+        graph: true
+        channels:
+          - name: stable-4.19.16
+            type: ocp
+      operators:
+        - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
+          packages:
+            - name: ansible-automation-platform-operator
+              channels:
+                - name: stable-2.6
+            - name: kubernetes-nmstate-operator
+              channels:
+                - name: stable
+            - name: kubevirt-hyperconverged
+              channels:
+                - name: stable
+            - name: lvms-operator
+              channels:
+                - name: stable-4.19
+            - name: openshift-gitops-operator
+              channels:
+                - name: latest
+        - catalog: quay.io/rhpds/gitea-catalog:latest
+          packages:
+            - name: gitea-operator
+              channels:
+                - name: stable
+      additionalImages:
+        - name: registry.redhat.io/ansible-automation-platform-26/ee-minimal-rhel9@sha256:a17ebe09a69f28a183068c3597467311ba9ed77f1c3a42864404d5e343f7c2de
+        - name: registry.redhat.io/ansible-automation-platform-26/ee-supported-rhel9@sha256:8b51f6026000a9f63e8d548e5d4c7b630425bc4504819ceeef97eea691653cd2

@@ -1,0 +1,156 @@
+FROM registry.redhat.io/openshift4/microshift-bootc-rhel9:v4.20
+
+# Unset proxy env vars
+ENV NO_PROXY=
+ENV HTTP_PROXY=
+ENV HTTPS_PROXY=
+
+# Reset dnf
+RUN dnf -y clean all && \
+    rm -rf /etc/yum.repos.d/unsigned.repo
+RUN rm -rf /etc/rhsm-host
+
+# RSHM args
+ARG RHSM_ORG
+ARG RHSM_AK
+
+RUN subscription-manager register \
+    --org "${RHSM_ORG}" \
+    --activationkey "${RHSM_AK}"
+
+# Setup Workstation
+RUN dnf -y groupinstall Workstation
+
+# Install additional packages
+RUN dnf \
+    --enablerepo=rhel-9-for-x86_64-baseos-rpms \
+    --enablerepo=rhel-9-for-x86_64-appstream-rpms \
+    --enablerepo=rhocp-4.20-for-rhel-9-x86_64-rpms \
+    --enablerepo=gitops-1.18-for-rhel-9-x86_64-rpms \
+    --enablerepo=fast-datapath-for-rhel-9-x86_64-rpms \
+    install -y \
+    openshift-clients \
+    nmstate \
+    podman \
+    vim-enhanced \
+    NetworkManager-wifi \
+    systemd-container \
+    git \
+    runc \
+    skopeo \
+    lorax \
+    ansible-core \
+    cockpit \
+    microshift-olm \
+    lvm2 \
+    && dnf clean all \
+    && rm -rf /var/{cache,log} /var/lib/{dnf,rhsm}
+
+# Install packages from EPEL
+RUN dnf \
+    install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
+    && dnf clean all \
+    && rm -rf /var/{cache,log} /var/lib/{dnf,rhsm}
+
+RUN dnf \
+    install -y \
+    rdesktop \
+    helm \
+    btop \
+    && dnf clean all \
+    && rm -rf /var/{cache,log} /var/lib/{dnf,rhsm}
+
+RUN dnf \
+    remove -y epel-release-latest-9 \
+    && dnf clean all \
+    && rm -rf /var/{cache,log} /var/lib/{dnf,rhsm}
+
+RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/helm/latest/helm-linux-amd64 -o /usr/local/bin/helm
+RUN chmod +x /usr/local/bin/helm
+
+RUN firewall-offline-cmd --zone=public --add-port=22/tcp && \
+    firewall-offline-cmd --zone=trusted --add-source=10.42.0.0/16 && \
+    firewall-offline-cmd --zone=trusted --add-source=169.254.169.1
+
+# IPC4 Args
+ARG INTERNAL_INTERFACE
+ARG EXTERNAL_INTERFACE
+ARG STORAGE_DEVICE
+
+# IPC4 app args
+ARG GITEA_ADMIN_PASSWORD
+
+# OCP install args
+ARG PULL_SECRET
+ARG ACP_INSTALL_DEVICE
+ARG ACP_INTERFACE_NAME
+ARG ACP_INTERFACE_MAC_ADDRESS
+ARG COREOS_SSH_KEY
+
+# Microshift config
+COPY ovn.yaml /etc/microshift/ovn.yaml
+COPY microshift-config.yaml /etc/microshift/config.yaml
+COPY microshift-storage.yaml /etc/microshit/lvmd.yaml
+COPY openshift-pull-secret /etc/crio/openshift-pull-secret
+RUN sed -i "s/PULL_SECRET/${PULL_SECRET}/g" /etc/crio/openshift-pull-secret
+RUN chmod 0600 /etc/crio/openshift-pull-secret
+
+# Microshift auto-deploy
+## DHCP
+ADD dhcp /etc/microshift/manifests.d/dhcp
+RUN sed -i "s/INTERNAL_INTERFACE/${INTERNAL_INTERFACE}/g" /etc/microshift/manifests.d/dhcp/configmap.yaml
+
+## DNS
+ADD dns /etc/microshift/manifests.d/dns
+
+## Gitea
+ADD gitea /etc/microshift/manifests.d/gitea
+RUN sed -i "s/GITEA_ADMIN_PASSWORD/${GITEA_ADMIN_PASSWORD}/g" /etc/microshift/manifests.d/gitea/job.yaml
+
+## Gitea Operator
+ADD gitea-operator /etc/microshift/manifests.d/gitea-operator
+
+## Oc-mirror
+ADD oc-mirror /etc/microshift/manifests.d/oc-mirror
+RUN sed -i "s/PULL_SECRET/${PULL_SECRET}/g" /etc/microshift/manifests.d/oc-mirror/secret.yaml
+
+## Ocp agent install
+ADD ocp-agent-install /etc/microshift/manifests.d/ocp-agent-install
+RUN sed -i "s/PULL_SECRET/${PULL_SECRET}/g" /etc/microshift/manifests.d/ocp-agent-install/configmap.yaml
+RUN sed -i "s|COREOS_SSH_KEY|${COREOS_SSH_KEY}|g" /etc/microshift/manifests.d/ocp-agent-install/configmap.yaml
+RUN sed -i "s|ACP_INSTALL_DEVICE|${ACP_INSTALL_DEVICE}|g" /etc/microshift/manifests.d/ocp-agent-install/configmap.yaml
+RUN sed -i "s/ACP_INTERFACE_NAME/${ACP_INTERFACE_NAME}/g" /etc/microshift/manifests.d/ocp-agent-install/configmap.yaml
+RUN sed -i "s/ACP_INTERFACE_MAC_ADDRESS/${ACP_INTERFACE_MAC_ADDRESS}/g" /etc/microshift/manifests.d/ocp-agent-install/configmap.yaml
+
+# Setup some services
+
+## Microshift rshared
+COPY microshift-make-rshared.service /etc/systemd/system/microshift-make-rshared.service
+RUN systemctl enable microshift-make-rshared.service
+
+## Network setup
+COPY setup-network.sh /usr/local/bin/setup-network.sh
+RUN chmod +x /usr/local/bin/setup-network.sh
+COPY setup-network.service /etc/systemd/system/networking-setup.service
+RUN sed -i "s/EXTERNAL_INTERFACE/${EXTERNAL_INTERFACE}/g" /usr/local/bin/setup-network.sh
+RUN sed -i "s/INTERNAL_INTERFACE/${INTERNAL_INTERFACE}/g" /usr/local/bin/setup-network.sh
+RUN systemctl enable networking-setup.service
+
+## Storage setup
+COPY setup-storage.sh /usr/local/bin/setup-storage.sh
+RUN chmod +x /usr/local/bin/setup-storage.sh
+RUN sed -i "s|STORAGE_DEVICE|${STORAGE_DEVICE}|g" /usr/local/bin/setup-network.sh
+
+## Set graphical
+RUN systemctl set-default graphical.target
+RUN systemctl enable cockpit.socket
+
+# Cleanup
+RUN subscription-manager clean
+RUN rm -rf /var/lib/rhsm /var/log/rhsm
+
+# Disable auto-updating
+RUN systemctl mask bootc-fetch-apply-updates.timer
+
+# Lint the build
+RUN bootc container lint

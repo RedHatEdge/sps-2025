@@ -1,0 +1,63 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dns-configmap
+data: 
+  named.conf: |
+    options {
+            listen-on port 53 { 192.168.100.1; };
+            directory "/var/named";
+            recursion yes;
+            allow-query { any; };
+            allow-recursion { any; };
+            forwarders {
+                    8.8.8.8;
+                    1.1.1.1;
+            };
+    };
+    include "/etc/named/files.zones";
+  files.zones: |
+    // forward
+    zone "sps2025.com" IN {
+            type master;
+            file "/etc/named/forward.zone";
+            allow-update { none; };
+    };
+
+    // reverse
+    zone "100.168.192.in-addr.arpa" IN {
+            type master;
+            file "/etc/named/reverse.zone";
+    };
+  forward.zone: |
+    $TTL    86400
+    @	 IN	SOA	dns.sps2025.com. admin.sps2025.com. (
+                            3       ; Serial
+                            604800  ; Refresh
+                            86400   ; Retry
+                            2419200 ; Expire
+                            604800  ; Negative Cache TTL
+                            )
+    ;
+                IN NS   dns.sps2025.com.
+    dns IN A 192.168.100.1
+    ipc4 IN A 192.168.100.1
+    api.acp IN A 192.168.100.10
+    *.apps.acp IN A 192.168.100.10
+    api.ipc4 IN A 192.168.100.1
+    *.apps.ipc4 IN A 192.168.100.1
+
+  reverse.zone: |
+    $TTL    86400
+    @	IN	SOA	dns.sps2025.com. root.sps2025.com. (
+        1997022700        ; serial
+        28800             ; refresh
+        14400             ; retry
+        3600000           ; expire
+        86400             ; minimum
+    )
+          IN	    NS      dns.sps2025.com.
+    ;
+    10    IN      PTR     node0.sps2025.com.
+    1     IN      PTR     ipc4.sps2025.com.

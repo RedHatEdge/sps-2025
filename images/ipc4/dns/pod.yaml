@@ -1,0 +1,30 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dns
+  labels:
+    app.kubernetes.io/name: dns
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: dns
+    app.kubernetes.io/part-of: bootstrap
+spec:
+  terminationGracePeriodSeconds: 10
+  serviceAccountName: dns-sa
+  hostNetwork: true
+  containers:
+    - name: dns
+      image: quay.io/jswanson/dns:1.0.1
+      securityContext:
+        privileged: true
+      ports:
+        - containerPort: 53
+          name: dns-port
+      volumeMounts:
+        - name: dns-config-volume
+          mountPath: /etc/named
+          readOnly: true
+  volumes:
+    - name: dns-config-volume
+      configMap:
+        name: dns-configmap

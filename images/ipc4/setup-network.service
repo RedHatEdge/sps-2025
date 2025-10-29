@@ -1,0 +1,14 @@
+
+[Unit]
+Description=Setup network connections with nmcli
+After=NetworkManager.service
+Before=microshift.service
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/setup-network.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

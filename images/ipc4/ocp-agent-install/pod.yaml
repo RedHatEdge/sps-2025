@@ -1,0 +1,81 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: install-iso
+  labels:
+    app.kubernetes.io/name: install-iso
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: install-iso
+    app.kubernetes.io/part-of: bootstrap
+spec:
+  serviceAccountName: ansible-runner
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  restartPolicy: Never
+  volumes:
+    - name: playbook
+      configMap:
+        name: create-install-iso-playbook
+    - name: agent-config
+      configMap:
+        name: agent-config
+        items:
+          - key: agent-config.yaml
+            path: agent-config.yaml
+    - name: install-config
+      configMap:
+        name: install-config
+        items:
+          - key: install-config.yaml
+            path: install-config.yaml
+    - name: output
+      persistentVolumeClaim:
+        claimName: installer-iso
+    - name: create-iso-scratch
+      emptyDir: {}
+    - name: ansible-scratch
+      emptyDir: {}
+    - name: installer-cache
+      emptyDir: {}
+  initContainers:
+    - name: create-installer-iso
+      image: quay.io/jswanson/sps-ee:2025
+      command:
+        - /bin/sh
+        - -c
+        - |
+          ansible-playbook /playbooks/create-agent-install-iso.yaml --inventory localhost, -vv
+      volumeMounts:
+        - name: playbook
+          mountPath: /playbooks
+        - name: agent-config
+          mountPath: /tmp/input/agent-config.yaml
+          subPath: agent-config.yaml
+        - name: install-config
+          mountPath: /tmp/input/install-config.yaml
+          subPath: install-config.yaml
+        - name: output
+          mountPath: /tmp/output
+        - name: create-iso-scratch
+          mountPath: /tmp/create-iso
+        - name: ansible-scratch
+          mountPath: /.ansible
+        - name: installer-cache
+          mountPath: /.cache
+  containers:
+    - name: host-iso
+      image: registry.access.redhat.com/ubi9/httpd-24
+      ports:
+        - containerPort: 8080
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        capabilities:
+          drop:
+            - ALL
+      volumeMounts:
+        - name: output
+          mountPath: /var/www/html

@@ -1,0 +1,5 @@
+---
+dns:
+  baseDomain: ipc4.sps2025.com
+node:
+  nodeIP: 192.168.100.1

@@ -1,0 +1,13 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: bind-gitea-jobs-sa-to-role
+subjects:
+  - kind: ServiceAccount
+    name: gitea-jobs-sa
+    namespace: gitea
+roleRef:
+  kind: ClusterRole
+  name: gitea-jobs-cr
+  apiGroup: rbac.authorization.k8s.io

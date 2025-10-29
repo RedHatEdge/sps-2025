@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitea-manifest
+data:
+  gitea.yaml: |
+    ---
+    apiVersion: pfe.rhpds.com/v1
+    kind: Gitea
+    metadata:
+      name: code
+    spec:
+      giteaVolumeSize: 4Gi
+      postgresqlVolumeSize: 4Gi

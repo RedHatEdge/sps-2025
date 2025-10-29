@@ -1,0 +1,48 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: run-oc-mirror
+  labels:
+    app.kubernetes.io/name: run-oc-mirror
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: run-oc-mirror
+    app.kubernetes.io/part-of: bootstrap
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: run-oc-mirror
+        app.kubernetes.io/part-of: bootstrap
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: run-oc-mirror
+          image: quay.io/jswanson/run-oc-mirror:1.0.3
+          env:
+            - name: NAMESPACE
+              value: oc-mirror
+            - name: REGISTRY
+              value: registry.oc-mirror.svc.cluster.local:5000
+            - name: DEST_USE_HTTP
+              value: 'True'
+            - name: DEST_SKIP_TLS
+              value: 'True'
+          volumeMounts:
+            - name: run-oc-mirror-configs
+              mountPath: /tmp/imagesetconfiguration.yaml
+              subPath: imagesetconfiguration.yaml
+            - name: run-oc-mirror-secrets
+              mountPath: /.docker
+            - name: oc-mirror-scratch
+              mountPath: /opt/oc-mirror
+      volumes:
+        - name: run-oc-mirror-configs
+          configMap:
+            name: oc-mirror-configmap
+        - name: oc-mirror-scratch
+          persistentVolumeClaim:
+            claimName: oc-mirror-scratch-pvc
+        - name: run-oc-mirror-secrets
+          secret:
+            secretName: run-oc-mirror-configjson-secret

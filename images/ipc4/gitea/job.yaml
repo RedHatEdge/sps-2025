@@ -1,0 +1,69 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: deploy-gitea
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      serviceAccount: gitea-jobs-sa
+      restartPolicy: Never
+      containers:
+        - name: deploy-gitea
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Waiting for CRD gitea.pfe.rhpds.com to become available..."
+              until oc get crd gitea.pfe.rhpds.com >/dev/null 2>&1; do
+                echo "CRD not found yet, sleeping..."
+                sleep 5
+              done
+              echo "CRD found! Applying manifest..."
+              oc apply -f /manifests/gitea.yaml
+              echo "Done."
+          volumeMounts:
+            - name: manifests
+              mountPath: /manifests
+      volumes:
+        - name: manifests
+          configMap:
+            name: gitea-manifest
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: setup-gitea-admin
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      serviceAccount: gitea-jobs-sa
+      restartPolicy: Never
+      containers:
+        - name: exec-into-pod
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              POD_PREFIX="code-"
+              echo "Waiting for a pod with prefix $POD_PREFIX to be created..."
+              
+              # Wait until a pod exists with the prefix
+              while [ -z "$POD_NAME" ]; do
+                POD_NAME=$(oc get pods -o name | grep "^pod/$POD_PREFIX" | cut -d'/' -f2 || true)
+                if [ -z "$POD_NAME" ]; then
+                  echo "Pod not found yet, sleeping 5s..."
+                  sleep 5
+                fi
+              done
+
+              echo "Pod found: $POD_NAME. Waiting for it to be Ready..."
+              oc wait --for=condition=Ready pod/$POD_NAME --timeout=300s
+              
+              echo "Running command inside pod..."
+              oc exec $POD_NAME -- /bin/sh -c "giteacmd admin user create --username admin --password 'GITEA_ADMIN_PASSWORD' --email 'dont@email.me' --admin"
+              echo "Command completed successfully."

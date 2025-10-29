@@ -1,0 +1,156 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-config
+data:
+  agent-config.yaml: |
+    ---
+    apiVersion: v1alpha1
+    kind: AgentConfig
+    rendezvousIP: 192.168.100.10
+    metadata:
+      name: acp
+    hosts:
+      - hostname: node0
+        rootDeviceHints:
+          deviceName: ACP_INSTALL_DEVICE
+        interfaces:
+          - name: ACP_INTERFACE_NAME
+            macAddress: ACP_INTERFACE_MAC_ADDRESS
+        networkConfig:
+          interfaces:
+            - name: ACP_INTERFACE_NAME
+              type: ethernet
+              state: up
+              mac-address: ACP_INTERFACE_MAC_ADDRESS
+              ipv4:
+                enabled: true
+                address:
+                  - ip: 192.168.100.10
+                    prefix-length: 24
+                dhcp: false
+          dns-resolver:
+            config:
+              server:
+                - 192.168.100.1
+          routes:
+            config:
+              - destination: 0.0.0.0/0
+                next-hop-address: 192.168.100.1
+                next-hop-interface: ACP_INTERFACE_NAME
+                table-id: 254
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: install-config
+data:
+  install-config.yaml: |
+    ---
+    apiVersion: v1
+    metadata:
+      name: acp
+    baseDomain: sps2025.com
+    controlPlane:
+      name: master
+      replicas: 1
+    compute:
+    - name: worker
+      replicas: 0
+    networking:
+      networkType: OVNKubernetes
+      machineNetwork:
+      - cidr: 192.168.100.0/24
+    platform:
+      none: {}
+    pullSecret: 'PULL_SECRET'
+    sshKey: 'COREOS_SSH_KEY'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: create-install-iso-playbook
+data:
+  create-agent-install-iso.yaml: |
+    ---
+    - name: Create OpenShift installation ISO
+      hosts:
+        - localhost
+      gather_facts: false
+      connection: local
+      vars:
+        create_dir: "/tmp/create-iso"
+        input_dir: "/tmp/input"
+        output_dir: "/tmp/output"
+      pre_tasks:
+        - name: Download openshift-install
+          ansible.builtin.get_url:
+            url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.19.16/openshift-install-linux.tar.gz"
+            dest: "{{ create_dir }}/"
+        - name: Extract tooling
+          ansible.builtin.unarchive:
+            src: "{{ create_dir }}/openshift-install-linux.tar.gz"
+            dest: "{{ create_dir }}/"
+            remote_src: yes
+        - name: Get router cert
+          ansible.builtin.shell:
+            cmd: oc get secret router-certs-default -n openshift-ingress -o yaml | grep 'tls.crt' | awk '{print $2}'
+          register: _router_cert_raw
+          changed_when: false
+        - name: Extract tls.crt value
+          set_fact:
+            _router_tls_crt: "{{ _router_cert_raw.stdout | b64decode }}"
+        - name: Slurp up install-config
+          ansible.builtin.slurp:
+            path: "{{ input_dir }}/install-config.yaml"
+          register: _install_config
+        - name: Convert install-config to yaml
+          ansible.builtin.set_fact:
+            _install_config_yaml: "{{ _install_config['content'] | b64decode | from_yaml }}"
+        - name: Extract pull secret
+          ansible.builtin.set_fact:
+            _pull_secret: "{{ _install_config_yaml.pullSecret | from_json }}"
+        - name: Append local registry auth info
+          ansible.builtin.set_fact:
+            _appended_pull_secret: >-
+              {{
+                {
+                  'auths': _pull_secret.auths | combine(new_auth.auths, recursive=True)
+                }
+              }}
+          vars:
+            new_auth: "{{ {'auths': {'registry-oc-mirror.apps.ipc4.sps2025.com': {'auth': 'ZHVtbXlfdXNlcjpkdW1teV9wYXNzd29yZA=='}}} }}"
+        - name: Update pull secret in install-config data
+          ansible.builtin.set_fact:
+            _new_install_config: "{{ _install_config_yaml | combine({'pullSecret': _appended_pull_secret | to_json}) }}"
+        - name: Write out new install-config
+          ansible.builtin.copy:
+            content: "{{ _new_install_config | to_nice_yaml }}"
+            dest: /tmp/create-iso/install-config.yaml
+      tasks:
+        - name: Copy agent config 
+          ansible.builtin.copy:
+            src: "{{ input_dir }}/agent-config.yaml"
+            dest: "{{ create_dir }}/agent-config.yaml"
+            remote_src: true
+        - name: Add additional trust bundle
+          ansible.builtin.blockinfile:
+            path: "{{ create_dir }}/install-config.yaml"
+            insertafter: EOF
+            block: |
+              additionalTrustBundle: |
+                {{ _router_tls_crt | indent(width=2) }}  
+        - name: Generate install ISO
+          ansible.builtin.shell:
+            cmd: "{{ create_dir }}/openshift-install --dir {{ create_dir }} agent create image"
+      post_tasks:
+        - name: Copy created ISO and auth into to {{ output_dir }}
+          ansible.builtin.copy:
+            src: "{{ item }}"
+            dest: "{{ output_dir }}/"
+            remote_src: true
+          loop:
+            - "{{ create_dir }}/agent.x86_64.iso"
+            - "{{ create_dir }}/auth"
+

@@ -1,0 +1,7 @@
+---
+socket-name: /run/lvmd/lvmd.socket
+device-classes:
+  - name: default
+    volume-group: microshift-storage
+    spare-gb: 0
+    default: true
