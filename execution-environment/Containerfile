@@ -1,6 +1,6 @@
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest as python-base
 
-RUN microdnf install python3 python3-pip openssh-clients -y && \
+RUN microdnf install python3 python3-pip openssh-clients tar -y && \
     microdnf clean all && \
     rm -rf /var/cache/{dnf,yum} && \
     rm -rf /var/log/{dnf,yum}
@@ -34,6 +34,12 @@ RUN ansible-builder introspect --sanitize /tmp/ansible/collections | sed -n '/^p
 WORKDIR /tmp/pip
 RUN python3 -m pip wheel --no-cache-dir --wheel-dir=/tmp/wheels -r pip-install.txt
 
+FROM python-base as openshift-client
+RUN curl -o /tmp/openshift-client-linux.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz
+RUN tar -xzvf /tmp/openshift-client-linux.tar.gz -C /tmp
+RUN chmod +x /tmp/oc
+RUN chmod +x /tmp/kubectl
+
 FROM ansible-base as execution-environment
 
 RUN mkdir /usr/share/ansible
@@ -46,6 +52,14 @@ COPY --from=ansible-galaxy /tmp/wheels /tmp/wheels
 WORKDIR /tmp/pip
 RUN python -m pip install --no-index --no-cache-dir --find-links=/tmp/wheels -r ansible.txt -r pip-install.txt
 RUN rm -rf /tmp/wheels /tmp/ansible.txt /tmp/pip-install.txt
+
+COPY --from=openshift-client /tmp/oc /usr/local/bin/oc
+COPY --from=openshift-client /tmp/kubectl /usr/local/bin/kubectl
+
+RUN microdnf install nmstate -y && \
+    microdnf clean all && \
+    rm -rf /var/cache/{dnf,yum} && \
+    rm -rf /var/log/{dnf,yum}
 
 RUN mkdir -p /runner/{playbooks,inventory,variables}
 
