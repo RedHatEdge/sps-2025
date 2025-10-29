@@ -1,0 +1,18 @@
+# RSHM args
+RHSM_ORG=123456789
+RHSM_AK=ak-whatever
+
+# IPC4 Args
+INTERNAL_INTERFACE=enp2s0
+EXTERNAL_INTERFACE=enp0s31f6
+
+# IPC4 app args
+GITEA_ADMIN_PASSWORD=your-password-here
+
+# OCP install args
+# Note: Don't single-quote your pull secret
+PULL_SECRET=your-pull-secret
+ACP_INSTALL_DEVICE=/dev/sda
+ACP_INTERFACE_NAME=enp3s0
+ACP_INTERFACE_MAC_ADDRESS=11:22:33:44:55:66
+COREOS_SSH_KEY=ssh-ed25519 blahblahblah you@your-computer
