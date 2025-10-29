@@ -2,3 +2,6 @@
 values.yaml
 scratch
 inventory.yaml
+*artifact*
+*scratch*
+*.log
