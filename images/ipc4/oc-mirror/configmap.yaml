@@ -17,7 +17,7 @@ data:
       platform:
         graph: true
         channels:
-          - name: stable-4.19.16
+          - name: stable-4.19
             type: ocp
       operators:
         - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
