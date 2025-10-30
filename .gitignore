@@ -8,3 +8,4 @@ inventory.yaml
 *.iso
 build-args.txt
 kickstarts/josh-testing.ks
+charts/
