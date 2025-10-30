@@ -244,42 +244,6 @@ data:
       apiGroup: rbac.authorization.k8s.io
       kind: ClusterRole
       name: cluster-admin
-  serviceaccount.yaml: |
-    ---
-    apiVersion: v1
-    kind: ServiceAccount
-    metadata:
-      name: apply-acp-standard-services
-      namespace: openshift-gitops
-  role.yaml: |
-    ---
-    kind: Role
-    apiVersion: rbac.authorization.k8s.io/v1
-    metadata:
-      name: apply-acp-standard-services
-      namespace: openshift-gitops
-    rules:
-      - apiGroups: ["", "apps", "argoproj.io"]
-        resources: ["secrets", "applications"]
-        verbs: ["get", "list", "create", "update", "patch", "delete"]
-      - apiGroups: ["config.openshift.io"]
-        resources: ["clusteroperators"]
-        verbs: ["get", "list", "watch"]
-  rolebinding.yaml: |
-    ---
-    kind: RoleBinding
-    apiVersion: rbac.authorization.k8s.io/v1
-    metadata:
-      name: apply-acp-standard-services
-      namespace: openshift-gitops
-    subjects:
-      - kind: ServiceAccount
-        name: apply-acp-standard-services
-        namespace: openshift-gitops
-    roleRef:
-      kind: Role
-      name: apply-acp-standard-services
-      apiGroup: rbac.authorization.k8s.io
   job.yaml: |
     ---
     apiVersion: batch/v1
@@ -293,11 +257,21 @@ data:
       backoffLimit: 0
       template:
         spec:
-          serviceAccountName: apply-acp-standard-services
+          serviceAccountName: gitops-service-cluster
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
           restartPolicy: Never
           containers:
             - name: apply-acp-standard-services
               image: registry.redhat.io/openshift4/ose-cli:latest
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+                seccompProfile:
+                  type: RuntimeDefault
               command:
                 - /bin/sh
                 - -c
