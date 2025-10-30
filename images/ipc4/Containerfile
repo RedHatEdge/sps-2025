@@ -149,6 +149,10 @@ RUN systemctl enable cockpit.socket
 # Set hostname
 RUN echo "${HOSTNAME}" > /etc/hostname
 
+# Helper scripts
+COPY get-microshift-kubeconfig.sh /usr/local/bin/get-microshift-kubeconfig.sh
+RUN chmod +x /usr/local/bin/get-microshift-kubeconfig.sh
+
 # Cleanup
 RUN subscription-manager clean
 RUN rm -rf /var/lib/rhsm /var/log/rhsm
