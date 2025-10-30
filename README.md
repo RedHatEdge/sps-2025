@@ -124,3 +124,5 @@ To watch the installation process, two methods are useful:
 1. SSH into the CoreOS node and run `sudo journalctl -f`
 2. Watch the oprtators come up: `watch -d "oc get co"`
 
+The cluster has baked-in manifests that will be deployed during the install - these should bootstrap GitOps, and link back to Gitea on IPC4.
+
