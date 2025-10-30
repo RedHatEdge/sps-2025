@@ -331,16 +331,19 @@ data:
                                   - node0
                                 deviceSelectorPaths:
                                   - /dev/nvme0n1
+                                  - /dev/nvme1n1
+                                  - /dev/nvme2n1
                                 default: true
                           virtualization:
                             commonBootImageImport: true
                           itAutomation:
                             overrideAnsibleAutomationPlatformVersion: stable-2.6
-                            database:
-                              storageClass: lvms-node0-local-storage
-                            hub:
-                              disabled: true
-                            lightspeed:
-                              disabled: true
+                            ansibleAutomationPlatform:
+                              database:
+                                storageClass: lvms-node0-local-storage
+                              hub:
+                                disabled: true
+                              lightspeed:
+                                disabled: true
                   EOF
                   echo "Manifests applied successfully."
