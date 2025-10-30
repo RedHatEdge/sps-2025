@@ -50,16 +50,16 @@
       loop: "{{ agent_install_config_files }}"
       loop_control:
         loop_var: template_file
-    - name: Create agent config ISO
-      ansible.builtin.shell:
-        cmd: "{{ resource_dir }}/openshift-install agent create config-image --dir={{ openshift_install_dir }}"
-      args:
-        creates: "{{ openshift_install_dir }}/agentconfig.noarch.iso"
-  post_tasks:
-    - name: Print out information
-      ansible.builtin.debug:
-        msg:
-          - "Agent config ISO generation is complete."
-          - "The ISO is available at: {{ openshift_install_dir }}/agentconfig.noarch.iso"
-          - "To perform an appliance-based agent install, boot the appliance with the agentconfig ISO mounted."
-          - "Note: The agentconfig ISO is NOT BOOTABLE - boot from the appliance, with the agentconfig ISO mounted."
+  #   - name: Create agent config ISO
+  #     ansible.builtin.shell:
+  #       cmd: "{{ resource_dir }}/openshift-install agent create config-image --dir={{ openshift_install_dir }}"
+  #     args:
+  #       creates: "{{ openshift_install_dir }}/agentconfig.noarch.iso"
+  # post_tasks:
+  #   - name: Print out information
+  #     ansible.builtin.debug:
+  #       msg:
+  #         - "Agent config ISO generation is complete."
+  #         - "The ISO is available at: {{ openshift_install_dir }}/agentconfig.noarch.iso"
+  #         - "To perform an appliance-based agent install, boot the appliance with the agentconfig ISO mounted."
+  #         - "Note: The agentconfig ISO is NOT BOOTABLE - boot from the appliance, with the agentconfig ISO mounted."
