@@ -31,6 +31,9 @@ spec:
         items:
           - key: install-config.yaml
             path: install-config.yaml
+    - name: additional-manifests
+      configMap:
+        name: additional-manifests
     - name: output
       persistentVolumeClaim:
         claimName: installer-iso
@@ -57,6 +60,8 @@ spec:
         - name: install-config
           mountPath: /tmp/input/install-config.yaml
           subPath: install-config.yaml
+        - name: additional-manifests
+          mountPath: /tmp/input/additional-manifests
         - name: output
           mountPath: /tmp/output
         - name: create-iso-scratch

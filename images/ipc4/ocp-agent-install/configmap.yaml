@@ -140,10 +140,27 @@ data:
             insertafter: EOF
             block: |
               additionalTrustBundle: |
-                {{ _router_tls_crt | indent(width=2) }}  
+                {{ _router_tls_crt | indent(width=2) }}
+        - name: Create directory for additional manifests
+          ansible.builtin.file:
+            path: "{{ create_dir }}/openshift"
+            state: directory
+        - name: Copy additional manifests to {{ create_dir }}/openshift
+          ansible.builtin.copy:
+            src: "{{ file }}"
+            dest: "{{ create_dir }}/openshift/{{ file.split('/')[-1] }}"
+            remote_src: true
+          with_fileglob:
+            - "{{ input_dir }}/additional-manifests/*.yaml"
+          loop_control:
+            loop_var: file
+        - name: Print out contents of {{ create_dir }}
+          ansible.builtin.shell:
+            cmd: "ls -lsaht {{ create_dir }}"
+          changed_when: false
         - name: Generate install ISO
           ansible.builtin.shell:
-            cmd: "{{ create_dir }}/openshift-install --dir {{ create_dir }} agent create image"
+            cmd: "{{ create_dir }}/openshift-install --dir {{ create_dir }} agent create image --log-level debug"
       post_tasks:
         - name: Copy created ISO and auth into to {{ output_dir }}
           ansible.builtin.copy:
@@ -153,4 +170,77 @@ data:
           loop:
             - "{{ create_dir }}/agent.x86_64.iso"
             - "{{ create_dir }}/auth"
-
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: additional-manifests
+data:
+  namespace.yaml: |
+    ---
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: openshift-gitops-operator
+      labels:
+        openshift.io/cluster-monitoring: 'true'
+  operatorgroup.yaml: |
+    ---
+    apiVersion: operators.coreos.com/v1
+    kind: OperatorGroup
+    metadata:
+      name: openshift-gitops-operator
+      namespace: openshift-gitops-operator
+    spec:
+      upgradeStrategy: Default
+  subscription.yaml: |
+    ---
+    apiVersion: operators.coreos.com/v1alpha1
+    kind: Subscription
+    metadata:
+      name: openshift-gitops-operator
+      namespace: openshift-gitops-operator
+    spec:
+      channel: latest
+      installPlanApproval: Automatic
+      name: openshift-gitops-operator
+      source: redhat-operators
+      sourceNamespace: openshift-marketplace
+  serviceaccount.yaml: |
+    ---
+    kind: ClusterRoleBinding
+    apiVersion: rbac.authorization.k8s.io/v1
+    metadata:
+      name: openshift-gitops-admin
+    subjects:
+      - kind: ServiceAccount
+        name: gitops-service-cluster
+        namespace: openshift-gitops
+      - kind: ServiceAccount
+        name: openshift-gitops-applicationset-controller
+        namespace: openshift-gitops
+      - kind: ServiceAccount
+        name: openshift-gitops-argocd-application-controller
+        namespace: openshift-gitops
+      - kind: ServiceAccount
+        name: openshift-gitops-argocd-dex-server
+        namespace: openshift-gitops
+      - kind: ServiceAccount
+        name: openshift-gitops-argocd-grafana
+        namespace: openshift-gitops
+      - kind: ServiceAccount
+        name: openshift-gitops-argocd-redis
+        namespace: openshift-gitops
+      - kind: ServiceAccount
+        name: openshift-gitops-argocd-redis-ha
+        namespace: openshift-gitops
+      - kind: ServiceAccount
+        name: openshift-gitops-argocd-server
+        namespace: openshift-gitops
+      - kind: ServiceAccount
+        name: openshift-gitops-operator-controller-manager
+        namespace: openshift-operators
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: cluster-admin
