@@ -1,0 +1,14 @@
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: apply-acp-standard-services
+  namespace: openshift-gitops
+subjects:
+  - kind: ServiceAccount
+    name: apply-acp-standard-services
+    namespace: openshift-gitops
+roleRef:
+  kind: Role
+  name: apply-acp-standard-services
+  apiGroup: rbac.authorization.k8s.io
