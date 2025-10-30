@@ -9,6 +9,7 @@ metadata:
     app.kubernetes.io/component: run-oc-mirror
     app.kubernetes.io/part-of: bootstrap
 spec:
+  backoffLimit: 25
   template:
     metadata:
       labels:
