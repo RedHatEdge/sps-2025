@@ -206,7 +206,7 @@ data:
       name: openshift-gitops-operator
       source: redhat-operators
       sourceNamespace: openshift-marketplace
-  serviceaccount.yaml: |
+  clusterrolebinding.yaml: |
     ---
     kind: ClusterRoleBinding
     apiVersion: rbac.authorization.k8s.io/v1
@@ -244,3 +244,129 @@ data:
       apiGroup: rbac.authorization.k8s.io
       kind: ClusterRole
       name: cluster-admin
+  serviceaccount.yaml: |
+    ---
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: apply-acp-standard-services
+      namespace: openshift-gitops
+  role.yaml: |
+    ---
+    kind: Role
+    apiVersion: rbac.authorization.k8s.io/v1
+    metadata:
+      name: apply-acp-standard-services
+      namespace: openshift-gitops
+    rules:
+      - apiGroups: ["", "apps", "argoproj.io"]
+        resources: ["secrets", "applications"]
+        verbs: ["get", "list", "create", "update", "patch", "delete"]
+      - apiGroups: ["config.openshift.io"]
+        resources: ["clusteroperators"]
+        verbs: ["get", "list", "watch"]
+  rolebinding.yaml: |
+    ---
+    kind: RoleBinding
+    apiVersion: rbac.authorization.k8s.io/v1
+    metadata:
+      name: apply-acp-standard-services
+      namespace: openshift-gitops
+    subjects:
+      - kind: ServiceAccount
+        name: apply-acp-standard-services
+        namespace: openshift-gitops
+    roleRef:
+      kind: Role
+      name: apply-acp-standard-services
+      apiGroup: rbac.authorization.k8s.io
+  job.yaml: |
+    ---
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: apply-acp-standard-services
+      namespace: openshift-gitops
+      labels:
+        app.kubernetes.io/name: apply-acp-standard-services
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          serviceAccountName: apply-acp-standard-services
+          restartPolicy: Never
+          containers:
+            - name: apply-acp-standard-services
+              image: registry.redhat.io/openshift4/ose-cli:latest
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "Waiting for all cluster operators to be healthy..."
+                  oc wait --all \
+                    --for=condition=Available=True \
+                    --for=condition=Progressing=False \
+                    --for=condition=Degraded=False \
+                    clusteroperators.config.openshift.io \
+                    --timeout=120m
+
+                  echo "All operators are healthy. Applying manifests..."
+                  cat <<'EOF' | oc apply -f -
+                  ---
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    labels:
+                      argocd.argoproj.io/secret-type: repository
+                    name: acp-standard-services-public-repository
+                    namespace: openshift-gitops
+                  stringData:
+                    insecure: 'true'
+                    name: acp-standard-services-public
+                    project: default
+                    type: git
+                    url: http://code-gitea.apps.ipc4.sps2025.com/admin/acp-standard-services-public.git
+                  ---
+                  apiVersion: argoproj.io/v1alpha1
+                  kind: Application
+                  metadata:
+                    name: acp-standard-services
+                    namespace: openshift-gitops
+                    labels:
+                      application: acp-standard-services
+                  spec:
+                    destination:
+                      name: ""
+                      server: https://kubernetes.default.svc
+                    project: default
+                    syncPolicy:
+                      automated:
+                        selfHeal: true
+                    source:
+                      repoURL: http://code-gitea.apps.ipc4.sps2025.com/admin/acp-standard-services-public.git
+                      targetRevision: dev
+                      path: charts/acp-standard-services
+                      helm:
+                        values: |
+                          gitBranch: dev
+                          localStorage:
+                            forceWipeDrives: true
+                            deviceClasses:
+                              - name: node0-local-storage
+                                nodes:
+                                  - node0
+                                deviceSelectorPaths:
+                                  - /dev/nvme0n1
+                                default: true
+                          virtualization:
+                            commonBootImageImport: true
+                          itAutomation:
+                            overrideAnsibleAutomationPlatformVersion: stable-2.6
+                            database:
+                              storageClass: lvms-node0-local-storage
+                            hub:
+                              disabled: true
+                            lightspeed:
+                              disabled: true
+                  EOF
+                  echo "Manifests applied successfully."
