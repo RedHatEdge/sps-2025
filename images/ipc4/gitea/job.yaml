@@ -62,8 +62,96 @@ spec:
               done
 
               echo "Pod found: $POD_NAME. Waiting for it to be Ready..."
-              oc wait --for=condition=Ready pod/$POD_NAME --timeout=300s
-              
-              echo "Running command inside pod..."
-              oc exec $POD_NAME -- /bin/sh -c "giteacmd admin user create --username admin --password 'GITEA_ADMIN_PASSWORD' --email 'dont@email.me' --admin"
-              echo "Command completed successfully."
+              oc wait --for=condition=Ready pod/$POD_NAME --timeout=900s
+
+              echo "Running command inside pod (will retry until success)..."
+              RETRIES=0
+              MAX_RETRIES=0  # 0 means infinite retries
+              SLEEP_SECONDS=5
+
+              until oc exec "$POD_NAME" -- /bin/sh -c "giteacmd admin user create --username admin --password 'GITEA_ADMIN_PASSWORD' --email 'dont@email.me' --admin"; do
+                RETRIES=$((RETRIES+1))
+                echo "Command failed (attempt $RETRIES). Retrying in $SLEEP_SECONDS seconds..."
+                sleep $SLEEP_SECONDS
+
+                # Optionally add a finite retry cap if desired:
+                if [ "$MAX_RETRIES" -gt 0 ] && [ "$RETRIES" -ge "$MAX_RETRIES" ]; then
+                  echo "Reached max retries ($MAX_RETRIES). Exiting with failure."
+                  exit 1
+                fi
+              done
+
+              echo "Command succeeded!"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mirror-repo
+  labels:
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: mirror-repo
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          env:
+            - name: GITEA_URL
+              value: "http://code.gitea.svc.cluster.local:3000"
+            - name: GITEA_USER
+              value: "admin"
+            - name: GITEA_PASS
+              value: "GITEA_ADMIN_PASSWORD"
+            - name: UPSTREAM_REPO
+              value: "https://github.com/RedHatEdge/acp-standard-services-public.git"
+            - name: REPO_NAME
+              value: "acp-standard-services-public"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              echo "Waiting for Gitea API to be available..."
+
+              # Retry loop for Gitea readiness
+              for i in {1..900}; do
+                if curl -sf -o /dev/null "$GITEA_URL/api/v1/version"; then
+                  echo "Gitea API is up"
+                  break
+                fi
+                echo "Attempt $i: Gitea API not yet ready, retrying in 10s..."
+                sleep 10
+              done
+
+              # Confirm final availability before proceeding
+              curl -sf "$GITEA_URL/api/v1/version" || {
+                echo "Gitea API not available after retries"
+                exit 1
+              }
+
+              echo "Checking if repository already exists..."
+              if curl -sf -u "${GITEA_USER}:${GITEA_PASS}" \
+                "$GITEA_URL/api/v1/repos/${GITEA_USER}/${REPO_NAME}" >/dev/null; then
+                echo "Repository '${REPO_NAME}' already exists — skipping creation."
+                exit 0
+              fi
+
+              echo "Creating mirror repo in Gitea..."
+
+              echo "Creating pull mirror for ${UPSTREAM_REPO}..."
+              curl -sf -X POST \
+                -H "Content-Type: application/json" \
+                -u "${GITEA_USER}:${GITEA_PASS}" \
+                -d '{
+                  "clone_addr": "'"${UPSTREAM_REPO}"'",
+                  "repo_name": "'"${REPO_NAME}"'",
+                  "mirror": true,
+                  "mirror_interval": "1h",
+                  "private": false,
+                  "description": "Auto-mirrored from GitHub",
+                  "uid": '"1"'
+                }' \
+                "${GITEA_URL}/api/v1/repos/migrate" \
+              && echo "Mirror created successfully" \
+              || { echo "Failed to create mirror"; exit 1; }
