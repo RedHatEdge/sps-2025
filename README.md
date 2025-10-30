@@ -66,6 +66,61 @@ tail -f /tmp/anaconda.log
 
 Once the device reboots, everything should start up on its own.
 
+To get the microshift kubeconfig, log in as your created user and run:
+```bash
+get-microshift-kubeconfig.sh
+```
+
+This will place the kubeconfig into the default path, so future `oc` commands will work without needing to specify a kubeconfig.
+
+All services are ready when all pods reach `Running` or `Completed`:
+```
+oc get pods -A
+NAMESPACE                              NAME                                                              READY   STATUS      RESTARTS      AGE
+dhcp                                   dhcp                                                              1/1     Running     0             31m
+dns                                    dns                                                               1/1     Running     0             31m
+gitea-operator                         603b4118f8198b060bdc8e06ec74d38a6422d65b43d1fc6195be91491a29lrl   0/1     Completed   0             30m
+gitea-operator                         gitea-operator-controller-manager-7fcc5585f5-dhwkn                2/2     Running     0             30m
+gitea-operator                         redhat-rhpds-gitea-jjrhw                                          1/1     Running     0             31m
+gitea                                  code-694b97bbf5-xk848                                             1/1     Running     0             28m
+gitea                                  deploy-gitea-8fs9l                                                0/1     Completed   0             31m
+gitea                                  postgresql-code-c45c7d5cc-nwbwr                                   1/1     Running     0             29m
+gitea                                  setup-gitea-admin-s2tx4                                           0/1     Completed   0             31m
+kube-system                            csi-snapshot-controller-5d77bbb59c-h2swq                          1/1     Running     0             32m
+oc-mirror                              registry                                                          1/1     Running     0             31m
+oc-mirror                              run-oc-mirror-p2zzv                                               1/1     Running     3 (10m ago)   31m
+ocp-agent-install                      install-iso                                                       1/1     Running     0             31m
+openshift-dns                          dns-default-7jt67                                                 2/2     Running     0             31m
+openshift-dns                          node-resolver-x25vn                                               1/1     Running     0             32m
+openshift-ingress                      router-default-7567c7c4df-s2tvt                                   1/1     Running     0             32m
+openshift-operator-lifecycle-manager   catalog-operator-7b75665d5b-qf5pl                                 1/1     Running     0             32m
+openshift-operator-lifecycle-manager   olm-operator-6d4dd7cd64-x2894                                     1/1     Running     0             32m
+openshift-ovn-kubernetes               ovnkube-master-fz5t4                                              4/4     Running     1 (31m ago)   32m
+openshift-ovn-kubernetes               ovnkube-node-jxgkq                                                1/1     Running     1 (31m ago)   32m
+openshift-service-ca                   service-ca-5b4769d488-jntnk                                       1/1     Running     0             32m
+openshift-storage                      lvms-operator-86566ddc69-x9w2l                                    1/1     Running     0             32m
+openshift-storage                      vg-manager-nlrqd                                                  1/1     Running     0             31m
+```
+
+At this point, connect your computer to the internal demo network - you should get an address in the `192.168.100.0/24` subnet, and have internet access.
+
 ### Setup the ACP
 The ACP setup is an agent-based install using a local mirror registry located on IPC4. A job on IPC4 will generate the installation ISO for you, all you need to do is download it, mount it to the target installation device, and boot from it. The install should happen automatically from there.
+
+To download the installation ISO, grab it from IPC4:
+```bash
+wget --no-check-certificate https://serve-iso-ocp-agent-install.apps.ipc4.sps2025.com/agent.x86_64.iso
+```
+
+Mount this media to the target installation device (USB drive, etc), and boot from it. The cluster installation should begin and complete automatically.
+
+The cluster kubeconfig and kubeadmin-password files are also available on IPC4:
+```
+wget --no-check-certificate https://serve-iso-ocp-agent-install.apps.ipc4.sps2025.com/auth/kubeconfig
+wget --no-check-certificate https://serve-iso-ocp-agent-install.apps.ipc4.sps2025.com/auth/kubeadmin-password
+```
+
+To watch the installation process, two methods are useful:
+1. SSH into the CoreOS node and run `sudo journalctl -f`
+2. Watch the oprtators come up: `watch -d "oc get co"`
 
