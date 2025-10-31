@@ -19,6 +19,8 @@ data:
         channels:
           - name: stable-4.19
             type: ocp
+            minVersion: 4.19.16
+            maxVersion: 4.19.16
       operators:
         - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
           packages:
