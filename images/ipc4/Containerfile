@@ -90,7 +90,7 @@ ARG COREOS_SSH_KEY
 # Microshift config
 COPY ovn.yaml /etc/microshift/ovn.yaml
 COPY microshift-config.yaml /etc/microshift/config.yaml
-COPY microshift-storage.yaml /etc/microshit/lvmd.yaml
+COPY microshift-storage.yaml /etc/microshift/lvmd.yaml
 COPY openshift-pull-secret /etc/crio/openshift-pull-secret
 RUN sed -i "s/PULL_SECRET/${PULL_SECRET}/g" /etc/crio/openshift-pull-secret
 RUN chmod 0600 /etc/crio/openshift-pull-secret
