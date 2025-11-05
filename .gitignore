@@ -7,5 +7,6 @@ inventory.yaml
 *.log
 *.iso
 build-args.txt
+notes.txt
 kickstarts/josh-testing.ks
 charts/

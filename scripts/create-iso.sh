@@ -2,7 +2,7 @@
 
 TEMPDIR=$(mktemp --directory)
 
-echo Unpack container image
+echo "Unpack container image"
 mkdir -p "${TEMPDIR}/container"
 skopeo copy "containers-storage:$1" "oci:${TEMPDIR}/container/"
 
@@ -11,7 +11,7 @@ cp $2 "${TEMPDIR}/local.ks"
 
 echo Pack iso to "$4"
 cd "${TEMPDIR}"
-sudo mkksiso --ks local.ks --add container/ \
+sudo mkksiso --ks local.ks --add ${TEMPDIR}/container/ \
      --cmdline "console=tty0 console=ttyS0,115200n8" \
      --rm-args "quiet" \
     "$3" "$4"

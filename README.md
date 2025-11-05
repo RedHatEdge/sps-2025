@@ -52,6 +52,9 @@ To create an installation ISO, a script is available in the [scripts](scripts/) 
 
 An example kickstart file is available in the [kickstarts](kickstarts/) directory.
 
+*You would need to install `skopeo` and `mkksiso` to run the script*  
+*Make sure to select the drive in the kickstart which has the most disk space, since it is going to allocate all OCP4 mirrored images*  
+
 Example script run:
 ```bash
 scripts/create-iso.sh localhost/ipc4:latest  $(pwd)/kickstarts/home-testing.ks ~/Downloads/rhel-9.6-x86_64-boot.iso $(pwd)/test.iso
