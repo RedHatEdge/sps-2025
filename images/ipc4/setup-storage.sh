@@ -40,6 +40,6 @@ echo "Initializing for LVM..."
 sgdisk -Z "$CANDIDATE"
 sleep 1
 pvcreate "$CANDIDATE"
-vgcreate microshift_storage "$CANDIDATE"
+vgcreate microshift-storage "$CANDIDATE"
 
-echo "Volume group 'microshift_storage' created successfully on $CANDIDATE."
+echo "Volume group 'microshift-storage' created successfully on $CANDIDATE."
