@@ -18,7 +18,7 @@ ROOT_DEV="/dev/${ROOT_DEV}"
 CANDIDATE=$(
     lsblk -dn -o NAME,TYPE | \
     awk '$2=="disk"{print "/dev/"$1}' | \
-    grep -Ev '/dev/(loop|ram|dm-|sr|zd|nvme.*n1p|composefs)' | \
+    grep -Ev '/dev/(loop|.*ram|dm-|sr|zd|nvme.*n1p|composefs)' | \
     while read -r DEV; do
         [[ "$DEV" == "$ROOT_DEV" ]] && continue
         # Skip if it has partitions

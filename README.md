@@ -74,6 +74,8 @@ To get the microshift kubeconfig, log in as your created user and run:
 get-microshift-kubeconfig.sh
 ```
 
+*If you installed something on the other disk on IPC4, make sure to wipe it, so that the LVM of Microshift can use that with something like `fdisk`*  
+
 This will place the kubeconfig into the default path, so future `oc` commands will work without needing to specify a kubeconfig.
 
 All services are ready when all pods reach `Running` or `Completed`:
