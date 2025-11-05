@@ -131,3 +131,6 @@ To watch the installation process, two methods are useful:
 
 The cluster has baked-in manifests that will be deployed during the install - these should bootstrap GitOps, and link back to Gitea on IPC4.
 
+## Access to systems for SPS 2025  
+Please check the repo [here](https://github.com/lucamaf/sps-2025-systems)
+
