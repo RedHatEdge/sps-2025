@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: dns
 resources:
   - namespace.yaml
+  - clusterole.yaml
   - serviceaccount.yaml
   - scc.yaml
   - rolebinding.yaml

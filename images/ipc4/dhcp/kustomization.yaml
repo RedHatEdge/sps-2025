@@ -5,6 +5,7 @@ namespace: dhcp
 resources:
   - namespace.yaml
   - serviceaccount.yaml
+  - clusterrole.yaml
   - scc.yaml
   - rolebinding.yaml
   - configmap.yaml
