@@ -127,9 +127,42 @@ wget --no-check-certificate https://serve-iso-ocp-agent-install.apps.ipc4.sps202
 
 To watch the installation process, two methods are useful:
 1. SSH into the CoreOS node and run `sudo journalctl -f`
-2. Watch the oprtators come up: `watch -d "oc get co"`
+2. Watch the operators come up: `watch -d "oc get co"`
 
 The cluster has baked-in manifests that will be deployed during the install - these should bootstrap GitOps, and link back to Gitea on IPC4.
+
+You can easily access the cluster from IPC3 (copying over `kubeconfig` file) while leaving IPC4 for local `microshift` access.  
+
+#### Dell iDrac Service Module
+
+Installed the ISM container on ACP to have more detailed information from inside the iDrac console.
+
+How to:
+- pushing a built image to mirror registry on IPC4 on Microshift
+- build the image and push it to a public repo (like Quay.io)
+- add it to the oc-mirror/configmap.yaml file
+- apply the new configuration: `$ oc -n oc-mirror apply -f /etc/microshift/manifests.d/oc-mirror/configmap.yaml`
+- rerun the import images job by creating and applying a copy of /etc/microshift/manifests.d/oc-mirror/job.yaml:   
+```bash
+$ oc -n oc-mirror get job run-oc-mirror -o json | \
+jq -r '.metadata.annotations."kubectl.kubernetes.io/last-applied-configuration"' | \
+oc -n oc-mirror replace --save-config --force -f -
+```
+
+#### Windows 11 VM on OCP-V - Codesys IDE
+
+Download WIN11 iso on IPC4
+curl "https://software.download.prss.microsoft.com/dbazure/Win11_25H2_EnglishInternational_x64.iso?t=7129ee82-c634-44f0-9c52-4ed124f901a0&P1=1762599991&P2=601&P3=2&P4=FSo6iBj9ZQroci78wN7HIc8amPneeoGTgvPzkZSqmHMDacqYQw0u1drkD%2f%2bUfI7N8VoVpv3KEUbrkfQDTyxWe73dlR3OnATkrXNQShTGMZY8bdQAa5rjLnAXDs8XBQ2i%2fc9BrNghPBKHddps0us5NzPMlzy%2b%2bowTLfhU0BJTaWT2ZXs5cewxY9E4uPh51bdRnb2DCsZiTmWxA8QkjbV7s0%2byVVFBl%2f8GWfzASMoFuSG%2f%2bQZ0LjVv%2bPtUhR9oQbnJeScCzLDPopzSiCduMiQoxf8NhGDp6VA%2f%2fwg3p7IW50eJa9890ud1IDZOLoMMCh4sPynK63DKtyrQmccgviuUTg%3d%3d" -o win11_x64.iso
+https://github.com/kubevirt/kubevirt-tekton-tasks/tree/main/templates-pipelines/windows-efi-installer
+Install OpenShift Pipelines TODO add it to the Gitops in Gitea
+Create a new project (for example codesys)
+Create the configmap that contains the unattended.xml file: https://raw.githubusercontent.com/kubevirt/kubevirt-tekton-tasks/refs/heads/main/release/pipelines/windows-efi-installer/configmaps/windows-efi-installer-configmaps.yaml oc --kubeconfig kubeconfig -n codesys create -f WIN11/windows-efi-installer-configmaps.yaml
+Run the pipeline that download, imports, create golden image of win11 (using unattended configuration): oc --kubeconfig kubeconfig create -f WIN11/pipelineruns.yaml
+Before getting to the WIN11 installation wizard, make sure to assing a `e1000` network driver to the VMI, Windows doesn't like `virtio` card much at first installation. After that, make sure to make the switch, since `virtio` network card is much more performant (install the local virtio-win drivers).    
+In case you cannot connect, make sure to check this blog entry to terminate installation offline: https://medium.com/@zorozeri/windows-11-arm-having-no-network-connection-on-vmware-fusion-pro-5b06e894811e 
+
+## Todo on restart
+remmeber to change the /etc/microshift/manifests.d/dns/configmap.yaml with the correct local nameservers assigned by the public WAN, connected to IPC4
 
 ## Access to systems for SPS 2025  
 Please check the repo [here](https://github.com/lucamaf/sps-2025-systems)
