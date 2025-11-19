@@ -1,0 +1,22 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: mosquitto-port
+  namespace: mqtt-broker
+spec:
+  type: NodePort 
+  ports:
+      # Which port on the node is the service available through?
+    - name: mqtt-port
+      nodePort: 31883
+      # Inside the cluster, what port does the service expose?
+      port: 1883
+      targetPort: 1883
+      protocol: TCP
+    - name: ws-port
+      nodePort: 31884
+      port: 8083
+      targetPort: 8083
+      protocol: TCP
+  selector:
+    app: mqtt-broker

@@ -133,6 +133,97 @@ The cluster has baked-in manifests that will be deployed during the install - th
 
 You can easily access the cluster from IPC3 (copying over `kubeconfig` file) while leaving IPC4 for local `microshift` access.  
 
+### Setup Nvidia Jetson
+
+## Workloads
+
+### GitOps prep
+
+Gitea and GitOps are preinstalled, but we will add the steps here in case you want to reproduce the gitops style deployment somewhere else.
+
+First install Red Hat GitOps Operator, this will automatically deploy an ArgoCD instance, accessible from inside the cluster and with the local cluster already imported. You can login using the OpenShift integrated OAuth.
+
+Then you would need to install Gitea. There is Red Hat maintained operator [here](https://github.com/rhpds/gitea-operator).  
+
+You can create the operator by simply applying the YAML files from the Github repository
+
+`$ oc apply -k https://github.com/rhpds/gitea-operator/OLMDeploy`
+
+This installs the operator cluster wide - which means you (or your users) can create instances of Gitea in any project on the cluster.
+
+Create a new project for your Gitea instance:
+
+` $ oc new-project gitea`
+
+The Gitea Operator can set up a PostgreSQL database alongside the Gitea Pod. This is the default deployment.
+
+If an Admin User ID is specified you can specify a password for the admin user as well. If no password is specified a password is generated with a certain length. The length of the generated password can be set via the password length variable.  
+The operator will report the status of the admin user creation as well as the user password in the fields `.status.adminSetupComplete: true` and `.status.adminPassword`.  
+To deploy a simple Gitea instance:
+
+```yaml
+apiVersion: pfe.rhpds.com/v1
+kind: Gitea
+metadata:
+  name: my-gitea
+  namespace: gitea
+spec:
+  giteaAdminEmail: admin@example.com
+  giteaAdminPassword: ''
+  giteaAdminPasswordLength: 12
+  giteaAdminUser: admin
+  giteaSsl: true
+  giteaVolumeSize: 4Gi
+  postgresqlVolumeSize: 4Gi```
+```
+
+You can now create a repo on Gitea and sync that to ArgoCD.  
+
+In case Gitea certificate is self signed you can use the following option in git:  
+
+` -c http.sslVerify=false `
+
+In case you want to deploy applications across different spoke / managed clusters beside the local one you can follow this [tutorial](https://developers.redhat.com/articles/2025/06/24/how-automate-multi-cluster-deployments-using-argo-cd?source=sso).  
+
+![gitea repo](workloads/gitea/gitea-repo.png)   
+
+![gitea repo](workloads/gitea/argocd-repo.png)  
+
+![gitea repo](workloads/gitea/argocd-repo-connection.png)  
+
+We can now create helm charts and / or kustomize files to sync Applications to managed clusters.  
+The basic ACP services have already been deployed and the source can be found [here](https://github.com/RedHatEdge/acp-standard-services-public/tree/dev)  
+
+### ACP
+
+#### MES Critical Manufacturing
+
+#### MQTT Broker
+
+We will be using Mosquitto as MQTT Broker, you can find the related manifests in the [folder](workloads/mqtt-broker/)
+These can be pushed to our Gitea repo and synced as ArgoCD Application.
+
+Make sure that ArgoCD can manage deployment over other [namespaces](https://access.redhat.com/solutions/7007638) and clusters first.  
+
+![app-configuration](workloads/mqtt-broker/app-config-argocd.png)
+
+![sync](workloads/mqtt-broker/argocd-sync.png)
+
+![openshift](workloads/mqtt-broker/openshift-mqtt.png)  
+
+You can now access the broker using a client like [MQTT5 Explorer](https://github.com/Omniaevo/mqtt5-explorer)
+
+![mqtt explorer](workloads/mqtt-broker/mqtt-explorer.png)
+
+#### OPCUA Manufacturing Server
+
+Based on [this](https://github.com/lucamaf/edge-manufacturing-server?tab=readme-ov-file) we will be deploying a NOdeRED based OPCUA server, which simulates a process with multiple sensors.
+
+
+#### HMI open source
+
+
+
 #### Dell iDrac Service Module
 
 Installed the ISM container on ACP to have more detailed information from inside the iDrac console.

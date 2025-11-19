@@ -1,0 +1,6 @@
+resources:
+- mosquitto-ns.yaml
+- mosquitto-sa.yaml
+- mosquitto-config.yaml
+- mosquitto.yaml
+- mosquitto-node.yaml
