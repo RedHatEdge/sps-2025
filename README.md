@@ -194,6 +194,10 @@ In case you want to deploy applications across different spoke / managed cluster
 We can now create helm charts and / or kustomize files to sync Applications to managed clusters.  
 The basic ACP services have already been deployed and the source can be found [here](https://github.com/RedHatEdge/acp-standard-services-public/tree/dev)  
 
+### Nvidia GPU device
+
+#### Defect recognition application
+
 ### ACP
 
 #### MES Critical Manufacturing
@@ -203,7 +207,7 @@ The basic ACP services have already been deployed and the source can be found [h
 We will be using Mosquitto as MQTT Broker, you can find the related manifests in the [folder](workloads/mqtt-broker/)
 These can be pushed to our Gitea repo and synced as ArgoCD Application.
 
-Make sure that ArgoCD can manage deployment over other [namespaces](https://access.redhat.com/solutions/7007638) and clusters first.  
+> NOTE: Make sure that ArgoCD can manage deployment over other [namespaces](https://access.redhat.com/solutions/7007638) and clusters first.  
 
 ![app-configuration](workloads/mqtt-broker/app-config-argocd.png)
 
@@ -215,9 +219,14 @@ You can now access the broker using a client like [MQTT5 Explorer](https://githu
 
 ![mqtt explorer](workloads/mqtt-broker/mqtt-explorer.png)
 
-#### OPCUA Manufacturing Server
+#### OPCUA Manufacturing Server (simulated process)
 
 Based on [this](https://github.com/lucamaf/edge-manufacturing-server?tab=readme-ov-file) we will be deploying a NOdeRED based OPCUA server, which simulates a process with multiple sensors.
+
+#### OPCUA / MQTT gateway
+
+#### Defect recognition application (simulated process)
+
 
 
 #### HMI open source
@@ -244,13 +253,13 @@ oc -n oc-mirror replace --save-config --force -f -
 
 Download WIN11 iso on IPC4
 curl "https://software.download.prss.microsoft.com/dbazure/Win11_25H2_EnglishInternational_x64.iso?t=7129ee82-c634-44f0-9c52-4ed124f901a0&P1=1762599991&P2=601&P3=2&P4=FSo6iBj9ZQroci78wN7HIc8amPneeoGTgvPzkZSqmHMDacqYQw0u1drkD%2f%2bUfI7N8VoVpv3KEUbrkfQDTyxWe73dlR3OnATkrXNQShTGMZY8bdQAa5rjLnAXDs8XBQ2i%2fc9BrNghPBKHddps0us5NzPMlzy%2b%2bowTLfhU0BJTaWT2ZXs5cewxY9E4uPh51bdRnb2DCsZiTmWxA8QkjbV7s0%2byVVFBl%2f8GWfzASMoFuSG%2f%2bQZ0LjVv%2bPtUhR9oQbnJeScCzLDPopzSiCduMiQoxf8NhGDp6VA%2f%2fwg3p7IW50eJa9890ud1IDZOLoMMCh4sPynK63DKtyrQmccgviuUTg%3d%3d" -o win11_x64.iso
-https://github.com/kubevirt/kubevirt-tekton-tasks/tree/main/templates-pipelines/windows-efi-installer
-Install OpenShift Pipelines TODO add it to the Gitops in Gitea
-Create a new project (for example codesys)
-Create the configmap that contains the unattended.xml file: https://raw.githubusercontent.com/kubevirt/kubevirt-tekton-tasks/refs/heads/main/release/pipelines/windows-efi-installer/configmaps/windows-efi-installer-configmaps.yaml oc --kubeconfig kubeconfig -n codesys create -f WIN11/windows-efi-installer-configmaps.yaml
-Run the pipeline that download, imports, create golden image of win11 (using unattended configuration): oc --kubeconfig kubeconfig create -f WIN11/pipelineruns.yaml
-Before getting to the WIN11 installation wizard, make sure to assing a `e1000` network driver to the VMI, Windows doesn't like `virtio` card much at first installation. After that, make sure to make the switch, since `virtio` network card is much more performant (install the local virtio-win drivers).    
-In case you cannot connect, make sure to check this blog entry to terminate installation offline: https://medium.com/@zorozeri/windows-11-arm-having-no-network-connection-on-vmware-fusion-pro-5b06e894811e 
+https://github.com/kubevirt/kubevirt-tekton-tasks/tree/main/templates-pipelines/windows-efi-installer  
+Install OpenShift Pipelines TODO add it to the Gitops in Gitea  
+Create a new project (for example codesys)  
+Create the configmap that contains the unattended.xml file: https://raw.githubusercontent.com/kubevirt/kubevirt-tekton-tasks/refs/heads/main/release/pipelines/windows-efi-installer/configmaps/windows-efi-installer-configmaps.yaml oc --kubeconfig kubeconfig -n codesys create -f WIN11/windows-efi-installer-configmaps.yaml  
+Run the pipeline that download, imports, create golden image of win11 (using unattended configuration): oc --kubeconfig kubeconfig create -f WIN11/pipelineruns.yaml  
+Before getting to the WIN11 installation wizard, make sure to assing a `e1000` network driver to the VMI, Windows doesn't like `virtio` card much at first installation. After that, make sure to make the switch, since `virtio` network card is much more performant (install the local virtio-win drivers).  
+In case you cannot connect, make sure to check this blog entry to terminate installation offline: https://medium.com/@zorozeri/windows-11-arm-having-no-network-connection-on-vmware-fusion-pro-5b06e894811e  
 
 ## Todo on restart
 remmeber to change the /etc/microshift/manifests.d/dns/configmap.yaml with the correct local nameservers assigned by the public WAN, connected to IPC4
