@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mosquitto-pass
+  namespace: mqtt-broker
+  labels:
+    app: mqtt-broker
+data:
+  password.txt: |
+    admin:$7$101$s10SvtAXU34sXRA4$0Z8E9KaB7Ngr/h+UxL7hZAHjZoZZ3Eg2kNkQM7XQ/ZSN6mRzeCGYqgIcHhwbsnGrGvemXlGdBKMa0em9Ks4KrA==

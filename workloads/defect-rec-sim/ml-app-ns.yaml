@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ml-app
+  labels:
+    app: ml-app-sim
+    argocd.argoproj.io/managed-by: openshift-gitops

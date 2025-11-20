@@ -1,0 +1,3 @@
+resources:
+- ml-app-ns.yaml
+- ml-app.yaml

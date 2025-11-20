@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-app-sim
+  namespace: ml-app
+  labels:
+    app: ml-app-sim
+spec:
+  # in case we want to expose a gui later
+  ports:
+  - port: 8080
+  selector:
+    app: ml-app-sim
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-app-sim
+  namespace: ml-app
+  labels:
+    app: ml-app-sim
+spec:
+  selector:
+    matchLabels:
+      app: ml-app-sim
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: ml-app-sim
+    spec:
+      containers:
+        - image: quay.io/luferrar/sps:ml-app-sim
+          name: ml-app-sim
+          ports:
+          - containerPort: 8080
+            name: web
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          env:
+            - name: MQTT_BROKER_URL
+              value: "mosquitto.mqtt-broker.svc.cluster.local"
+            - name: MQTT_BROKER_PORT
+              value: "1883"
+            - name: MQTT_BROKER_TOPIC
+              value: "factory1/lineA/results"
+            - name: WAIT_TIME
+              value: "1"
+            - name: MQTT_CLIENT_ID
+              value: "defect-rec-sim"
+            - name: MQTT_USERNAME
+              value: "admin"
+            - name: MQTT_PASSWORD
+              value: "password"

@@ -2,5 +2,6 @@ resources:
 - mosquitto-ns.yaml
 - mosquitto-sa.yaml
 - mosquitto-config.yaml
+- mosquitto-pass.yaml
 - mosquitto.yaml
 - mosquitto-node.yaml

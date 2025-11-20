@@ -215,7 +215,7 @@ These can be pushed to our Gitea repo and synced as ArgoCD Application.
 
 ![openshift](workloads/mqtt-broker/openshift-mqtt.png)  
 
-You can now access the broker using a client like [MQTT5 Explorer](https://github.com/Omniaevo/mqtt5-explorer)
+You can now access the broker using a client like [MQTT5 Explorer](https://github.com/Omniaevo/mqtt5-explorer). You would require with the current configuration a valid username / password `admin:password`  
 
 ![mqtt explorer](workloads/mqtt-broker/mqtt-explorer.png)
 
@@ -223,26 +223,45 @@ You can now access the broker using a client like [MQTT5 Explorer](https://githu
 
 Based on [this](https://github.com/lucamaf/edge-manufacturing-server?tab=readme-ov-file) we will be deploying a NOdeRED based OPCUA server, which simulates a process with multiple sensors.
 
-#### OPCUA / MQTT gateway
+#### OPCUA / MQTT gateway (Takebishi)
 
 #### Defect recognition application (simulated process)
 
+This will run on ACP and will be simulating the defects recognition machine learning app (that should be running on Nvidia GPU). Based on random function it will be providing an output on a **MQTT Broker** topic following this [source](https://medium.com/@API4AI/mes-integration-real-time-defect-feeds-to-erp-a54c9243bdfc):  
 
+```json
+{
+  "defect_type": 1,
+  "defective": true,
+  "confidence_score": 0.05,
+  "timestamp": "2024-11-20T15:30:00Z",
+  "line_id": 24,
+  "station_id": 10,
+  "batch_id": "X345678",
+  "id": 12001
+}
+```
 
-#### HMI open source
+You can find the relative manifests in the [folder](workloads/defect-rec-sim/)
+
+![app logs](workloads/defect-rec-sim/app-logs.png)
+
+#### HMI open source connected to MQTT Broker
 
 
 
 #### Dell iDrac Service Module
 
-Installed the ISM container on ACP to have more detailed information from inside the iDrac console.
+Installed the ISM container on ACP to provide more detailed information about the server and running OS to iDrac.
 
 How to:
+
 - pushing a built image to mirror registry on IPC4 on Microshift
 - build the image and push it to a public repo (like Quay.io)
 - add it to the oc-mirror/configmap.yaml file
 - apply the new configuration: `$ oc -n oc-mirror apply -f /etc/microshift/manifests.d/oc-mirror/configmap.yaml`
-- rerun the import images job by creating and applying a copy of /etc/microshift/manifests.d/oc-mirror/job.yaml:   
+- rerun the import images job by creating and applying a copy of `/etc/microshift/manifests.d/oc-mirror/job.yaml`:
+
 ```bash
 $ oc -n oc-mirror get job run-oc-mirror -o json | \
 jq -r '.metadata.annotations."kubectl.kubernetes.io/last-applied-configuration"' | \
@@ -265,5 +284,6 @@ In case you cannot connect, make sure to check this blog entry to terminate inst
 remmeber to change the /etc/microshift/manifests.d/dns/configmap.yaml with the correct local nameservers assigned by the public WAN, connected to IPC4
 
 ## Access to systems for SPS 2025  
+
 Please check the repo [here](https://github.com/lucamaf/sps-2025-systems)
 

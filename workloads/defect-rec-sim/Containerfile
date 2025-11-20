@@ -1,0 +1,15 @@
+FROM registry.access.redhat.com/ubi9/ubi
+# install packages
+RUN dnf install -y python3 python3-pip
+COPY requirements.txt /app/
+
+RUN python3 -m pip install -r /app/requirements.txt
+
+# Copy all content needed to run the app
+WORKDIR /app
+COPY app.py /app/
+
+
+# Starting the application
+CMD ["/app/app.py"]
+ENTRYPOINT ["python3"]
