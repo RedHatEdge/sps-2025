@@ -5,6 +5,7 @@ This repository contains setup information/automation for the Red Hat demos for 
 
 ## Setup
 The setup for this demo is broken up into several parts:
+
 0. Basic setup
 1. Setup bootstrap
 2. Setup the ACP
@@ -15,6 +16,7 @@ A basic x86 Linux-ish system with sufficient disk space and podman should be abl
 
 ### Setting basic variables
 Create a copy of the `build-args.txt.example` file, and populate it with your information:
+
 ```
 # RSHM args
 RHSM_ORG=123456789
@@ -41,10 +43,11 @@ Assuming your values are correct in your args file, all that needs to be done is
 
 To build the image, run:
 ```bash
- podman build images/ipc4/ --tag localhost/ipc4:latest --build-arg-file=build-args.txt
+$ podman build images/ipc4/ --tag localhost/ipc4:latest --build-arg-file=build-args.txt
 ```
 
 To create an installation ISO, a script is available in the [scripts](scripts/) directory, which takes 4 arguments:
+
 1. The image to add to the ISO
 2. A path to a kickstart file
 3. A path to a RHEL boot ISO
@@ -56,6 +59,7 @@ An example kickstart file is available in the [kickstarts](kickstarts/) director
 *Make sure to select the drive in the kickstart which is smaller, since the other one is going to be used to mirror OCP4 images*  
 
 Example script run:
+
 ```bash
 scripts/create-iso.sh localhost/ipc4:latest  $(pwd)/kickstarts/home-testing.ks ~/Downloads/rhel-9.6-x86_64-boot.iso $(pwd)/test.iso
 ```
@@ -63,6 +67,7 @@ scripts/create-iso.sh localhost/ipc4:latest  $(pwd)/kickstarts/home-testing.ks ~
 Mount the ISO to the device using your preferred method (probably USB drive), boot from it, and wait a few moments for the install to complete.
 
 To see progress during the installation, switch to one of the other panes using `alt` + `ctrl` +`F2`, and run:
+
 ```bash
 tail -f /tmp/anaconda.log
 ```
@@ -126,6 +131,7 @@ wget --no-check-certificate https://serve-iso-ocp-agent-install.apps.ipc4.sps202
 ```
 
 To watch the installation process, two methods are useful:
+
 1. SSH into the CoreOS node and run `sudo journalctl -f`
 2. Watch the operators come up: `watch -d "oc get co"`
 
@@ -286,4 +292,34 @@ remmeber to change the /etc/microshift/manifests.d/dns/configmap.yaml with the c
 ## Access to systems for SPS 2025  
 
 Please check the repo [here](https://github.com/lucamaf/sps-2025-systems)
+
+## Architecture Diagram
+
+The diagram below shows the main systems involved: ACP, IPC4, IPC3, and an NVIDIA Jetson edge device.
+
+```mermaid
+flowchart LR
+  subgraph Control
+    ACP[ACP]
+  end
+
+  subgraph Edge
+    IPC4[IPC4]
+    IPC3[IPC3]
+    Jetson[NVIDIA Jetson]
+  end
+
+  ACP ---|management / configs| IPC4
+  ACP ---|management / configs| IPC3
+  IPC4 ---|mirror / registry / microshift| IPC3
+  IPC3 ---|orchestrates workloads / provisioning| Jetson
+  Jetson ---|telemetry / inference results| ACP
+
+  classDef control fill:#e3f2fd,stroke:#0288d1;
+  classDef edge fill:#fff3e0,stroke:#fb8c00;
+  class ACP control;
+  class IPC4,IPC3,Jetson edge;
+```
+
+This uses Mermaid flowchart syntax; many Markdown renderers (and GitHub when enabled) can render this directly.
 

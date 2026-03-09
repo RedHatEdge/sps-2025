@@ -65,8 +65,9 @@ RUN dnf \
     && dnf clean all \
     && rm -rf /var/{cache,log} /var/lib/{dnf,rhsm}
 
-RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/helm/latest/helm-linux-amd64 -o /usr/local/bin/helm
-RUN chmod +x /usr/local/bin/helm
+#unneeded as helm is in EPEL now
+#RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/helm/latest/helm-linux-amd64 -o /usr/local/bin/helm
+#RUN chmod +x /usr/local/bin/helm
 
 RUN firewall-offline-cmd --zone=public --add-port=22/tcp && \
     firewall-offline-cmd --zone=trusted --add-source=10.42.0.0/16 && \

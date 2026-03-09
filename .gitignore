@@ -10,3 +10,5 @@ build-args.txt
 notes.txt
 kickstarts/josh-testing.ks
 charts/
+*.env
+pull-secret
