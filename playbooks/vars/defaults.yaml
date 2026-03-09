@@ -11,7 +11,7 @@ rebuild_appliance_iso: false
 rebuild_agent_iso: false
 
 openshift_base_settings:
-  version: 4.19.16
+  version: 4.20.15
   channel: stable
   cpu_architecture: x86_64
 
@@ -20,7 +20,7 @@ appliance_additional_content:
     - name: registry.redhat.io/ansible-automation-platform-26/ee-minimal-rhel9@sha256:a17ebe09a69f28a183068c3597467311ba9ed77f1c3a42864404d5e343f7c2de
     - name: registry.redhat.io/ansible-automation-platform-26/ee-supported-rhel9@sha256:8b51f6026000a9f63e8d548e5d4c7b630425bc4504819ceeef97eea691653cd2
   operators:
-    - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
+    - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.20
       packages:
         - name: ansible-automation-platform-operator
           channels:
@@ -33,22 +33,22 @@ appliance_additional_content:
             - name: stable
         - name: lvms-operator
           channels:
-            - name: stable-4.19
+            - name: stable-4.20
         - name: ocs-client-operator
           channels:
-            - name: stable-4.19
+            - name: stable-4.20
         - name: ocs-operator
           channels:
-            - name: stable-4.19
+            - name: stable-4.20
         - name: odf-csi-addons-operator 
           channels:
-            - name: stable-4.19
+            - name: stable-4.20
         - name: odf-dependencies
           channels:
-            - name: stable-4.19
+            - name: stable-4.20
         - name: odf-operator
           channels:
-            - name: stable-4.19
+            - name: stable-4.20
         - name: openshift-gitops-operator
           channels:
             - name: latest

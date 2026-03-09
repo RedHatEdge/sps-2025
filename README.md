@@ -110,7 +110,8 @@ get-microshift-kubeconfig.sh
 This will place the kubeconfig into the default path, so future `oc` commands will work without needing to specify a kubeconfig.
 
 All services are ready when all pods reach `Running` or `Completed`:
-```
+
+```bash
 oc get pods -A
 NAMESPACE                              NAME                                                              READY   STATUS      RESTARTS      AGE
 dhcp                                   dhcp                                                              1/1     Running     0             31m
@@ -144,6 +145,7 @@ At this point, connect your computer to the internal demo network - you should g
 The ACP setup is an agent-based install using a local mirror registry located on IPC4. A job on IPC4 will generate the installation ISO for you, all you need to do is download it, mount it to the target installation device, and boot from it. The install should happen automatically from there.
 
 To download the installation ISO, grab it from IPC4:
+
 ```bash
 wget --no-check-certificate https://serve-iso-ocp-agent-install.apps.ipc4.sps2025.com/agent.x86_64.iso
 ```
@@ -151,7 +153,8 @@ wget --no-check-certificate https://serve-iso-ocp-agent-install.apps.ipc4.sps202
 Mount this media to the target installation device (USB drive, etc), and boot from it. The cluster installation should begin and complete automatically.
 
 The cluster kubeconfig and kubeadmin-password files are also available on IPC4:
-```
+
+```bash
 wget --no-check-certificate https://serve-iso-ocp-agent-install.apps.ipc4.sps2025.com/auth/kubeconfig
 wget --no-check-certificate https://serve-iso-ocp-agent-install.apps.ipc4.sps2025.com/auth/kubeadmin-password
 ```
