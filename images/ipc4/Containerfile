@@ -104,6 +104,9 @@ RUN sed -i "s/INTERNAL_INTERFACE/${INTERNAL_INTERFACE}/g" /etc/microshift/manife
 ## DNS
 ADD dns /etc/microshift/manifests.d/dns
 
+## NTP
+ADD ntp /etc/microshift/manifests.d/ntp
+
 ## Gitea
 ADD gitea /etc/microshift/manifests.d/gitea
 RUN sed -i "s/GITEA_ADMIN_PASSWORD/${GITEA_ADMIN_PASSWORD}/g" /etc/microshift/manifests.d/gitea/job.yaml

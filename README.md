@@ -3,6 +3,32 @@ This repository contains setup information/automation for the Red Hat demos for 
 
 ## Demo Architecture
 
+The diagram below shows the main systems involved: ACP, IPC4, IPC3, and an NVIDIA Jetson edge device.
+
+```mermaid
+flowchart LR
+  subgraph Control
+    ACP[ACP]
+  end
+
+  subgraph Edge
+    IPC4[IPC4]
+    IPC3[IPC3]
+    Jetson[NVIDIA Jetson]
+  end
+
+  ACP ---|management / configs| IPC4
+  ACP ---|management / configs| IPC3
+  IPC4 ---|mirror / registry / microshift| IPC3
+  IPC3 ---|orchestrates workloads / provisioning| Jetson
+  Jetson ---|telemetry / inference results| ACP
+
+  classDef control fill:#e3f2fd,stroke:#0288d1;
+  classDef edge fill:#fff3e0,stroke:#fb8c00;
+  class ACP control;
+  class IPC4,IPC3,Jetson edge;
+```
+
 ## Setup
 The setup for this demo is broken up into several parts:
 
@@ -291,35 +317,7 @@ remmeber to change the /etc/microshift/manifests.d/dns/configmap.yaml with the c
 
 ## Access to systems for SPS 2025  
 
-Please check the repo [here](https://github.com/lucamaf/sps-2025-systems)
+Please check the repo [here](https://github.com/RedHatEdge/sps-2025-systems)
 
-## Architecture Diagram
 
-The diagram below shows the main systems involved: ACP, IPC4, IPC3, and an NVIDIA Jetson edge device.
-
-```mermaid
-flowchart LR
-  subgraph Control
-    ACP[ACP]
-  end
-
-  subgraph Edge
-    IPC4[IPC4]
-    IPC3[IPC3]
-    Jetson[NVIDIA Jetson]
-  end
-
-  ACP ---|management / configs| IPC4
-  ACP ---|management / configs| IPC3
-  IPC4 ---|mirror / registry / microshift| IPC3
-  IPC3 ---|orchestrates workloads / provisioning| Jetson
-  Jetson ---|telemetry / inference results| ACP
-
-  classDef control fill:#e3f2fd,stroke:#0288d1;
-  classDef edge fill:#fff3e0,stroke:#fb8c00;
-  class ACP control;
-  class IPC4,IPC3,Jetson edge;
-```
-
-This uses Mermaid flowchart syntax; many Markdown renderers (and GitHub when enabled) can render this directly.
 

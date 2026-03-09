@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ntp
+  labels:
+    app.kubernetes.io/name: ntp
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: ntp
+    app.kubernetes.io/part-of: bootstrap
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ntp
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ntp
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/component: ntp
+        app.kubernetes.io/part-of: bootstrap
+    spec:
+      serviceAccountName: ntp-sa
+      hostNetwork: true
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: ntp
+          image: quay.io/jswanson/ntp:1.0.0
+          securityContext:
+            privileged: true
+          ports:
+            - containerPort: 123
+              name: ntp-port
+              protocol: UDP
+          volumeMounts:
+            - name: ntp-config
+              mountPath: /etc/chrony.conf
+              subPath: chrony.conf
+            - name: var-lib-chrony
+              mountPath: /var/lib/chrony
+      volumes:
+        - name: ntp-config
+          configMap:
+            name: ntp-config
+        - name: var-lib-chrony
+          hostPath:
+            path: /var/lib/chrony
+            type: DirectoryOrCreate

@@ -1,0 +1,19 @@
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+
+LABEL maintainer="sps-2025"
+LABEL name="ntp-chrony"
+
+# Install chrony
+RUN microdnf -y update && \
+    microdnf -y install chrony && \
+    microdnf clean all && \
+    rm -rf /var/cache/dnf /var/cache/yum
+
+# Default config path is /etc/chrony.conf; when used with the DaemonSet
+# we mount the ConfigMap to that path.
+
+EXPOSE 123/udp
+
+STOPSIGNAL SIGTERM
+
+CMD ["chronyd", "-f", "/etc/chrony.conf", "-n"]
