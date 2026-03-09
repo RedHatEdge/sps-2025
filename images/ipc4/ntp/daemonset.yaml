@@ -25,7 +25,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: ntp
-          image: quay.io/jswanson/ntp:1.0.0
+          image: quay.io/luferrar/sps:ntp
           securityContext:
             privileged: true
           ports:

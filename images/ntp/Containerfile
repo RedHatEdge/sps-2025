@@ -1,12 +1,12 @@
-FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+FROM quay.io/centos/centos:stream9
 
 LABEL maintainer="sps-2025"
 LABEL name="ntp-chrony"
 
 # Install chrony
-RUN microdnf -y update && \
-    microdnf -y install chrony && \
-    microdnf clean all && \
+RUN dnf -y update && \
+    dnf -y install chrony && \
+    dnf clean all && \
     rm -rf /var/cache/dnf /var/cache/yum
 
 # Default config path is /etc/chrony.conf; when used with the DaemonSet
