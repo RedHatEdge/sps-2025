@@ -114,7 +114,7 @@ This will place the kubeconfig into the default path, so future `oc` commands wi
 All services are ready when all pods reach `Running` or `Completed`:
 
 ```bash
-oc get pods -A
+$ oc get pods -A
 NAMESPACE                              NAME                                                              READY   STATUS      RESTARTS      AGE
 dhcp                                   dhcp                                                              1/1     Running     0             31m
 dns                                    dns                                                               1/1     Running     0             31m
@@ -149,7 +149,7 @@ The ACP setup is an agent-based install using a local mirror registry located on
 To download the installation ISO, grab it from IPC4:
 
 ```bash
-wget --no-check-certificate https://serve-iso-ocp-agent-install.apps.ipc4.sps2025.com/agent.x86_64.iso
+$ wget --no-check-certificate https://serve-iso-ocp-agent-install.apps.ipc4.sps2025.com/agent.x86_64.iso
 ```
 
 Mount this media to the target installation device (USB drive, etc), and boot from it. The cluster installation should begin and complete automatically.

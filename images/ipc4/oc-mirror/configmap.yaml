@@ -39,7 +39,7 @@ data:
             - name: openshift-gitops-operator
               channels:
                 - name: latest
-        - catalog: quay.io/rhpds/gitea-catalog:latest
+        - catalog: quay.io/rhpds/gitea-catalog:v2.1.0
           packages:
             - name: gitea-operator
               channels:
