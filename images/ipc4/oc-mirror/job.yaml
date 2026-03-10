@@ -19,7 +19,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: run-oc-mirror
-          image: quay.io/jswanson/run-oc-mirror:1.0.3
+          image: quay.io/luferrar/sps:run-oc-mirror
           env:
             - name: NAMESPACE
               value: oc-mirror
