@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6
+FROM registry.access.redhat.com/ubi9/ubi:9.6
 
 ARG OC_VERSION=4.19.0
 
@@ -6,9 +6,9 @@ LABEL maintainer="sps-2025"
 LABEL name="run-oc-mirror"
 
 # Install runtime deps
-RUN microdnf -y update && \
-    microdnf -y install curl tar gzip jq skopeo ca-certificates which podman wget && \
-    microdnf clean all && rm -rf /var/cache/dnf /var/cache/yum
+RUN dnf -y update && \
+    dnf -y install curl tar gzip jq skopeo ca-certificates which podman wget && \
+    dnf clean all && rm -rf /var/cache/dnf /var/cache/yum
 
 # Download OpenShift `oc` client
 RUN set -eux; \
