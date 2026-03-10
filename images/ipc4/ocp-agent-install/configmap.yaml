@@ -420,7 +420,7 @@ data:
       pre_tasks:
         - name: Download openshift-install
           ansible.builtin.get_url:
-            url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.19.16/openshift-install-linux.tar.gz"
+            url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.20.15/openshift-install-linux.tar.gz"
             dest: "{{ create_dir }}/"
         - name: Extract tooling
           ansible.builtin.unarchive:

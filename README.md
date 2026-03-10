@@ -110,7 +110,7 @@ $ get-microshift-kubeconfig.sh
 This will place the kubeconfig into the default path, so future `oc` commands will work without needing to specify a kubeconfig.
 
 > NOTE:
-> `gitea-operator` pod might fail since one of the images being used `gcr.io/kubebuilder/kube-rbac-proxy` is not available anymore, but the **gitea** should be running just fine  
+> `gitea-operator` install plan is set to Manual because the `latest` tag point to an invalid catalog source component (*gcr.io/kubebuilder/kube-rbac-proxy*) so once Microshift is up and running you need to approve the `installplan` manually doing `$ oc edit installplans.operators.coreos.com -n gitea-operator install-SOMETHING`  
 All services are ready when all pods reach `Running` or `Completed`:
 
 ```bash
