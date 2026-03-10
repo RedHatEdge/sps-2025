@@ -27,4 +27,4 @@ if [ "${DEST_SKIP_TLS:-False}" = "True" ]; then
 fi
 
 echo "Running: oc-mirror ${CMD_ARGS} --dest docker://${REGISTRY}"
-exec oc-mirror ${CMD_ARGS} --dest docker://${REGISTRY}
+exec oc-mirror --v1 ${CMD_ARGS} --dest docker://${REGISTRY}
