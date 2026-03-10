@@ -19,7 +19,7 @@ RUN subscription-manager register \
     --activationkey "${RHSM_AK}"
 
 # Setup Workstation
-RUN dnf --releasever=9.6 -y  groupinstall Workstation
+#RUN dnf --releasever=9.6 -y  groupinstall Workstation
 
 # Install additional packages
 RUN dnf  --releasever=9.6 \
