@@ -12,3 +12,4 @@ kickstarts/josh-testing.ks
 charts/
 *.env
 pull-secret
+oc-mirror*
