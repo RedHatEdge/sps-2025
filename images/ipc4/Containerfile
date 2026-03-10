@@ -176,7 +176,7 @@ RUN dnf --releasever=9.6 install -y \
     && dnf clean all \
     && rm -rf /var/{cache,log} /var/lib/{dnf,rhsm}
 # Enable agent
-RUN systemctl enable flightctl-agent.service
+RUN systemctl disable flightctl-agent.service
 
 # Cleanup
 RUN subscription-manager clean
