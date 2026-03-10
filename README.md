@@ -109,6 +109,8 @@ $ get-microshift-kubeconfig.sh
 
 This will place the kubeconfig into the default path, so future `oc` commands will work without needing to specify a kubeconfig.
 
+> NOTE:
+> `gitea-operator` pod might fail since one of the images being used `gcr.io/kubebuilder/kube-rbac-proxy` is not available anymore, but the **gitea** should be running just fine  
 All services are ready when all pods reach `Running` or `Completed`:
 
 ```bash

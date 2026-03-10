@@ -1,0 +1,36 @@
+FROM registry.access.redhat.com/ubi9/ubi:9.0
+
+ARG OC_VERSION=4.13.0
+ARG OC_MIRROR_VERSION=v0.6.0
+
+LABEL maintainer="sps-2025"
+LABEL name="run-oc-mirror"
+
+# Install runtime deps
+RUN microdnf -y update && \
+    microdnf -y install curl tar gzip jq skopeo ca-certificates which && \
+    microdnf clean all && rm -rf /var/cache/dnf /var/cache/yum
+
+# Download OpenShift `oc` client
+RUN set -eux; \
+    OC_TAR_URL="https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OC_VERSION}/openshift-client-linux-${OC_VERSION}.tar.gz"; \
+    echo "Downloading oc from ${OC_TAR_URL}"; \
+    curl -fsSL "${OC_TAR_URL}" -o /tmp/oc.tar.gz; \
+    tar -C /usr/local/bin -xzf /tmp/oc.tar.gz oc oc.KUBECONFIG || true; \
+    rm -f /tmp/oc.tar.gz
+
+# Download oc-mirror binary (release tarball expected)
+RUN set -eux; \
+    OC_MIRROR_URL="https://github.com/openshift/oc-mirror/releases/download/${OC_MIRROR_VERSION}/oc-mirror-${OC_MIRROR_VERSION}-linux-64bit.tar.gz"; \
+    echo "Downloading oc-mirror from ${OC_MIRROR_URL}"; \
+    curl -fsSL "${OC_MIRROR_URL}" -o /tmp/oc-mirror.tar.gz; \
+    tar -C /usr/local/bin -xzf /tmp/oc-mirror.tar.gz oc-mirror || true; \
+    rm -f /tmp/oc-mirror.tar.gz || true
+
+# Add entrypoint script
+COPY run-oc-mirror.sh /usr/local/bin/run-oc-mirror.sh
+RUN chmod +x /usr/local/bin/run-oc-mirror.sh
+
+WORKDIR /tmp
+
+ENTRYPOINT ["/usr/local/bin/run-oc-mirror.sh"]
