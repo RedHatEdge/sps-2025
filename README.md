@@ -87,15 +87,15 @@ An example kickstart file is available in the [kickstarts](kickstarts/) director
 Example script run:
 
 ```bash
-scripts/create-iso.sh localhost/ipc4:latest  $(pwd)/kickstarts/home-testing.ks ~/Downloads/rhel-9.6-x86_64-boot.iso $(pwd)/test.iso
+$ scripts/create-iso.sh localhost/ipc4:latest  $(pwd)/kickstarts/home-testing.ks ~/Downloads/rhel-9.6-x86_64-boot.iso $(pwd)/test.iso
 ```
 
 Mount the ISO to the device using your preferred method (probably USB drive), boot from it, and wait a few moments for the install to complete.
 
 To see progress during the installation, switch to one of the other panes using `alt` + `ctrl` +`F2`, and run:
-
+9.52 - 9.59
 ```bash
-tail -f /tmp/anaconda.log
+$ tail -f /tmp/anaconda.log
 ```
 
 Once the device reboots, everything should start up on its own.
