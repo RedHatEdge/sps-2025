@@ -102,7 +102,7 @@ Once the device reboots, everything should start up on its own.
 
 To get the microshift kubeconfig, log in as your created user and run:
 ```bash
-get-microshift-kubeconfig.sh
+$ get-microshift-kubeconfig.sh
 ```
 
 *If you installed something on the other disk on IPC4, make sure to wipe it, so that the LVM of Microshift can use that with something like `fdisk`*  
