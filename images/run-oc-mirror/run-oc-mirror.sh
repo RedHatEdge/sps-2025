@@ -28,10 +28,10 @@ REG_NO_SCHEME="${REGISTRY#docker://}"
 # Build oc-mirror arguments
 CMD=("./oc-mirror" "--v1" "--config=${IMAGESET_CONFIG_PATH}")
 if [ "${DEST_USE_HTTP,,}" = "true" ] || [ "${DEST_USE_HTTP}" = "1" ]; then
-	CMD+=("--use-http")
+	CMD+=("--dest-use-http")
 fi
 if [ "${DEST_SKIP_TLS,,}" = "true" ] || [ "${DEST_SKIP_TLS}" = "1" ]; then
-	CMD+=("--skip-tls")
+	CMD+=("--dest-skip-tls")
 fi
 
 CMD+=("docker://${REG_NO_SCHEME}")
