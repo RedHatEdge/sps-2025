@@ -157,6 +157,27 @@ RUN echo "${HOSTNAME}" > /etc/hostname
 COPY get-microshift-kubeconfig.sh /usr/local/bin/get-microshift-kubeconfig.sh
 RUN chmod +x /usr/local/bin/get-microshift-kubeconfig.sh
 
+# adding and configuring Tailscale for VPN access
+RUN dnf config-manager -y --add-repo https://pkgs.tailscale.com/stable/rhel/9/tailscale.repo && \
+    dnf -y install tailscale && \
+    dnf -y clean all
+RUN systemctl enable tailscaled
+
+# set automatic Taiscale login using script at boot time
+COPY tailscale-login.service /etc/systemd/system/tailscale-login.service
+RUN systemctl enable tailscale-login.service && touch /etc/.run_tailscale_next_boot
+
+
+## add rhem client
+RUN  dnf config-manager --add-repo https://rpm.flightctl.io/flightctl-epel.repo
+RUN dnf install -y \
+    flightctl-agent \
+    flightctl-cli \
+    && dnf clean all \
+    && rm -rf /var/{cache,log} /var/lib/{dnf,rhsm}
+# Enable agent
+RUN systemctl enable flightctl-agent.service
+
 # Cleanup
 RUN subscription-manager clean
 RUN rm -rf /var/lib/rhsm /var/log/rhsm

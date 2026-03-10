@@ -1,0 +1,13 @@
+[Unit]
+Description=Login to Tailscale Mesh VPN
+After=NetworkManager-wait-online.service
+ConditionPathExists=/etc/.run_tailscale_next_boot
+
+
+[Service]
+Type=oneshot
+ExecStart=tailscale up --auth-key=tskey-auth-something --accept-dns=false
+ExecStartPre=/bin/rm -f /etc/.run_tailscale_next_boot
+
+[Install]
+WantedBy=default.target
