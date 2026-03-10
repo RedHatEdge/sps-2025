@@ -69,7 +69,7 @@ data:
     imageContentSources:
     - mirrors:
       - registry-oc-mirror.apps.ipc4.sps2025.com/kubebuilder/kube-rbac-proxy
-      source: gcr.io/kubebuilder/kube-rbac-proxy
+      source: quay.io/brancz/kube-rbac-proxy
     - mirrors:
       - registry-oc-mirror.apps.ipc4.sps2025.com/openshift/release
       source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
