@@ -17,12 +17,12 @@ data:
       platform:
         graph: true
         channels:
-          - name: stable-4.19
+          - name: stable-4.20
             type: ocp
-            minVersion: 4.19.16
-            maxVersion: 4.19.16
+            minVersion: 4.20.15
+            maxVersion: 4.20.15
       operators:
-        - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
+        - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.20
           packages:
             - name: ansible-automation-platform-operator
               channels:
@@ -35,7 +35,7 @@ data:
                 - name: stable
             - name: lvms-operator
               channels:
-                - name: stable-4.19
+                - name: stable-4.20
             - name: openshift-gitops-operator
               channels:
                 - name: latest
