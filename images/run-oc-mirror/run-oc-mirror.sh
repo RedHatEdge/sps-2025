@@ -26,7 +26,7 @@ fi
 REG_NO_SCHEME="${REGISTRY#docker://}"
 
 # Build oc-mirror arguments
-CMD=("./oc-mirror --v1" "--config=${IMAGESET_CONFIG_PATH}")
+CMD=("./oc-mirror" "--v1" "--config=${IMAGESET_CONFIG_PATH}")
 if [ "${DEST_USE_HTTP,,}" = "true" ] || [ "${DEST_USE_HTTP}" = "1" ]; then
 	CMD+=("--use-http")
 fi
