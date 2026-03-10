@@ -1,32 +1,12 @@
-FROM registry.access.redhat.com/ubi9/ubi:9.6
+FROM ubi9:latest
 
-ARG OC_VERSION=4.19.0
+RUN mkdir /.docker
+RUN mkdir /opt/oc-mirror
 
-LABEL maintainer="sps-2025"
-LABEL name="run-oc-mirror"
+WORKDIR /opt/oc-mirror
 
-# Install runtime deps
-RUN dnf -y install curl tar gzip jq skopeo ca-certificates which podman wget && \
-    dnf clean all && rm -rf /var/cache/dnf /var/cache/yum
+COPY run-oc-mirror.sh /usr/local/bin/run-oc-mirror
 
-# Download OpenShift `oc` client
-RUN set -eux; \
-    OC_TAR_URL="https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OC_VERSION}/openshift-client-linux-${OC_VERSION}.tar.gz"; \
-    echo "Downloading oc from ${OC_TAR_URL}"; \
-    wget "${OC_TAR_URL}" -O openshift-client-linux.tar.gz &&\
-    tar xzvf openshift-client-linux.tar.gz -C /usr/bin/ &&\
-    chmod +x /usr/bin/oc &&\
-    rm -fr openshift-client-linux.tar.gz &&\
-    mkdir -p /root/.docker
+RUN chmod +x /usr/local/bin/run-oc-mirror
 
-# Copy oc-mirror binary (release tarball expected)
-COPY oc-mirror /usr/bin/oc-mirror
-RUN chmod +x /usr/bin/oc-mirror
-
-# Add entrypoint script
-COPY run-oc-mirror.sh /usr/local/bin/run-oc-mirror.sh
-RUN chmod +x /usr/local/bin/run-oc-mirror.sh
-
-WORKDIR /tmp
-
-ENTRYPOINT ["/usr/local/bin/run-oc-mirror.sh"]
+ENTRYPOINT ["/usr/local/bin/run-oc-mirror"]
