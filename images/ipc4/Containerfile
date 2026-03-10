@@ -19,10 +19,10 @@ RUN subscription-manager register \
     --activationkey "${RHSM_AK}"
 
 # Setup Workstation
-RUN dnf -y --releasever=9.6 groupinstall Workstation
+RUN dnf --releasever=9.6 -y  groupinstall Workstation
 
 # Install additional packages
-RUN dnf \
+RUN dnf  --releasever=9.6 \
     --enablerepo=rhel-9-for-x86_64-baseos-rpms \
     --enablerepo=rhel-9-for-x86_64-appstream-rpms \
     --enablerepo=rhocp-4.20-for-rhel-9-x86_64-rpms \
@@ -47,12 +47,12 @@ RUN dnf \
     && rm -rf /var/{cache,log} /var/lib/{dnf,rhsm}
 
 # Install packages from EPEL
-RUN dnf \
+RUN dnf --releasever=9.6\
     install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
     && dnf clean all \
     && rm -rf /var/{cache,log} /var/lib/{dnf,rhsm}
 
-RUN dnf \
+RUN dnf --releasever=9.6 \
     install -y \
     rdesktop \
     helm \
@@ -159,7 +159,7 @@ RUN chmod +x /usr/local/bin/get-microshift-kubeconfig.sh
 
 # adding and configuring Tailscale for VPN access
 RUN dnf config-manager -y --add-repo https://pkgs.tailscale.com/stable/rhel/9/tailscale.repo && \
-    dnf -y install tailscale && \
+    dnf --releasever=9.6 -y install tailscale && \
     dnf -y clean all
 RUN systemctl enable tailscaled
 
@@ -170,7 +170,7 @@ RUN systemctl enable tailscale-login.service && touch /etc/.run_tailscale_next_b
 
 ## add rhem client
 RUN  dnf config-manager --add-repo https://rpm.flightctl.io/flightctl-epel.repo
-RUN dnf install -y \
+RUN dnf --releasever=9.6 install -y \
     flightctl-agent \
     flightctl-cli \
     && dnf clean all \
