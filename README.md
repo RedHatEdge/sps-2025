@@ -296,7 +296,9 @@ How to:
 - build the image and push it to a public repo (like Quay.io)
 - add it to the oc-mirror/configmap.yaml file
 - apply the new configuration: `$ oc -n oc-mirror apply -f /etc/microshift/manifests.d/oc-mirror/configmap.yaml`
-- rerun the import images job by creating and applying a copy of `/etc/microshift/manifests.d/oc-mirror/job.yaml`:
+- rerun the import images job by creating and applying a copy of `/etc/microshift/manifests.d/oc-mirror/job.yaml`
+- the configmap for `install-config.yaml` of the cluster is immutable (since the cluster is installed)
+- you would need to modify on the ACP (SNO) the CRD `ImageDigestMirrorSet` to map the new image to the corresponding image on the mirror registry:
 
 ```bash
 $ oc -n oc-mirror get job run-oc-mirror -o json | \
