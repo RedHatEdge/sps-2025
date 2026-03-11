@@ -400,6 +400,9 @@ data:
     - mirrors:
       - registry-oc-mirror.apps.ipc4.sps2025.com/ubi9-minimal
       source: registry.redhat.io/ubi9-minimal
+    - mirrors:
+      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift4/ose-cli
+      source: registry.redhat.io/openshift4/ose-cli
 ---
 apiVersion: v1
 kind: ConfigMap

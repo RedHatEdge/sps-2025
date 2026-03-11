@@ -231,6 +231,23 @@ In case you want to deploy applications across different spoke / managed cluster
 We can now create helm charts and / or kustomize files to sync Applications to managed clusters.  
 The basic ACP services have already been deployed and the source can be found [here](https://github.com/RedHatEdge/acp-standard-services-public/tree/dev)  
 
+## Using new container image on ACP
+How to use a new image not included in the original ACP Mirror installation:
+
+- build the image and push it to a public repo (like Quay.io)
+- add it to the oc-mirror/configmap.yaml file
+- apply the new configuration: `$ oc -n oc-mirror apply -f /etc/microshift/manifests.d/oc-mirror/configmap.yaml`
+- rerun the import images job by creating and applying a copy of `/etc/microshift/manifests.d/oc-mirror/job.yaml` or delete the job and restart **microshift**
+- the configmap for `install-config.yaml` of the cluster is immutable (since the cluster is installed) so you would need to modify on the ACP (SNO) the CRD `ImageDigestMirrorSet` to map the new image to the corresponding image on the mirror registry
+- beware if you are using Tags to identify images (instead of Digest) you should modify instead the `ImageTagMirrorSet`:
+
+```bash
+$ oc -n oc-mirror get job run-oc-mirror -o json | \
+jq -r '.metadata.annotations."kubectl.kubernetes.io/last-applied-configuration"' | \
+oc -n oc-mirror replace --save-config --force -f -
+```
+
+
 ### Nvidia GPU device
 
 #### Defect recognition application
@@ -291,20 +308,6 @@ You can find the relative manifests in the [folder](workloads/defect-rec-sim/)
 
 Installed the ISM container on ACP to provide more detailed information about the server and running OS to iDrac.
 
-How to:
-
-- build the image and push it to a public repo (like Quay.io)
-- add it to the oc-mirror/configmap.yaml file
-- apply the new configuration: `$ oc -n oc-mirror apply -f /etc/microshift/manifests.d/oc-mirror/configmap.yaml`
-- rerun the import images job by creating and applying a copy of `/etc/microshift/manifests.d/oc-mirror/job.yaml`
-- the configmap for `install-config.yaml` of the cluster is immutable (since the cluster is installed)
-- you would need to modify on the ACP (SNO) the CRD `ImageDigestMirrorSet` to map the new image to the corresponding image on the mirror registry:
-
-```bash
-$ oc -n oc-mirror get job run-oc-mirror -o json | \
-jq -r '.metadata.annotations."kubectl.kubernetes.io/last-applied-configuration"' | \
-oc -n oc-mirror replace --save-config --force -f -
-```
 
 #### Windows 11 VM on OCP-V - Codesys IDE
 
