@@ -213,6 +213,43 @@ You should now be able to access the catalog and see only the mirrored operators
 
 ![disconnected catalog](image.png)
 
+>NOTE:
+> Gitops will try to install all acp-standard-services among which is Local Storage with LVM Operator. If you have a prexisting installation you would need to wipe the local volumes to make sure the installation succeeds with something like this directly on node0 (ACP):
+>
+>```bash
+>sh-5.1# vgreduce node0-local-storage --removemissing
+>  WARNING: Couldn't find device with uuid fkC1B6-kH4a-2s1p-JoAj-i5cJ-Dhl1-c4LyMy.
+>  WARNING: VG node0-local-storage is missing PV fkC1B6-kH4a-2s1p-JoAj-i5cJ-Dhl1-c4LyMy (last written to [unknown]).
+>  WARNING: Couldn't find device with uuid fkC1B6-kH4a-2s1p-JoAj-i5cJ-Dhl1-c4LyMy.
+>  Wrote out consistent volume group node0-local-storage.
+>sh-5.1# vgs
+>  VG                  #PV #LV #SN Attr   VSize  VFree 
+>  node0-local-storage   1   0   0 wz--n- <1.75t <1.75t
+>sh-5.1# pvs
+>  PV           VG                  Fmt  Attr PSize  PFree 
+>  /dev/nvme1n1 node0-local-storage lvm2 a--  <1.75t <1.75t
+>sh-5.1# vgremove node0-local-storage
+>  Volume group "node0-local-storage" successfully removed
+>sh-5.1# pvremove /dev/nvme1n1
+>  Labels on physical volume "/dev/nvme1n1" successfully wiped.
+>```
+
+#### Adding / mirroring new container image on ACP
+How to use a new image not included in the original ACP Mirror installation:
+
+- build the image and push it to a public repo (like Quay.io)
+- add it to the oc-mirror/configmap.yaml file
+- apply the new configuration: `$ oc -n oc-mirror apply -f /etc/microshift/manifests.d/oc-mirror/configmap.yaml`
+- rerun the import images job by creating and applying a copy of `/etc/microshift/manifests.d/oc-mirror/job.yaml` or delete the job and restart **microshift**
+- the configmap for `install-config.yaml` of the cluster is immutable (since the cluster is installed) so you would need to modify on the ACP (SNO) the CRD `ImageDigestMirrorSet` to map the new image to the corresponding image on the mirror registry
+- beware if you are using Tags to identify images (instead of Digest) you should modify instead the `ImageTagMirrorSet`:
+
+```bash
+$ oc -n oc-mirror get job run-oc-mirror -o json | \
+jq -r '.metadata.annotations."kubectl.kubernetes.io/last-applied-configuration"' | \
+oc -n oc-mirror replace --save-config --force -f -
+```
+
 ### Setup Nvidia Jetson
 
 ## Workloads
@@ -274,21 +311,6 @@ In case you want to deploy applications across different spoke / managed cluster
 We can now create helm charts and / or kustomize files to sync Applications to managed clusters.  
 The basic ACP services have already been deployed and the source can be found [here](https://github.com/RedHatEdge/acp-standard-services-public/tree/dev)  
 
-## Adding / mirroring new container image on ACP
-How to use a new image not included in the original ACP Mirror installation:
-
-- build the image and push it to a public repo (like Quay.io)
-- add it to the oc-mirror/configmap.yaml file
-- apply the new configuration: `$ oc -n oc-mirror apply -f /etc/microshift/manifests.d/oc-mirror/configmap.yaml`
-- rerun the import images job by creating and applying a copy of `/etc/microshift/manifests.d/oc-mirror/job.yaml` or delete the job and restart **microshift**
-- the configmap for `install-config.yaml` of the cluster is immutable (since the cluster is installed) so you would need to modify on the ACP (SNO) the CRD `ImageDigestMirrorSet` to map the new image to the corresponding image on the mirror registry
-- beware if you are using Tags to identify images (instead of Digest) you should modify instead the `ImageTagMirrorSet`:
-
-```bash
-$ oc -n oc-mirror get job run-oc-mirror -o json | \
-jq -r '.metadata.annotations."kubectl.kubernetes.io/last-applied-configuration"' | \
-oc -n oc-mirror replace --save-config --force -f -
-```
 
 
 ### Nvidia GPU device
