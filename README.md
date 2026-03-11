@@ -231,7 +231,7 @@ In case you want to deploy applications across different spoke / managed cluster
 We can now create helm charts and / or kustomize files to sync Applications to managed clusters.  
 The basic ACP services have already been deployed and the source can be found [here](https://github.com/RedHatEdge/acp-standard-services-public/tree/dev)  
 
-## Using new container image on ACP
+## Using / mirroring new container image on ACP
 How to use a new image not included in the original ACP Mirror installation:
 
 - build the image and push it to a public repo (like Quay.io)

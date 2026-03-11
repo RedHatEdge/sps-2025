@@ -48,4 +48,4 @@ data:
         - name: registry.redhat.io/ansible-automation-platform-26/ee-minimal-rhel9@sha256:a17ebe09a69f28a183068c3597467311ba9ed77f1c3a42864404d5e343f7c2de
         - name: registry.redhat.io/ansible-automation-platform-26/ee-supported-rhel9@sha256:8b51f6026000a9f63e8d548e5d4c7b630425bc4504819ceeef97eea691653cd2
         - name: quay.io/luferrar/sps@sha256:986b04077494891165caf55010eca39a3352d58ecd336be1cf7ad4f1d7c4515b
-        - name: registry.redhat.io/openshift4/ose-cli:latest
+        - name: registry.redhat.io/openshift4/ose-cli@sha256:69762925e16053d77685ff3a08b3b45dd2bfa5d68277851bc6969b368bbd0cb9
