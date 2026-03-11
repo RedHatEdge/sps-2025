@@ -684,6 +684,7 @@ data:
                       helm:
                         values: |
                           gitBranch: dev
+                          gitRepoURL: http://code-gitea.apps.ipc4.sps2025.com/admin/acp-standard-services-public.git
                           localStorage:
                             forceWipeDrives: true
                             deviceClasses:
