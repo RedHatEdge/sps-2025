@@ -92,8 +92,8 @@ $ scripts/create-iso.sh localhost/ipc4:latest  $(pwd)/kickstarts/home-testing.ks
 
 Mount the ISO to the device using your preferred method (probably USB drive), boot from it, and wait a few moments for the install to complete.
 
-To see progress during the installation, switch to one of the other panes using `alt` + `ctrl` +`F2`, and run:
-9.52 - 9.59
+To see progress during the installation, switch to one of the other panes using `alt` + `ctrl` +`F2`, and run (10 minutes approximately):
+
 ```bash
 $ tail -f /tmp/anaconda.log
 ```
@@ -109,7 +109,7 @@ $ get-microshift-kubeconfig.sh
 
 This will place the kubeconfig into the default path, so future `oc` commands will work without needing to specify a kubeconfig.
 
-> NOTE:
+> [!WARNING]:
 > `gitea-operator` install plan is set to Manual because the `latest` tag point to an invalid catalog source component (*gcr.io/kubebuilder/kube-rbac-proxy*) so once Microshift is up and running you need to approve the `installplan` manually doing `$ oc edit installplans.operators.coreos.com -n gitea-operator install-SOMETHING`  
 All services are ready when all pods reach `Running` or `Completed`:
 
@@ -213,7 +213,7 @@ You should now be able to access the catalog and see only the mirrored operators
 
 ![disconnected catalog](image.png)
 
->NOTE:
+>[!NOTE]:
 > Gitops will try to install all acp-standard-services among which is Local Storage with LVM Operator. If you have a prexisting installation you would need to wipe the local volumes to make sure the installation succeeds with something like this directly on node0 (ACP):
 >
 >```bash
@@ -386,12 +386,9 @@ Run the pipeline that download, imports, create golden image of win11 (using una
 Before getting to the WIN11 installation wizard, make sure to assing a `e1000` network driver to the VMI, Windows doesn't like `virtio` card much at first installation. After that, make sure to make the switch, since `virtio` network card is much more performant (install the local virtio-win drivers).  
 In case you cannot connect, make sure to check this blog entry to terminate installation offline: https://medium.com/@zorozeri/windows-11-arm-having-no-network-connection-on-vmware-fusion-pro-5b06e894811e  
 
-## Todo on restart
-remmeber to change the /etc/microshift/manifests.d/dns/configmap.yaml with the correct local nameservers assigned by the public WAN, connected to IPC4
-
 ## Access to systems for SPS 2025  
 
 Please check the repo [here](https://github.com/RedHatEdge/sps-2025-systems)
 
-
-
+>[!IMPORTANT]
+> **ON RESTART**, when connecting to a new WAN network remember to change the `/etc/microshift/manifests.d/dns/configmap.yaml` with the correct local nameservers assigned by the public WAN on IPC4
