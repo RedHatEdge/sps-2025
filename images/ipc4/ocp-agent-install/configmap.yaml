@@ -638,13 +638,12 @@ data:
                 - /bin/sh
                 - -c
                 - |
-                  echo "Waiting for all cluster operators to be healthy..."
-                  oc wait --all \
-                    --for=condition=Available=True \
-                    --for=condition=Progressing=False \
-                    --for=condition=Degraded=False \
-                    clusteroperators.config.openshift.io \
-                    --timeout=120m
+                  echo "Waiting for all cluster operators (minus Insights) to be healthy..."
+                  oc get clusteroperators -o name | grep -v insights | xargs oc wait \
+                  --for=condition=Available=True \
+                  --for=condition=Progressing=False \
+                  --for=condition=Degraded=False \
+                  --timeout=120m
 
                   echo "All operators are healthy. Applying manifests..."
                   cat <<'EOF' | oc apply -f -
