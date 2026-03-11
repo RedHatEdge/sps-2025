@@ -685,6 +685,7 @@ data:
                         values: |
                           gitBranch: dev
                           gitRepoURL: http://code-gitea.apps.ipc4.sps2025.com/admin/acp-standard-services-public.git
+                          catalogSource: cs-redhat-operator-index
                           localStorage:
                             forceWipeDrives: true
                             deviceClasses:
