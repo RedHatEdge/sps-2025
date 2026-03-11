@@ -109,7 +109,7 @@ $ get-microshift-kubeconfig.sh
 
 This will place the kubeconfig into the default path, so future `oc` commands will work without needing to specify a kubeconfig.
 
-> [!WARNING]:
+> [!WARNING]  
 > `gitea-operator` install plan is set to Manual because the `latest` tag point to an invalid catalog source component (*gcr.io/kubebuilder/kube-rbac-proxy*) so once Microshift is up and running you need to approve the `installplan` manually doing `$ oc edit installplans.operators.coreos.com -n gitea-operator install-SOMETHING`  
 All services are ready when all pods reach `Running` or `Completed`:
 
@@ -213,7 +213,7 @@ You should now be able to access the catalog and see only the mirrored operators
 
 ![disconnected catalog](image.png)
 
->[!NOTE]:
+>[!NOTE]  
 > Gitops will try to install all acp-standard-services among which is Local Storage with LVM Operator. If you have a prexisting installation you would need to wipe the local volumes to make sure the installation succeeds with something like this directly on node0 (ACP):
 >
 >```bash
@@ -326,7 +326,7 @@ The basic ACP services have already been deployed and the source can be found [h
 We will be using Mosquitto as MQTT Broker, you can find the related manifests in the [folder](workloads/mqtt-broker/)
 These can be pushed to our Gitea repo and synced as ArgoCD Application.
 
-> NOTE: Make sure that ArgoCD can manage deployment over other [namespaces](https://access.redhat.com/solutions/7007638) and clusters first.  
+>[!NOTE] Make sure that ArgoCD can manage deployment over other [namespaces](https://access.redhat.com/solutions/7007638) and clusters first.  
 
 ![app-configuration](workloads/mqtt-broker/app-config-argocd.png)
 
