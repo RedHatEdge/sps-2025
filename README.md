@@ -293,7 +293,6 @@ Installed the ISM container on ACP to provide more detailed information about th
 
 How to:
 
-- pushing a built image to mirror registry on IPC4 on Microshift
 - build the image and push it to a public repo (like Quay.io)
 - add it to the oc-mirror/configmap.yaml file
 - apply the new configuration: `$ oc -n oc-mirror apply -f /etc/microshift/manifests.d/oc-mirror/configmap.yaml`
