@@ -149,7 +149,7 @@ The ACP setup is an agent-based install using a local mirror registry located on
 To download the installation ISO, grab it from IPC4:
 
 ```bash
-$ wget --no-check-certificate https://serve-iso-ocp-agent-install.apps.ipc4.sps2025.com/agent.x86_64.iso
+$ curl -k https://serve-iso-ocp-agent-install.apps.ipc4.sps2025.com/agent.x86_64.iso -o agent.iso
 ```
 
 Mount this media to the target installation device (USB drive, etc), and boot from it. The cluster installation should begin and complete automatically.
@@ -157,8 +157,8 @@ Mount this media to the target installation device (USB drive, etc), and boot fr
 The cluster kubeconfig and kubeadmin-password files are also available on IPC4:
 
 ```bash
-wget --no-check-certificate https://serve-iso-ocp-agent-install.apps.ipc4.sps2025.com/auth/kubeconfig
-wget --no-check-certificate https://serve-iso-ocp-agent-install.apps.ipc4.sps2025.com/auth/kubeadmin-password
+$ curl -k https://serve-iso-ocp-agent-install.apps.ipc4.sps2025.com/auth/kubeconfig -o kubeconfig
+$ curl -k https://serve-iso-ocp-agent-install.apps.ipc4.sps2025.com/auth/kubeadmin-password -o kubeadmin-password
 ```
 
 To watch the installation process, two methods are useful:
