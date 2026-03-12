@@ -140,28 +140,35 @@ flowchart LR
     Dev[Operator / Builder]
   end
 
-  subgraph IPC4[IPC4 (MicroShift)]
-    MS(MicroShift)
-    REG[Local Registry\nregistry.oc-mirror.svc.cluster.local:5000]
+  subgraph IPC4[IPC4 Bootc MicroShift]
+    SVC(DHCP DNS NTP)
+    REG[Local Registry<br>registry.oc-mirror.svc.cluster.local:5000]
     GITEA[Gitea]
     OC_MIRROR[oc-mirror Job]
     AGENT_GEN[ocp-agent-install]
   end
 
-  subgraph ACP[ACP Cluster]
+  subgraph ACP[ACP Single Node OpenShift]
     ARGO(ArgoCD)
     ACP_SERVERS[acp-standard-services]
+    LVM[LVM ]
+    VIRT[Virt]
+    ANSIBLE[AAP]
   end
 
-  Dev -->|build ISO| IPC4
-  MS -->|applies manifests| DHCP[DHCP/DNS/NTP/Services]
-  OC_MIRROR --> REG
-  GITEA -->|mirrors repo| MS
-  AGENT_GEN -->|serves agent ISO| Dev
-  Dev -->|install from agent ISO| ACP
+  Dev -->|build bootc ISO | IPC4
+  IPC4 -->|applies manifests| DHCP[DHCP / DNS / NTP / supporting services]
+  DHCP[DHCP / DNS / NTP / supporting services] --> SVC
+  OC_MIRROR --> |mirrors images from <br> RH registry |REG
+  GITEA -->|copy repo from| Github[Github<br>acp-standard-services]
+  AGENT_GEN -->|serves ocp agent ISO| Dev
+  Dev -->|install from ocp agent ISO| ACP
   REG -->|provides operator images| ACP
   GITEA -->|repo for GitOps| ARGO
   ARGO -->|syncs| ACP_SERVERS
+  ARGO -->|deploys|LVM
+  ARGO -->|deploys|VIRT
+  ARGO -->|deploys|ANSIBLE
 
   classDef infra fill:#e8f5e9,stroke:#2e7d32;
   classDef control fill:#e3f2fd,stroke:#1565c0;
