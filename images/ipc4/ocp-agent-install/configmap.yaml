@@ -696,6 +696,7 @@ data:
                                   - /dev/nvme0n1
                                   - /dev/nvme1n1
                                 default: true
+                                createImmediate: false
                           virtualization:
                             commonBootImageImport: false
                           itAutomation:
