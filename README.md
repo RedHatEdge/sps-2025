@@ -213,7 +213,7 @@ You should now be able to access the catalog and see only the mirrored operators
 
 ![disconnected catalog](image.png)
 
-Make sure to change any catalog source to the new local one, in particular the **GitOps operator** that is installed as part of the bootstrap procedure  
+Make sure to change any catalog source to the new local one, in particular the **GitOps operator** that is installed as part of the bootstrap procedure and the rest of the Operators deployed with **acp-standard-services** 
 
 And in case there are some images that you mirrored by **Tag** instead of **Digest**, make sure to update the **ImageTagMirrorSet** of the cluster:
 
@@ -249,6 +249,7 @@ spec:
 >  Volume group "node0-local-storage" successfully removed
 >sh-5.1# pvremove /dev/nvme1n1
 >  Labels on physical volume "/dev/nvme1n1" successfully wiped.
+>sh-5.1# pvremove /dev/nvme0n1
 >```
 
 #### Adding / mirroring new container image on ACP
