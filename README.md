@@ -213,6 +213,23 @@ You should now be able to access the catalog and see only the mirrored operators
 
 ![disconnected catalog](image.png)
 
+Make sure to change any catalog source to the new local one, in particular the **GitOps operator** that is installed as part of the bootstrap procedure  
+
+And in case there are some images that you mirrored by **Tag** instead of **Digest**, make sure to update the **ImageTagMirrorSet** of the cluster:
+
+```yaml
+apiVersion: config.openshift.io/v1
+kind: ImageTagMirrorSet
+metadata:
+  name: mirror-config
+spec:
+  imageTagMirrors:
+    - source: registry.redhat.io/openshift4/ose-cli
+      mirrors:
+      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift4/ose-cli
+    
+```
+
 >[!NOTE]  
 > Gitops will try to install all acp-standard-services among which is Local Storage with LVM Operator. If you have a prexisting installation you would need to wipe the local volumes to make sure the installation succeeds with something like this directly on node0 (ACP):
 >
@@ -249,6 +266,14 @@ $ oc -n oc-mirror get job run-oc-mirror -o json | \
 jq -r '.metadata.annotations."kubectl.kubernetes.io/last-applied-configuration"' | \
 oc -n oc-mirror replace --save-config --force -f -
 ```
+
+#### Additional disconnected procedures
+Some additional tweaks:
+
+- Disabled [Insights reporting](https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html-single/support/index#insights-operator-new-pull-secret_remote-health-reporting)
+- Disabled cluster updates checks: cleared spec.channel in the ClusterVersion object
+- configured NTP in disconnected environment with [MachineConfig](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/machine_configuration/machine-configs-configure#installation-special-config-chrony_machine-configs-configure), pointing at IPC4 NTP service running on Microshift (UDP:123) Master `MachineConfig` is required
+- 
 
 ### Setup Nvidia Jetson
 
