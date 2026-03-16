@@ -40,6 +40,10 @@ The setup for this demo is broken up into several parts:
 ### Basic setup
 A basic x86 Linux-ish system with sufficient disk space and podman should be able to handle the setup of the demos. You will also need a flash drive, or method to mount installation ISOs to devices.
 
+> In this case we decided to use another IPC sitting in same architecture: **IPC3**  
+> This is running standard RHEL9.x with *RDP* enabled to access Firefox and be able to visualize the OpenShift console.  
+> Tailscale client is also installed and port **UDP:41641** is open on the Firewalld to allow direct, peer-to-peer WireGuard tunnels between devices, reducing latency and avoiding relay servers
+
 #### Setting basic variables
 Create a copy of the `build-args.txt.example` file, and populate it with your information:
 
