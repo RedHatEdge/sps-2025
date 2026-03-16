@@ -49,3 +49,43 @@ data:
         - name: registry.redhat.io/ansible-automation-platform-26/ee-supported-rhel9@sha256:8b51f6026000a9f63e8d548e5d4c7b630425bc4504819ceeef97eea691653cd2
         - name: quay.io/luferrar/sps@sha256:986b04077494891165caf55010eca39a3352d58ecd336be1cf7ad4f1d7c4515b
         - name: registry.redhat.io/openshift4/ose-cli@sha256:69762925e16053d77685ff3a08b3b45dd2bfa5d68277851bc6969b368bbd0cb9
+        # CustomerEnvironment_cmf-sps-demo-agent
+        - name: criticalmanufacturing.io/3rd-party/traefik:3.5.2
+        - name: criticalmanufacturing.io/customerportal/edge-forward-proxy:11.2.0
+        - name: criticalmanufacturing.io/customerportal/edge-squid-proxy:11.2.0
+        # CustomerEnvironment_cmf-sps-demo-ms-environment
+        - name: criticalmanufacturing.io/3rd-party/ch-ui:20250613-unofficial
+        - name: criticalmanufacturing.io/3rd-party/clickhouse-server:25.3.3.42
+        - name: criticalmanufacturing.io/3rd-party/cp-kafka:7.6.2-1-ubi8
+        - name: criticalmanufacturing.io/3rd-party/kafka-ui:v0.7.2
+        - name: criticalmanufacturing.io/3rd-party/minio:2024.7.31
+        - name: criticalmanufacturing.io/3rd-party/rabbitmq:3.13.7-management-alpine
+        - name: criticalmanufacturing.io/3rd-party/traefik:3.6.2
+        - name: criticalmanufacturing.io/criticalmanufacturing/automationmanagercontroller:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/discoveryservices:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/envmanager:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/grafana:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/help:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/host:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/ioteventprocessor:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/lbogenerator:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/mcad:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/mes-scheduler:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/mes-ui:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/messagebus:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/rasa-actions:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/rasa:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/reference:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/securityportal:11.2.5
+        - name: criticalmanufacturing.io/criticalmanufacturing/traefik-forwardauth:11.2.5
+        - name: criticalmanufacturing.io/dataplatform/aggregationengine:11.2.5
+        - name: criticalmanufacturing.io/dataplatform/cube:11.2.5
+        - name: criticalmanufacturing.io/dataplatform/cubestore:11.2.5
+        - name: criticalmanufacturing.io/dataplatform/datamanager:11.2.5
+        - name: criticalmanufacturing.io/dataplatform/epf-alarm-management-action-trigger:11.2.5
+        - name: criticalmanufacturing.io/dataplatform/epf-alarm-management-event-rule-handler:11.2.5
+        - name: criticalmanufacturing.io/dataplatform/epf-alarm-management-mes-event-handler:11.2.5
+        - name: criticalmanufacturing.io/dataplatform/housekeeper:11.2.5
+        - name: criticalmanufacturing.io/dataplatform/mlplatformagent:11.2.5
+        - name: criticalmanufacturing.io/dataplatform/mlplatformtraining:11.2.5
+        - name: criticalmanufacturing.io/dataplatform/redis:11.2.5
