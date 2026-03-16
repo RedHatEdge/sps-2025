@@ -347,6 +347,24 @@ The basic ACP services have already been deployed and the source can be found [h
 
 #### MES Critical Manufacturing
 
+The [oc-mirror job](images/ipc4/oc-mirror/) mirrors all required CM MES images to the local registry on ipc4 for disconnected installation.
+
+**Initial setup or re-installation:**
+
+1. Download the offline installer artifacts from the CM DevOps Portal.
+2. Extract the `CustomerEnvironment_cmf-sps-demo-agent-*.zip` and locate `criticalmanufacturing.io-cred-secret.yaml`.
+3. Decode the `.dockerconfigjson` field from that secret and merge the `criticalmanufacturing.io` auth entry into the oc-mirror pull secret:
+   - **Fresh install:** add to the pull secret in the ipc4 install variables before running the installer.
+   - **Existing install:** update `/etc/microshift/manifests.d/oc-mirror/secret.yaml` directly on ipc4, then restart MicroShift.
+
+**Version update:**
+
+1. Update the image tags for all MES images in the [oc-mirror configmap](images/ipc4/oc-mirror/configmap.yaml).
+2. Update the pull secret as above if the CM credentials have changed.
+3. Restart MicroShift to re-run the oc-mirror job.
+
+
+
 #### German Edge Cloud
 Had to modoify the default OCP-Virt configuration to allow **SSH over NodePort**.
 
