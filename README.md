@@ -170,6 +170,13 @@ The cluster has baked-in manifests that will be deployed during the install - th
 
 You can easily access the cluster from IPC3 (copying over `kubeconfig` file) while leaving IPC4 for local `microshift` access.  
 
+>[!TIP]
+> In case you lost access to Single Node OpenShift (ACP) for any reasons you should still be able to access the physical node given you provided an authorized ssh key while installing.  
+> Use that and just `ssh core@192.168.100.10` into it.  
+> Once inside you can reuse the local kubeconfig 
+> `$ export KUBECONFIG=/etc/kubernetes/static-pod-resources/kube-apiserver-certs/secrets/node-kubeconfigs/lb-ext.kubeconfig`  
+
+
 #### Update ACP Operator Catalog to oc-mirror registry catalog
 Based on a [blog entry](https://www.redhat.com/en/blog/deploying-red-hat-openshift-operators-disconnected-environment) we can now disable the default OpenShift catalogs, which otherwise in a disconnected environment would just trigger unnecessary errors. Let's disable the default OperatorHub catalog sources first:
 
