@@ -33,14 +33,14 @@ flowchart LR
 The setup for this demo is broken up into several parts:
 
 0. Basic setup
-1. Setup bootstrap
+1. Setup bootstrap on IPC4
 2. Setup the ACP
 3. Setup the NVIDIA Jetson
 
 ### Basic setup
 A basic x86 Linux-ish system with sufficient disk space and podman should be able to handle the setup of the demos. You will also need a flash drive, or method to mount installation ISOs to devices.
 
-### Setting basic variables
+#### Setting basic variables
 Create a copy of the `build-args.txt.example` file, and populate it with your information:
 
 ```
@@ -64,7 +64,7 @@ ACP_INTERFACE_MAC_ADDRESS=11:22:33:44:55:66
 COREOS_SSH_KEY=ssh-ed25519 blahblahblah you@your-computer
 ```
 
-### Setup IPC4
+### Setup bootstrap on IPC4
 Assuming your values are correct in your args file, all that needs to be done is to build the IPC4 image and install the device - all other steps are handled through containers on Microshift.
 
 To build the image, run:
@@ -346,6 +346,14 @@ The basic ACP services have already been deployed and the source can be found [h
 ### ACP
 
 #### MES Critical Manufacturing
+
+#### German Edge Cloud
+Had to modoify the default OCP-Virt configuration to allow **SSH over NodePort**.
+
+![alt text](image-1.png)
+
+You can access Oncite through ssh using the default username and password.
+
 
 #### MQTT Broker
 
