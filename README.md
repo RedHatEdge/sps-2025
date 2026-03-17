@@ -72,6 +72,7 @@ COREOS_SSH_KEY=ssh-ed25519 blahblahblah you@your-computer
 Assuming your values are correct in your args file, all that needs to be done is to build the IPC4 image and install the device - all other steps are handled through containers on Microshift.
 
 To build the image, run:
+
 ```bash
 $ podman build images/ipc4/ --tag localhost/ipc4:latest --build-arg-file=build-args.txt
 ```
@@ -105,6 +106,7 @@ $ tail -f /tmp/anaconda.log
 Once the device reboots, everything should start up on its own.
 
 To get the microshift kubeconfig, log in as your created user and run:
+
 ```bash
 $ get-microshift-kubeconfig.sh
 ```
@@ -180,8 +182,7 @@ You can easily access the cluster from IPC3 (copying over `kubeconfig` file) whi
 > Once inside you can reuse the local kubeconfig 
 > `$ export KUBECONFIG=/etc/kubernetes/static-pod-resources/kube-apiserver-certs/secrets/node-kubeconfigs/lb-ext.kubeconfig`  
 
-
-#### Update ACP Operator Catalog to oc-mirror registry catalog
+#### Setup ACP Operator Catalog for disconnected scenario
 Based on a [blog entry](https://www.redhat.com/en/blog/deploying-red-hat-openshift-operators-disconnected-environment) we can now disable the default OpenShift catalogs, which otherwise in a disconnected environment would just trigger unnecessary errors. Let's disable the default OperatorHub catalog sources first:
 
 ```bash
@@ -283,7 +284,7 @@ oc -n oc-mirror replace --save-config --force -f -
 Some additional tweaks:
 
 - Disabled [Insights reporting](https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html-single/support/index#insights-operator-new-pull-secret_remote-health-reporting)
-- Disabled cluster updates checks: cleared spec.channel in the ClusterVersion object
+- Disabled cluster updates checks: cleared `spec.channel` in the ClusterVersion object
 - configured NTP in disconnected environment with [MachineConfig](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/machine_configuration/machine-configs-configure#installation-special-config-chrony_machine-configs-configure), pointing at IPC4 NTP service running on Microshift (UDP:123) Master `MachineConfig` is required
 - 
 
@@ -291,7 +292,7 @@ Some additional tweaks:
 
 ## Workloads
 
-### GitOps prep
+### GitOps & Gitea manual deployment
 
 Gitea and GitOps are preinstalled, but we will add the steps here in case you want to reproduce the gitops style deployment somewhere else.
 
@@ -307,7 +308,9 @@ This installs the operator cluster wide - which means you (or your users) can cr
 
 Create a new project for your Gitea instance:
 
-` $ oc new-project gitea`
+```bash
+$ oc new-project gitea
+```
 
 The Gitea Operator can set up a PostgreSQL database alongside the Gitea Pod. This is the default deployment.
 
@@ -348,8 +351,6 @@ In case you want to deploy applications across different spoke / managed cluster
 We can now create helm charts and / or kustomize files to sync Applications to managed clusters.  
 The basic ACP services have already been deployed and the source can be found [here](https://github.com/RedHatEdge/acp-standard-services-public/tree/dev)  
 
-
-
 ### Nvidia GPU device
 
 #### Defect recognition application
@@ -374,15 +375,28 @@ The [oc-mirror job](images/ipc4/oc-mirror/) mirrors all required CM MES images t
 2. Update the pull secret as above if the CM credentials have changed.
 3. Restart MicroShift to re-run the oc-mirror job.
 
-
-
 #### German Edge Cloud
-Had to modoify the default OCP-Virt configuration to allow **SSH over NodePort**.
+The provided image is based on Bootc and will self install. The application is running as containerized microservices on embedded Microshift.  
+Step for deployment:
 
+- import ISO as PV
+- create VM with the following minimum specs:  
+  ![specs](image-2.png)
+- in this case I kept just one NIC
+- to access VM over SSH had to modoify the default OCP-Virt configuration to allow **SSH over NodePort**
 ![alt text](image-1.png)
+- access Microshift locally:  
+  ```bash
+  $ mkdir -p ~/.kube/
+  $ sudo cat /var/lib/microshift/resources/kubeadmin/kubeconfig > ~/.kube/config
+  $ chmod go-r ~/.kube/config
+  ```
+- get list of needed images for pull-secret:  
+  ```bash
+  $ sudo cat /usr/share/microshift/release/release-x86_64.json 
+-   ```
 
 You can access Oncite through ssh using the default username and password.
-
 
 #### MQTT Broker
 
