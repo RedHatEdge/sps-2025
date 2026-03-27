@@ -287,8 +287,18 @@ Some additional tweaks:
 - Disabled [Insights reporting](https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html-single/support/index#insights-operator-new-pull-secret_remote-health-reporting)
 - Disabled cluster updates checks: cleared `spec.channel` in the ClusterVersion object
 - configured NTP in disconnected environment with [MachineConfig](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/machine_configuration/machine-configs-configure#installation-special-config-chrony_machine-configs-configure), pointing at IPC4 NTP service running on Microshift (UDP:123) Master `MachineConfig` is required
-- added local users using [htpasswd identity provider](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/configuring-identity-providers). You can check the systems credentials repo for a list of created users.  
+- added local users using [htpasswd identity provider](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/configuring-identity-providers). You can check the systems credentials repo for a list of created users. 
+- I also setup for good practice a Script that wakes up and shutdowns ACP Monday to Friday (office hours), using IPMI, ssh and Ansible. You can find such scripts on IPC3 under `Script` directory. The systemd services are triggered by timer, on local admin user.  
+- I added Flightctl on IPC4 to manage any Bootc image in this environment. You can find that at https://ui.apps.ipc4.sps2025.com accessible from IPC3 browser. To login you can generate a service account token like this: `oc create token flightctl-admin -n flightctl --duration=24h` directly on IPC4 which is running *Microshift* and *Flightctl*. Flightctl cli tool is also found on IPC4 so you can generate the config like: 
+  ```bash
+  $ flightctl login https://api.apps.ipc4.sps2025.com -t ${K8S_TOKEN}
+  $ flightctl certificate request --signer=enrollment --expiration=365d --output=embedded > config.yaml
+  ```
+![alt text](image-3.png)
+- Flightctl manages IPC4 itself
+  ![alt text](image-4.png)
 
+  
 ### Setup Nvidia Jetson
 
 ## Workloads
@@ -444,7 +454,7 @@ quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:c9f0041b0290be2d1e0f96f672
 registry.oc-mirror.svc.cluster.local:5000/openshift/graph-image:latest=registry.oc-mirror.svc.cluster.local:5000/openshift/graph-image:latest
 ```
 - use this mapping to add entries in ACP **ImageDigestMirrorSet**. You can find an example in the [GEC folder](workloads/GEC/idms.yaml)
-
+- can then modify the entries under `/etc/containers/registries.conf.d/999-microshift-mirror.conf` inside the GEC vm to fix the mapping between public and private mirror
 
 You can access Oncite through ssh using the default username and password.
 
