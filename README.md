@@ -180,7 +180,8 @@ You can easily access the cluster from IPC3 (copying over `kubeconfig` file) whi
 > In case you lost access to Single Node OpenShift (ACP) for any reasons you should still be able to access the physical node given you provided an authorized ssh key while installing.  
 > Use that and just `ssh core@192.168.100.10` into it.  
 > Once inside you can reuse the local kubeconfig 
-> `$ export KUBECONFIG=/etc/kubernetes/static-pod-resources/kube-apiserver-certs/secrets/node-kubeconfigs/lb-ext.kubeconfig`  
+> `$ export KUBECONFIG=/etc/kubernetes/static-pod-resources/kube-apiserver-certs/secrets/node-kubeconfigs/lb-ext.kubeconfig` 
+> here is also the KCS on how to regenerate a valid `kubeconfig`:  https://access.redhat.com/solutions/7137471
 
 #### Setup ACP Operator Catalog for disconnected scenario
 Based on a [blog entry](https://www.redhat.com/en/blog/deploying-red-hat-openshift-operators-disconnected-environment) we can now disable the default OpenShift catalogs, which otherwise in a disconnected environment would just trigger unnecessary errors. Let's disable the default OperatorHub catalog sources first:
@@ -286,7 +287,7 @@ Some additional tweaks:
 - Disabled [Insights reporting](https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html-single/support/index#insights-operator-new-pull-secret_remote-health-reporting)
 - Disabled cluster updates checks: cleared `spec.channel` in the ClusterVersion object
 - configured NTP in disconnected environment with [MachineConfig](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/machine_configuration/machine-configs-configure#installation-special-config-chrony_machine-configs-configure), pointing at IPC4 NTP service running on Microshift (UDP:123) Master `MachineConfig` is required
-- 
+- added local users using [htpasswd identity provider](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/configuring-identity-providers). You can check the systems credentials repo for a list of created users.  
 
 ### Setup Nvidia Jetson
 
@@ -391,10 +392,59 @@ Step for deployment:
   $ sudo cat /var/lib/microshift/resources/kubeadmin/kubeconfig > ~/.kube/config
   $ chmod go-r ~/.kube/config
   ```
+- change the default MTU for Microshift, since we are double encapsulating with OCP-Virt the available MTU is reduced from original 1500 to 1400
+  ```bash
+  $ sudo cp /etc/microshift/ovn.yaml.default /etc/microshift/ovn.yaml
+  $ cat /etc/microshift/ovn.yaml
+  mtu: 1400
+  $ sudo reboot
+  ```
 - get list of needed images for pull-secret:  
   ```bash
-  $ sudo cat /usr/share/microshift/release/release-x86_64.json 
--   ```
+  $ sudo cat /usr/share/microshift/release/release-x86_64.json  
+  {
+  "release": {
+    "base": "4.20.13"
+  },
+  "images": {
+    "cli": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:80819f88795a16b1df3cea66b7fe57d68b504b08fcbaaf245716f3caed588e82",
+    "coredns": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:c9f0041b0290be2d1e0f96f6727c3a70071105d6a83890e0a5503e9f77da8529",
+    "haproxy-router": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:8f714fb9046c1842f044c5c074486baf5ce3ea05db479b5624702cd5f2f45a99",
+    "kube-rbac-proxy": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:6fa6e5b1fabb9b7165ee4928637b9b28c5966d7f192d4866c7453c2149ef1376",
+    "ovn-kubernetes-microshift": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:fc87935eb676a73b877cca295ccae2502645c3183a416363c9dcf9be6cf2c08f",
+    "pod": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:89dd57ce21c549ec2260cb5ac317482d7523789cce340ce16be13c4a9fa41a16",
+    "service-ca-operator": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:6d84b5c4e89d3e9920d29dbb4e6220d7711ee8e35b6f712afb48d9d237331322",
+    "lvms_operator": "registry.redhat.io/lvms4/lvms-rhel9-operator@sha256:58804d8baf922927b66cec9424d431a3bdb341d207024ce40cc8f0123bac03ee",
+    "csi-snapshot-controller": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:1cba2314e3276572ca1f179bc0b27a5f496865f7762f641a4bc87c4a4597018b"
+    }
+  }
+  ```
+- add listed images to `oc-mirror` on **IPC4** configmap, delete the completed job and restart microshift
+- get the new image mapping from microshift completed job:  
+```bash
+$ oc debug -n oc-mirror run-oc-mirror-gdglq
+Starting pod/run-oc-mirror-gdglq-debug-r9d9d ...
+Pod IP: 10.42.0.41
+If you don't see a command prompt, try pressing enter.
+sh-5.1$ cd oc-mirror-workspace/
+sh-5.1$ ls
+publish  results-1773163370  results-1773218678  results-1773680443  results-1773740650
+sh-5.1$ cat results-1773740650/mapping.txt                   
+quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:8f714fb9046c1842f044c5c074486baf5ce3ea05db479b5624702cd5f2f45a99=registry.oc-mirror.svc.cluster.local:5000/openshift-release-dev/ocp-v4.0-art-dev:latest
+quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:fc87935eb676a73b877cca295ccae2502645c3183a416363c9dcf9be6cf2c08f=registry.oc-mirror.svc.cluster.local:5000/openshift-release-dev/ocp-v4.0-art-dev:latest
+quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:1cba2314e3276572ca1f179bc0b27a5f496865f7762f641a4bc87c4a4597018b=registry.oc-mirror.svc.cluster.local:5000/openshift-release-dev/ocp-v4.0-art-dev:latest
+registry.redhat.io/lvms4/lvms-rhel9-operator@sha256:58804d8baf922927b66cec9424d431a3bdb341d207024ce40cc8f0123bac03ee=registry.oc-mirror.svc.cluster.local:5000/lvms4/lvms-rhel9-operator:latest
+quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:89dd57ce21c549ec2260cb5ac317482d7523789cce340ce16be13c4a9fa41a16=registry.oc-mirror.svc.cluster.local:5000/openshift-release-dev/ocp-v4.0-art-dev:latest
+quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:6d84b5c4e89d3e9920d29dbb4e6220d7711ee8e35b6f712afb48d9d237331322=registry.oc-mirror.svc.cluster.local:5000/openshift-release-dev/ocp-v4.0-art-dev:latest
+quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:6fa6e5b1fabb9b7165ee4928637b9b28c5966d7f192d4866c7453c2149ef1376=registry.oc-mirror.svc.cluster.local:5000/openshift-release-dev/ocp-v4.0-art-dev:latest
+registry.redhat.io/redhat/redhat-operator-index:v4.20=registry.oc-mirror.svc.cluster.local:5000/redhat/redhat-operator-index:v4.20
+quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:80819f88795a16b1df3cea66b7fe57d68b504b08fcbaaf245716f3caed588e82=registry.oc-mirror.svc.cluster.local:5000/openshift-release-dev/ocp-v4.0-art-dev:latest
+quay.io/rhpds/gitea-catalog:v2.1.0=registry.oc-mirror.svc.cluster.local:5000/rhpds/gitea-catalog:v2.1.0
+quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:c9f0041b0290be2d1e0f96f6727c3a70071105d6a83890e0a5503e9f77da8529=registry.oc-mirror.svc.cluster.local:5000/openshift-release-dev/ocp-v4.0-art-dev:latest
+registry.oc-mirror.svc.cluster.local:5000/openshift/graph-image:latest=registry.oc-mirror.svc.cluster.local:5000/openshift/graph-image:latest
+```
+- use this mapping to add entries in ACP **ImageDigestMirrorSet**. You can find an example in the [GEC folder](workloads/GEC/idms.yaml)
+
 
 You can access Oncite through ssh using the default username and password.
 

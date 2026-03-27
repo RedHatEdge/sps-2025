@@ -1,0 +1,16 @@
+[Unit]
+Description=Pull and tag images from mirrored registry
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /home/luferrar/Desktop/SPS/SPS25/sps-2025/workloads/GEC/pull_and_tag_images.sh
+#User=root
+#Group=root
+Nice=0
+IOSchedulingClass=realtime
+TimeoutStartSec=1h
+
+[Install]
+WantedBy=multi-user.target
