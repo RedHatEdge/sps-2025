@@ -27,6 +27,8 @@ data:
             - name: ansible-automation-platform-operator
               channels:
                 - name: stable-2.6
+                  minVersion: 'aap-operator.v2.6.0-0.1772556720'
+                  maxVersion: 'aap-operator.v2.6.0-0.1772556720'
             - name: kubernetes-nmstate-operator
               channels:
                 - name: stable
@@ -39,6 +41,8 @@ data:
             - name: openshift-gitops-operator
               channels:
                 - name: latest
+                  minVersion: 'openshift-gitops-operator.v1.19.2'
+                  maxVersion: 'openshift-gitops-operator.v1.19.2'
         - catalog: quay.io/rhpds/gitea-catalog:v2.1.0
           packages:
             - name: gitea-operator
