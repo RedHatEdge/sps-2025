@@ -1,6 +1,6 @@
 global:
   hostname: oncite
-  basedomain: YOUR-BASE-DOMAIN-TLD
+  basedomain: apps.acp.sps2025.com
   observe:
     enable: true
     mode: platform-openshift
