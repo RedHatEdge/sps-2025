@@ -11,6 +11,11 @@ virtualfactory:
 cxgateway:
   enable: false
 
+apache-kafka-operator:
+        k8sVersion:
+          major: "1"
+          minor: "33"
+          
 postgres:
   size: 64Gi
   backups:

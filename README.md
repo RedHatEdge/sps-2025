@@ -390,6 +390,26 @@ The [oc-mirror job](images/ipc4/oc-mirror/) mirrors all required CM MES images t
 
 ##### Helm charts deployment
 
+- Pull Secret: add pull secret from GEC to `run-oc-mirror-configjson-secret` secret under `oc-mirror` namespace. To do that modify it at the origin under `/etc/microshift/manifests.d/oc-mirror/secret.yaml` and restart Microshift
+- Image list: update the list of mirrored images under `/etc/microshift/manifests.d/oc-mirror/configmap.yaml` with the [images listed](workloads/GEC/HelmCharts/oncite-container-refs.txt), delete the ran job (`run-oc-mirror`) and restart Microshift to let the mirror job run
+- Modify the BASEDOMAIN value in the helm chart with a valid one
+- Charts available and version  
+  dps-operators - 26.2.0  
+  oncite-dps - 26.2.6  
+  doctrain - 9.1.0-rc.0  
+  k6doctrain - 9.1.0-rc.2  
+- ImageTagMirrorSet: since all images for Oncite are mirrored based on *tag* and not *digest*, we would need to delete and recreate the `ImageTagMirrorSet` of the cluster and add all [needed mapping](workloads/GEC/HelmCharts/bytag-mirror.yaml)
+- Installation 
+
+```bash
+$ oc new-project oncite-dps
+$ helm install dps-operators charts/dps-operators-26.2.0.tgz
+
+!!! SET BASEDOMAIN IN VALUESs
+!!! pls. organise a valid certificate for this domain 
+
+$ helm install oncite-dps -f oncite-dps-value-overwrite.yaml charts/oncite-dps-26.2.6.tgz
+```
 
 ##### VM install (Bootc image)
 The provided image is based on Bootc and will self install. The application is running as containerized microservices on embedded Microshift.  

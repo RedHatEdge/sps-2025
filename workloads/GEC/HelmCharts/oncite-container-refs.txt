@@ -1,62 +1,62 @@
-nexus.alm.oncite.io/docker/qt/doctrain/simulation_doctrain:9.1.0-rc.0
-nexus.alm.oncite.io/docker/keycloak/keycloak:26.4.7
-nexus.alm.oncite.io/docker/products/operators/apache-kafka-operator/amq-streams/bridge-rhel9:2.9.0
-nexus.alm.oncite.io/docker/products/operators/apache-kafka-operator/amq-streams/kafka-38-rhel9:2.9.0
-nexus.alm.oncite.io/docker/products/operators/apache-kafka-operator/amq-streams/kafka-39-rhel9:2.9.0
-nexus.alm.oncite.io/docker/products/operators/apache-kafka-operator/amq-streams/maven-builder-rhel9:2.9.0
-nexus.alm.oncite.io/docker/products/operators/apache-kafka-operator/amq-streams/strimzi-rhel9-operator:2.9.0
-nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-pgadmin4:ubi9-9.1-2513
-nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-pgbackrest:ubi9-2.54.2-2513
-nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-pgbouncer:ubi9-1.24-2513
-nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres-exporter:ubi9-0.16.0-2513
-nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres-gis:ubi8-15.12-3.3-0
-nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres-gis:ubi9-16.8-3.3-2513
-nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres-gis:ubi9-16.8-3.4-2513
-nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres-gis:ubi9-17.4-3.4-2513
-nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres-gis:ubi9-17.4-3.5-2513
-nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres:ubi8-15.12-0
-nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres:ubi9-16.8-2513
-nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres:ubi9-17.4-2513
-nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-upgrade:ubi9-17.4-2513
-nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/postgres-operator:ubi9-5.8.0-0
-nexus.alm.oncite.io/docker/products/operators/keycloak-operator:1.2.0
-nexus.alm.oncite.io/docker/products/operators/keycloak-providers/providers-image:1.3.0
-nexus.alm.oncite.io/docker/tools/images/gec-ubi:9.7.0
-nexus.alm.oncite.io/docker/tools/k6/k6doctrain:9.1.0-rc.2
-nexus.alm.oncite.io/docker/eclipse-mosquitto:2.0.18
-nexus.alm.oncite.io/docker/oauth2-proxy/oauth2-proxy:v7.14.2
-nexus.alm.oncite.io/docker/oauth2-proxy/oauth2-proxy:v7.6.0
-nexus.alm.oncite.io/docker/products/oncite-dps/dps-alloy:v1.13.2
-nexus.alm.oncite.io/docker/products/oncite-dps/dps-ingress:26.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/dps-loki:3.6.7
-nexus.alm.oncite.io/docker/products/oncite-dps/dps-observability:26.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/dps-onlinehelp:26.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/dps-portal:1.6.1
-nexus.alm.oncite.io/docker/products/oncite-dps/hmi/hmi-client:3.3.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-address-ui:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-attribute-service:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-configuration-ui:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-dashboard-ui:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-idgenerator-ui:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-kpi-service:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-kpi-ui:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-machinedata-ui:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-masterdata-service:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-masterdata-ui:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-portal-ui:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-productionview-ui:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-shiftplan-ui:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-smartmom-service:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-storage-service:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-storage-ui:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-testplan-ui:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-transactiondata-ui:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-transfer-service:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-usermanagement-ui:9.2.0
-nexus.alm.oncite.io/docker/products/oncite-dps/sse-mqtt-bridge:1.3.0
-nexus.alm.oncite.io/docker/products/oncite-dps/virtual-factory/frontends/vf-ui-frontend:2.4.1
-nexus.alm.oncite.io/docker/products/oncite-dps/virtual-factory/services/vf-asset-service:2.4.0
-nexus.alm.oncite.io/docker/products/oncite-dps/virtual-factory/services/vf-core-service:2.4.0
-nexus.alm.oncite.io/docker/products/oncite-dps/virtual-factory/services/vf-smartmom-service:2.4.0
-nexus.alm.oncite.io/docker/tools/images/gec-ubi:9.6.0
-nexus.alm.oncite.io/docker/tools/images/gec-ubi:9.7.0
+        - name: nexus.alm.oncite.io/docker/qt/doctrain/simulation_doctrain:9.1.0-rc.0
+        - name: nexus.alm.oncite.io/docker/keycloak/keycloak:26.4.7
+        - name: nexus.alm.oncite.io/docker/products/operators/apache-kafka-operator/amq-streams/bridge-rhel9:2.9.0
+        - name: nexus.alm.oncite.io/docker/products/operators/apache-kafka-operator/amq-streams/kafka-38-rhel9:2.9.0
+        - name: nexus.alm.oncite.io/docker/products/operators/apache-kafka-operator/amq-streams/kafka-39-rhel9:2.9.0
+        - name: nexus.alm.oncite.io/docker/products/operators/apache-kafka-operator/amq-streams/maven-builder-rhel9:2.9.0
+        - name: nexus.alm.oncite.io/docker/products/operators/apache-kafka-operator/amq-streams/strimzi-rhel9-operator:2.9.0
+        - name: nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-pgadmin4:ubi9-9.1-2513
+        - name: nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-pgbackrest:ubi9-2.54.2-2513
+        - name: nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-pgbouncer:ubi9-1.24-2513
+        - name: nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres-exporter:ubi9-0.16.0-2513
+        - name: nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres-gis:ubi8-15.12-3.3-0
+        - name: nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres-gis:ubi9-16.8-3.3-2513
+        - name: nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres-gis:ubi9-16.8-3.4-2513
+        - name: nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres-gis:ubi9-17.4-3.4-2513
+        - name: nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres-gis:ubi9-17.4-3.5-2513
+        - name: nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres:ubi8-15.12-0
+        - name: nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres:ubi9-16.8-2513
+        - name: nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-postgres:ubi9-17.4-2513
+        - name: nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/crunchy-upgrade:ubi9-17.4-2513
+        - name: nexus.alm.oncite.io/docker/products/operators/crunchy-postgres-operator/crunchydata/postgres-operator:ubi9-5.8.0-0
+        - name: nexus.alm.oncite.io/docker/products/operators/keycloak-operator:1.2.0
+        - name: nexus.alm.oncite.io/docker/products/operators/keycloak-providers/providers-image:1.3.0
+        - name: nexus.alm.oncite.io/docker/tools/images/gec-ubi:9.7.0
+        - name: nexus.alm.oncite.io/docker/tools/k6/k6doctrain:9.1.0-rc.2
+        - name: nexus.alm.oncite.io/docker/eclipse-mosquitto:2.0.18
+        - name: nexus.alm.oncite.io/docker/oauth2-proxy/oauth2-proxy:v7.14.2
+        - name: nexus.alm.oncite.io/docker/oauth2-proxy/oauth2-proxy:v7.6.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/dps-alloy:v1.13.2
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/dps-ingress:26.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/dps-loki:3.6.7
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/dps-observability:26.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/dps-onlinehelp:26.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/dps-portal:1.6.1
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/hmi/hmi-client:3.3.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-address-ui:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-attribute-service:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-configuration-ui:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-dashboard-ui:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-idgenerator-ui:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-kpi-service:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-kpi-ui:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-machinedata-ui:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-masterdata-service:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-masterdata-ui:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-portal-ui:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-productionview-ui:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-shiftplan-ui:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-smartmom-service:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-storage-service:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-storage-ui:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-testplan-ui:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-transactiondata-ui:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-transfer-service:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/smartmom-suite/smom-usermanagement-ui:9.2.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/sse-mqtt-bridge:1.3.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/virtual-factory/frontends/vf-ui-frontend:2.4.1
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/virtual-factory/services/vf-asset-service:2.4.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/virtual-factory/services/vf-core-service:2.4.0
+        - name: nexus.alm.oncite.io/docker/products/oncite-dps/virtual-factory/services/vf-smartmom-service:2.4.0
+        - name: nexus.alm.oncite.io/docker/tools/images/gec-ubi:9.6.0
+        - name: nexus.alm.oncite.io/docker/tools/images/gec-ubi:9.7.0
