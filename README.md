@@ -399,17 +399,14 @@ The [oc-mirror job](images/ipc4/oc-mirror/) mirrors all required CM MES images t
   doctrain - 9.1.0-rc.0  
   k6doctrain - 9.1.0-rc.2  
 - ImageTagMirrorSet: since all images for Oncite are mirrored based on *tag* and not *digest*, we would need to delete and recreate the `ImageTagMirrorSet` of the cluster and add all [needed mapping](workloads/GEC/HelmCharts/bytag-mirror.yaml)
-- Installation 
+- Installation: install first the Helm charts (we are overriding kafka operator version because of installed kubernetes version) and then the application itself
+  
+  ```bash
+  $ oc new-project oncite-dps
+  $ helm install dps-operators charts/dps-operators-26.2.0.tgz -f kafka-operator-values.yaml
+  $ helm install oncite-dps -f oncite-dps-value-overwrite.yaml charts/oncite-dps-26.2.6.tgz
+  ```
 
-```bash
-$ oc new-project oncite-dps
-$ helm install dps-operators charts/dps-operators-26.2.0.tgz
-
-!!! SET BASEDOMAIN IN VALUESs
-!!! pls. organise a valid certificate for this domain 
-
-$ helm install oncite-dps -f oncite-dps-value-overwrite.yaml charts/oncite-dps-26.2.6.tgz
-```
 
 ##### VM install (Bootc image)
 The provided image is based on Bootc and will self install. The application is running as containerized microservices on embedded Microshift.  
@@ -478,7 +475,7 @@ quay.io/rhpds/gitea-catalog:v2.1.0=registry.oc-mirror.svc.cluster.local:5000/rhp
 quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:c9f0041b0290be2d1e0f96f6727c3a70071105d6a83890e0a5503e9f77da8529=registry.oc-mirror.svc.cluster.local:5000/openshift-release-dev/ocp-v4.0-art-dev:latest
 registry.oc-mirror.svc.cluster.local:5000/openshift/graph-image:latest=registry.oc-mirror.svc.cluster.local:5000/openshift/graph-image:latest
 ```
-- use this mapping to add entries in ACP **ImageDigestMirrorSet**. You can find an example in the [GEC folder](workloads/GEC/idms.yaml)
+- use this mapping to add entries in ACP **ImageDigestMirrorSet**. You can find an example in the [GEC folder](workloads/GEC/VM/idms.yaml)
 
 You can access Oncite through ssh using the default username and password.
 

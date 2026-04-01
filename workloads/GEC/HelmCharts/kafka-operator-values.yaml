@@ -1,0 +1,4 @@
+apache-kafka-operator:
+  k8sVersion:
+    major: "1"
+    minor: "33"

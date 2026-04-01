@@ -11,12 +11,13 @@ virtualfactory:
 cxgateway:
   enable: false
 
-apache-kafka-operator:
-        k8sVersion:
-          major: "1"
-          minor: "33"
-          
+kafka:
+  storageClass: "lvms-node0-local-storage-immediate"
+
+
 postgres:
+  labels:
+    mylabel: "hello"
   size: 64Gi
   backups:
     pgbackrest:
