@@ -1,0 +1,16 @@
+global:
+  observe:
+    enable: true
+    mode: default
+virtualfactory:
+  enable: true
+cxgateway:
+  enable: false
+observe:
+  enable: true
+hmiclient:
+  enable: true
+smartbi:
+  enable: true
+ssemqttbridge:
+  enable: true

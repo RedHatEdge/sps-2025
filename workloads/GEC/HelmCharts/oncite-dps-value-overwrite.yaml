@@ -1,0 +1,38 @@
+global:
+  hostname: oncite
+  basedomain: YOUR-BASE-DOMAIN-TLD
+  observe:
+    enable: true
+    mode: platform-openshift
+
+virtualfactory:
+  enable: true
+
+cxgateway:
+  enable: false
+
+postgres:
+  size: 64Gi
+  backups:
+    pgbackrest:
+      global:
+        repo1-retention-full: '4'
+        repo1-retention-full-type: time
+        repo1-retention-history: '0'
+      manual:
+        repoName: repo1
+        options:
+          - '--type=full'
+      repos:
+        - name: repo1
+          schedules:
+            differential: 0 21 * * 1-6
+            full: 0 21 * * 0  
+          volume:
+            volumeClaimSpec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 256Gi
+

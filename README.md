@@ -298,7 +298,7 @@ Some additional tweaks:
 - Flightctl manages IPC4 itself
   ![alt text](image-4.png)
 
-  
+
 ### Setup Nvidia Jetson
 
 ## Workloads
@@ -386,7 +386,12 @@ The [oc-mirror job](images/ipc4/oc-mirror/) mirrors all required CM MES images t
 2. Update the pull secret as above if the CM credentials have changed.
 3. Restart MicroShift to re-run the oc-mirror job.
 
-#### German Edge Cloud
+#### German Edge Cloud Oncite
+
+##### Helm charts deployment
+
+
+##### VM install (Bootc image)
 The provided image is based on Bootc and will self install. The application is running as containerized microservices on embedded Microshift.  
 Step for deployment:
 
@@ -454,9 +459,9 @@ quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:c9f0041b0290be2d1e0f96f672
 registry.oc-mirror.svc.cluster.local:5000/openshift/graph-image:latest=registry.oc-mirror.svc.cluster.local:5000/openshift/graph-image:latest
 ```
 - use this mapping to add entries in ACP **ImageDigestMirrorSet**. You can find an example in the [GEC folder](workloads/GEC/idms.yaml)
-- can then modify the entries under `/etc/containers/registries.conf.d/999-microshift-mirror.conf` inside the GEC vm to fix the mapping between public and private mirror
 
 You can access Oncite through ssh using the default username and password.
+
 
 #### MQTT Broker
 

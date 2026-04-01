@@ -9,7 +9,7 @@ inventory.yaml
 build-args.txt
 notes.txt
 kickstarts/josh-testing.ks
-charts/
 *.env
-pull-secret
+pull-secret*
+pullsecret*
 oc-mirror*

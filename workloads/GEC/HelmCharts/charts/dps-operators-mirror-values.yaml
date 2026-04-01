@@ -1,0 +1,4 @@
+global:
+  observe:
+    enable: true
+    mode: default
