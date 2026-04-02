@@ -28,21 +28,25 @@ data:
               channels:
                 - name: stable-2.6
                   minVersion: 'aap-operator.v2.6.0-0.1772556720'
-                  maxVersion: 'aap-operator.v2.6.0-0.1772556720'
+                  maxVersion: 'aap-operator.v2.6.0-0.1774648945'
             - name: kubernetes-nmstate-operator
               channels:
                 - name: stable
             - name: kubevirt-hyperconverged
               channels:
                 - name: stable
+                  minVersion: 'hyperconverged-cluster-operator.v4.20.8'
+                  maxVersion: 'hyperconverged-cluster-operator.v4.20.8'
             - name: lvms-operator
               channels:
                 - name: stable-4.20
+                  minVersion: 'lvms-operator.v4.20.0'
+                  maxVersion: 'lvms-operator.v4.20.0'
             - name: openshift-gitops-operator
               channels:
                 - name: latest
                   minVersion: 'openshift-gitops-operator.v1.19.2'
-                  maxVersion: 'openshift-gitops-operator.v1.19.2'
+                  maxVersion: 'openshift-gitops-operator.v1.20.0'
         - catalog: quay.io/rhpds/gitea-catalog:v2.1.0
           packages:
             - name: gitea-operator
