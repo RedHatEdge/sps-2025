@@ -46,7 +46,7 @@ data:
               channels:
                 - name: latest
                   minVersion: 'openshift-gitops-operator.v1.19.2'
-                  maxVersion: 'openshift-gitops-operator.v1.20.0'
+                  maxVersion: 'openshift-gitops-operator.v1.20.1'
         - catalog: quay.io/rhpds/gitea-catalog:v2.1.0
           packages:
             - name: gitea-operator
@@ -57,6 +57,8 @@ data:
         - name: registry.redhat.io/ansible-automation-platform-26/ee-supported-rhel9@sha256:8b51f6026000a9f63e8d548e5d4c7b630425bc4504819ceeef97eea691653cd2
         - name: quay.io/luferrar/sps@sha256:986b04077494891165caf55010eca39a3352d58ecd336be1cf7ad4f1d7c4515b
         - name: registry.redhat.io/openshift4/ose-cli@sha256:69762925e16053d77685ff3a08b3b45dd2bfa5d68277851bc6969b368bbd0cb9
+        # making sure certain operator images are included in the mirror, as they are required for the demo environment and might not be present in the default OCP mirror
+        - name: registry.redhat.io/openshift-gitops-1/gitops-rhel9-operator@sha256:fd980bdf8227af7685025b9153005945252cd27798fae276e2775d895bc90ba6
         # CustomerEnvironment_cmf-sps-demo-agent
         - name: criticalmanufacturing.io/3rd-party/traefik:3.5.2
         - name: criticalmanufacturing.io/customerportal/edge-forward-proxy:11.2.0
