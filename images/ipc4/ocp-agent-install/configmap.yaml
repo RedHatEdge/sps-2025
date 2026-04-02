@@ -356,35 +356,35 @@ data:
       - registry-oc-mirror.apps.ipc4.sps2025.com/openshift4/ose-kubernetes-nmstate-handler-rhel9
       source: registry.redhat.io/openshift4/ose-kubernetes-nmstate-handler-rhel9
     - mirrors:
-      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/argocd-agent-rhel8
-      source: registry.redhat.io/openshift-gitops-1/argocd-agent-rhel8
+      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/argocd-agent-rhel9
+      source: registry.redhat.io/openshift-gitops-1/argocd-agent-rhel9
     - mirrors:
-      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/argocd-extensions-rhel8
-      source: registry.redhat.io/openshift-gitops-1/argocd-extensions-rhel8
+      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/argocd-extensions-rhel9
+      source: registry.redhat.io/openshift-gitops-1/argocd-extensions-rhel9
     - mirrors:
-      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/argocd-rhel8
-      source: registry.redhat.io/openshift-gitops-1/argocd-rhel8
+      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/argocd-rhel9
+      source: registry.redhat.io/openshift-gitops-1/argocd-rhel9
     - mirrors:
-      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/argo-rollouts-rhel8
-      source: registry.redhat.io/openshift-gitops-1/argo-rollouts-rhel8
+      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/argo-rollouts-rhel9
+      source: registry.redhat.io/openshift-gitops-1/argo-rollouts-rhel9
     - mirrors:
-      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/console-plugin-rhel8
-      source: registry.redhat.io/openshift-gitops-1/console-plugin-rhel8
+      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/console-plugin-rhel9
+      source: registry.redhat.io/openshift-gitops-1/console-plugin-rhel9
     - mirrors:
-      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/dex-rhel8
-      source: registry.redhat.io/openshift-gitops-1/dex-rhel8
+      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/dex-rhel9
+      source: registry.redhat.io/openshift-gitops-1/dex-rhel9
     - mirrors:
       - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/gitops-operator-bundle
       source: registry.redhat.io/openshift-gitops-1/gitops-operator-bundle
     - mirrors:
-      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/gitops-rhel8
-      source: registry.redhat.io/openshift-gitops-1/gitops-rhel8
+      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/gitops-rhel9
+      source: registry.redhat.io/openshift-gitops-1/gitops-rhel9
     - mirrors:
-      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/gitops-rhel8-operator
-      source: registry.redhat.io/openshift-gitops-1/gitops-rhel8-operator
+      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/gitops-rhel9-operator
+      source: registry.redhat.io/openshift-gitops-1/gitops-rhel9-operator
     - mirrors:
-      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/must-gather-rhel8
-      source: registry.redhat.io/openshift-gitops-1/must-gather-rhel8
+      - registry-oc-mirror.apps.ipc4.sps2025.com/openshift-gitops-1/must-gather-rhel9
+      source: registry.redhat.io/openshift-gitops-1/must-gather-rhel9
     - mirrors:
       - registry-oc-mirror.apps.ipc4.sps2025.com/rhel9/postgresql-15
       source: registry.redhat.io/rhel9/postgresql-15
