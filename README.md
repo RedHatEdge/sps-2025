@@ -282,15 +282,17 @@ oc -n oc-mirror replace --save-config --force -f -
 ```
 
 #### Additional disconnected procedures
+
 Some additional tweaks:
 
 - Disabled [Insights reporting](https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html-single/support/index#insights-operator-new-pull-secret_remote-health-reporting)
 - Disabled cluster updates checks: cleared `spec.channel` in the ClusterVersion object
-- configured NTP in disconnected environment with [MachineConfig](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/machine_configuration/machine-configs-configure#installation-special-config-chrony_machine-configs-configure), pointing at IPC4 NTP service running on Microshift (UDP:123) Master `MachineConfig` is required
+- configured NTP in disconnected environment with [MachineConfig](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/machine_configuration/machine-configs-configure#installation-special-config-chrony_machine-configs-configure), pointing at IPC4 NTP service running on Microshift (UDP:123) Master `MachineConfig` is [required](images/ntp/99-master-chrony.bu)
 - added local users using [htpasswd identity provider](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/configuring-identity-providers). You can check the systems credentials repo for a list of created users.
 - I also setup for good practice a Script that wakes up and shutdowns ACP Monday to Friday (office hours), using IPMI, ssh and Ansible. You can find such scripts on IPC3 under `Script` directory. The systemd services are triggered by timer, on local admin user.  
 - I added Flightctl on IPC4 to manage any Bootc image in this environment. You can find that at https://ui.apps.ipc4.sps2025.com accessible from IPC3 browser. To login you can generate a service account token like this: `oc create token flightctl-admin -n flightctl --duration=24h` directly on IPC4 which is running *Microshift* and *Flightctl*. Flightctl cli tool is also found on IPC4 so you can generate the config and the token like this:  
   ```bash
+  $ oc create token flightctl-admin -n flightctl --duration=100h
   $ flightctl login https://api.apps.ipc4.sps2025.com -t ${K8S_TOKEN}
   $ flightctl certificate request --signer=enrollment --expiration=365d --output=embedded > config.yaml
   ```
