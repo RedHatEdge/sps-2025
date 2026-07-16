@@ -12,8 +12,8 @@ data:
             allow-query { any; };
             allow-recursion { any; };
             forwarders {
-                    8.8.8.8;
-                    1.1.1.1;
+                    10.45.248.15;
+                    10.11.5.19;
             };
     };
     include "/etc/named/files.zones";
