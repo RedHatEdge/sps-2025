@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# setup-storage.service runs on every boot. Guard against re-provisioning
+# (and destroying) an already-configured volume group.
+if vgs --noheadings -o vg_name 2>/dev/null | grep -qx ' *microshift-storage'; then
+    echo "Volume group 'microshift-storage' already exists, skipping disk initialization."
+    vgchange --addtag @lvms microshift-storage
+    exit 0
+fi
+
 echo "Searching for an unpartitioned secondary disk..."
 
 # Detect the root disk device (e.g. /dev/sda)
@@ -40,6 +48,6 @@ echo "Initializing for LVM..."
 sgdisk -Z "$CANDIDATE"
 sleep 1
 pvcreate "$CANDIDATE"
-vgcreate microshift-storage "$CANDIDATE"
+vgcreate --addtag @lvms microshift-storage "$CANDIDATE"
 
 echo "Volume group 'microshift-storage' created successfully on $CANDIDATE."
