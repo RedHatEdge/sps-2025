@@ -1,0 +1,6 @@
+resources:
+- csr-approver-ns.yaml
+- csr-approver-sa.yaml
+- csr-approver-rbac.yaml
+- csr-approver-script-cm.yaml
+- csr-approver-cronjob.yaml

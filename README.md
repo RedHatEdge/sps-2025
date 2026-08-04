@@ -149,7 +149,7 @@ openshift-storage                      vg-manager-nlrqd                         
 
 At this point, connect your computer to the internal demo network - you should get an address in the `192.168.100.0/24` subnet, and have internet access.
 
-### Setup the ACP
+### Setup the SNO (ACP)
 The ACP setup is an agent-based install using a local mirror registry located on IPC4. A job on IPC4 will generate the installation ISO for you, all you need to do is download it, mount it to the target installation device, and boot from it. The install should happen automatically from there.
 
 To download the installation ISO, grab it from IPC4:
@@ -305,7 +305,8 @@ Some additional tweaks:
 
 ## Workloads
 
-### GitOps & Gitea manual deployment
+### IPC4
+#### GitOps & Gitea manual deployment 
 
 Gitea and GitOps are preinstalled, but we will add the steps here in case you want to reproduce the gitops style deployment somewhere else.
 
@@ -364,12 +365,12 @@ In case you want to deploy applications across different spoke / managed cluster
 We can now create helm charts and / or kustomize files to sync Applications to managed clusters.  
 The basic ACP services have already been deployed and the source can be found [here](https://github.com/RedHatEdge/acp-standard-services-public/tree/dev)  
 
-### Nvidia GPU device
+### Nvidia Jetson  
+#### Defect detector application
+For Device flashing and GPU application deployment you can find the instructions [here](https://github.com/lucamaf/edge-defect-detector)
 
-#### Defect recognition application
 
-### ACP
-
+### Single Node Openshift (ACP)  
 #### MES Critical Manufacturing
 
 The [oc-mirror job](images/ipc4/oc-mirror/) mirrors all required CM MES images to the local registry on ipc4 for disconnected installation.
@@ -412,7 +413,7 @@ The [oc-mirror job](images/ipc4/oc-mirror/) mirrors all required CM MES images t
 - installed **acme.sh** on **IPC3** to generate a valid certificate for the SPA [application Ingress](https://oncite.apps.acp.sps2025.com). Had to buy a valid domain (**sps2025.com**) to perform validation on AWS Route53
 
 
-##### VM install (Bootc image)
+##### VM install (Bootc image) DEPRECATED APPROACH
 The provided image is based on Bootc and will self install. The application is running as containerized microservices on embedded Microshift.  
 Step for deployment:
 

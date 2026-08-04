@@ -1,0 +1,51 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: csr-approver-script
+  namespace: csr-approver
+data:
+  approve-csrs.sh: |
+    #!/bin/sh
+    set -eu
+
+    # Only auto-approve CSRs for these signers, and only when requested by a
+    # node identity (self-renewal) or the machine-config-operator's
+    # node-bootstrapper. This mirrors exactly what an admin would otherwise
+    # do by hand after a node comes back up with expired certificates -
+    # nothing else is eligible for auto-approval.
+    ALLOWED_SIGNERS="kubernetes.io/kubelet-serving kubernetes.io/kube-apiserver-client kubernetes.io/kube-apiserver-client-kubelet"
+
+    for csr in $(oc get csr -o jsonpath='{.items[*].metadata.name}'); do
+      conditions=$(oc get csr "$csr" -o jsonpath='{.status.conditions[*].type}' 2>/dev/null || true)
+      case "$conditions" in
+        *Approved*|*Denied*)
+          continue
+          ;;
+      esac
+
+      signer=$(oc get csr "$csr" -o jsonpath='{.spec.signerName}')
+      requester=$(oc get csr "$csr" -o jsonpath='{.spec.username}')
+
+      signer_allowed=false
+      for s in $ALLOWED_SIGNERS; do
+        [ "$signer" = "$s" ] && signer_allowed=true && break
+      done
+
+      if [ "$signer_allowed" != true ]; then
+        echo "Skipping $csr: signer '$signer' not in allow-list"
+        continue
+      fi
+
+      case "$requester" in
+        system:node:*|system:serviceaccount:openshift-machine-config-operator:node-bootstrapper)
+          echo "Approving $csr (signer=$signer, requester=$requester)"
+          oc adm certificate approve "$csr"
+          ;;
+        *)
+          echo "Skipping $csr: requester '$requester' does not match allowed pattern"
+          ;;
+      esac
+    done
+
+    echo "Done."

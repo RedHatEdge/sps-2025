@@ -1,0 +1,45 @@
+---
+# Least-privilege role: can only read CSRs and approve the specific
+# node/kubelet signers, not arbitrary certificate signing.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: csr-approver
+rules:
+  - apiGroups:
+      - certificates.k8s.io
+    resources:
+      - certificatesigningrequests
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - certificates.k8s.io
+    resources:
+      - certificatesigningrequests/approval
+    verbs:
+      - update
+  - apiGroups:
+      - certificates.k8s.io
+    resources:
+      - signers
+    resourceNames:
+      - kubernetes.io/kube-apiserver-client-kubelet
+      - kubernetes.io/kubelet-serving
+      - kubernetes.io/kube-apiserver-client
+    verbs:
+      - approve
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: csr-approver
+subjects:
+  - kind: ServiceAccount
+    name: csr-approver
+    namespace: csr-approver
+roleRef:
+  kind: ClusterRole
+  name: csr-approver
+  apiGroup: rbac.authorization.k8s.io

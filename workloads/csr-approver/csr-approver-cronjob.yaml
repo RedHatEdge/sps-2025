@@ -1,0 +1,45 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: csr-approver
+  namespace: csr-approver
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          serviceAccountName: csr-approver
+          restartPolicy: OnFailure
+          containers:
+            - name: csr-approver
+              # Same image the "openshift/cli" imagestream resolves to.
+              # Referenced directly (not via the internal registry service
+              # hostname) since that requires cluster DNS resolution that
+              # isn't reliably available to the node's image-pull path here;
+              # this digest is covered by the cluster's ImageDigestMirrorSet
+              # and pulls through the local mirror on IPC4.
+              image: quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:1a4195c6ae1e0d71d0ef1505a108a133e2d0a2fe3032035f30b6310c3df2e688
+              command:
+                - /bin/sh
+                - /scripts/approve-csrs.sh
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  cpu: 100m
+                  memory: 64Mi
+          volumes:
+            - name: script
+              configMap:
+                name: csr-approver-script
+                defaultMode: 0755

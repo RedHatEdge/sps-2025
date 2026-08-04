@@ -1,4 +1,6 @@
 .venv
+.vscode
+.claude
 values.yaml
 scratch
 inventory.yaml
