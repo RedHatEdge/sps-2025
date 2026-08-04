@@ -709,6 +709,8 @@ data:
                                 disabled: true
                               lightspeed:
                                 disabled: true
+                          pipelines:
+                            version: latest
                   ---
                   apiVersion: machineconfiguration.openshift.io/v1
                   kind: MachineConfig

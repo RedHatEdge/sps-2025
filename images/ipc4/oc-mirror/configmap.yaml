@@ -47,6 +47,9 @@ data:
                 - name: latest
                   minVersion: 'openshift-gitops-operator.v1.19.2'
                   maxVersion: 'openshift-gitops-operator.v1.20.1'
+            - name: openshift-pipelines-operator-rh
+              channels:
+                - name: latest
         - catalog: quay.io/rhpds/gitea-catalog:v2.1.0
           packages:
             - name: gitea-operator

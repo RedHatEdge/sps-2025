@@ -56,13 +56,14 @@ Other helpers placed by the image include networking and storage setup systemd u
 
 - The `acp-standard-services` Application installs a set of operators and charts on ACP. The `ImageSetConfiguration` and `oc-mirror` ensure required operator catalogs and images are available from the IPC4 mirror so the ACP installation and subsequent ArgoCD sync can use them offline.
 
-Key operator/components included by the chart (see the rendered manifest in the ConfigMap):
+Key operator/components included by the chart (see the rendered manifest in the [ConfigMap](images/ipc4/ocp-agent-install/configmap.yaml) starting at line 666):
 
 - `ansible-automation-platform-operator` (stable-2.6)
 - `kubernetes-nmstate-operator`
 - `kubevirt-hyperconverged`
 - `lvms-operator`
 - `openshift-gitops-operator` (ArgoCD)
+- `openshift-pipelines-operator` (Tekton)
 
 The `acp-standard-services` app also sets local storage configuration (device classes, force-wipe options), virtualization flags, and other values that control how services are deployed on the ACP nodes. Refer to the `apply-acp-standard-services` job in [images/ipc4/ocp-agent-install/configmap.yaml](images/ipc4/ocp-agent-install/configmap.yaml) for the exact applied YAML fragment.
 

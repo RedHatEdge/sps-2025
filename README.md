@@ -391,8 +391,6 @@ The [oc-mirror job](images/ipc4/oc-mirror/) mirrors all required CM MES images t
 
 #### German Edge Cloud Oncite
 
-##### Helm charts deployment
-
 - Pull Secret: add pull secret from GEC to `run-oc-mirror-configjson-secret` secret under `oc-mirror` namespace. To do that modify it at the origin under `/etc/microshift/manifests.d/oc-mirror/secret.yaml` and restart Microshift
 - Image list: update the list of mirrored images under `/etc/microshift/manifests.d/oc-mirror/configmap.yaml` with the [images listed](workloads/GEC/HelmCharts/oncite-container-refs.txt), delete the ran job (`run-oc-mirror`) and restart Microshift to let the mirror job run
 - Modify the BASEDOMAIN value in the helm chart with a valid one
@@ -413,7 +411,6 @@ The [oc-mirror job](images/ipc4/oc-mirror/) mirrors all required CM MES images t
 - installed **acme.sh** on **IPC3** to generate a valid certificate for the SPA [application Ingress](https://oncite.apps.acp.sps2025.com). Had to buy a valid domain (**sps2025.com**) to perform validation on AWS Route53
 
 
-
 #### MQTT Broker
 
 We will be using Mosquitto as MQTT Broker, you can find the related manifests in the [folder](workloads/mqtt-broker/)
@@ -430,6 +427,25 @@ These can be pushed to our Gitea repo and synced as ArgoCD Application.
 You can now access the broker using a client like [MQTT5 Explorer](https://github.com/Omniaevo/mqtt5-explorer). You would require with the current configuration a valid username / password `admin:password`  
 
 ![mqtt explorer](workloads/mqtt-broker/mqtt-explorer.png)
+
+#### Codesys IDE (win11 on OCP-V)
+
+Adapted from [here](https://github.com/kubevirt/kubevirt-tekton-tasks/tree/main/templates-pipelines/windows-efi-installer)
+
+1. Obtain Windows 11 ISO download URL
+    - Go to https://www.microsoft.com/en-us/software-download/windows11
+    - Fill in the edition and English language (other languages need to be updated in windows11-autounattend ConfigMap) and go to the download page.
+    - Right-click on the 64-bit download button and copy the download link. The link should be valid for 24 hours.
+2. Download WIN11 iso on IPC3  
+   `$ curl "https://software.download.prss.microsoft.com/dbazure/Win11_25H2_EnglishInternational_x64.iso?t=A_TOKEN" -o win11_x64.iso`
+3. Create a new project (for example `codesys`)
+4. Create the configmap that contains the [unattended.xml file](https://raw.githubusercontent.com/kubevirt/kubevirt-tekton-tasks/refs/heads/main/release/pipelines/windows-efi-installer/configmaps/windows-efi-installer-configmaps.yaml):  
+   `$ oc --kubeconfig kubeconfig -n codesys create -f WIN11/windows-efi-installer-configmaps.yaml`  
+5. Run the pipeline that download, imports, create golden image of WIN11 (using unattended configuration):  
+   `$ oc --kubeconfig kubeconfig create -f WIN11/pipelineruns.yaml`  
+6.   
+Before getting to the WIN11 installation wizard, make sure to assing a `e1000` network driver to the VMI, Windows doesn't like `virtio` card much at first installation. After that, make sure to make the switch, since `virtio` network card is much more performant (install the local virtio-win drivers).  
+In case you cannot connect, make sure to check this blog entry to terminate installation offline: https://medium.com/@zorozeri/windows-11-arm-having-no-network-connection-on-vmware-fusion-pro-5b06e894811e  
 
 #### OPCUA Manufacturing Server (simulated process)
 
@@ -467,17 +483,7 @@ You can find the relative manifests in the [folder](workloads/defect-rec-sim/)
 Installed the ISM container on ACP to provide more detailed information about the server and running OS to iDrac.
 
 
-#### Windows 11 VM on OCP-V - Codesys IDE
 
-Download WIN11 iso on IPC4
-curl "https://software.download.prss.microsoft.com/dbazure/Win11_25H2_EnglishInternational_x64.iso?t=7129ee82-c634-44f0-9c52-4ed124f901a0&P1=1762599991&P2=601&P3=2&P4=FSo6iBj9ZQroci78wN7HIc8amPneeoGTgvPzkZSqmHMDacqYQw0u1drkD%2f%2bUfI7N8VoVpv3KEUbrkfQDTyxWe73dlR3OnATkrXNQShTGMZY8bdQAa5rjLnAXDs8XBQ2i%2fc9BrNghPBKHddps0us5NzPMlzy%2b%2bowTLfhU0BJTaWT2ZXs5cewxY9E4uPh51bdRnb2DCsZiTmWxA8QkjbV7s0%2byVVFBl%2f8GWfzASMoFuSG%2f%2bQZ0LjVv%2bPtUhR9oQbnJeScCzLDPopzSiCduMiQoxf8NhGDp6VA%2f%2fwg3p7IW50eJa9890ud1IDZOLoMMCh4sPynK63DKtyrQmccgviuUTg%3d%3d" -o win11_x64.iso
-https://github.com/kubevirt/kubevirt-tekton-tasks/tree/main/templates-pipelines/windows-efi-installer  
-Install OpenShift Pipelines TODO add it to the Gitops in Gitea  
-Create a new project (for example codesys)  
-Create the configmap that contains the unattended.xml file: https://raw.githubusercontent.com/kubevirt/kubevirt-tekton-tasks/refs/heads/main/release/pipelines/windows-efi-installer/configmaps/windows-efi-installer-configmaps.yaml oc --kubeconfig kubeconfig -n codesys create -f WIN11/windows-efi-installer-configmaps.yaml  
-Run the pipeline that download, imports, create golden image of win11 (using unattended configuration): oc --kubeconfig kubeconfig create -f WIN11/pipelineruns.yaml  
-Before getting to the WIN11 installation wizard, make sure to assing a `e1000` network driver to the VMI, Windows doesn't like `virtio` card much at first installation. After that, make sure to make the switch, since `virtio` network card is much more performant (install the local virtio-win drivers).  
-In case you cannot connect, make sure to check this blog entry to terminate installation offline: https://medium.com/@zorozeri/windows-11-arm-having-no-network-connection-on-vmware-fusion-pro-5b06e894811e  
 
 ## Access to systems for SPS 2025  
 
