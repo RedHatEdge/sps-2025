@@ -463,6 +463,13 @@ Windows VM creation adapted from [here](https://github.com/kubevirt/kubevirt-tek
 
 In case you cannot connect, make sure to check this blog entry to terminate installation offline: https://medium.com/@zorozeri/windows-11-arm-having-no-network-connection-on-vmware-fusion-pro-5b06e894811e  
 
+### Ethernet/IP IO - Groov Opto22
+To find devices on the network install [groov find](workloads/ETH-IP-IO-Module/groovFind.exe)
+
+
+### Ethernet/IP Drive - AppliedMotion TSM23X3B-IP
+To find the drive on the network install their [step-servo-tuner](workloads/ETH-IP-StepServoDrive/Step-Servo-Quick-Tuner-Setup-3.0.21.1120(AMP).exe)
+
 #### OPCUA Manufacturing Server (simulated process)
 
 Based on [this](https://github.com/lucamaf/edge-manufacturing-server?tab=readme-ov-file) we will be deploying a NOdeRED based OPCUA server, which simulates a process with multiple sensors.
