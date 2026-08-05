@@ -367,7 +367,7 @@ We can now create helm charts and / or kustomize files to sync Applications to m
 The basic ACP services have already been deployed and the source can be found [here](https://github.com/RedHatEdge/acp-standard-services-public/tree/dev)  
 
 ### Nvidia Jetson  
-#### Defect detector application
+#### Defect detector application  
 For Device flashing and GPU application deployment you can find the instructions [here](https://github.com/lucamaf/edge-defect-detector)
 
 
@@ -431,7 +431,7 @@ You can now access the broker using a client like [MQTT5 Explorer](https://githu
 
 #### Codesys IDE (win11 on OCP-V)
 
-Adapted from [here](https://github.com/kubevirt/kubevirt-tekton-tasks/tree/main/templates-pipelines/windows-efi-installer)
+Windows VM creation adapted from [here](https://github.com/kubevirt/kubevirt-tekton-tasks/tree/main/templates-pipelines/windows-efi-installer)
 
 1. Obtain Windows 11 ISO download URL
     - Go to https://www.microsoft.com/en-us/software-download/windows11
@@ -456,7 +456,11 @@ Adapted from [here](https://github.com/kubevirt/kubevirt-tekton-tasks/tree/main/
    - Type `delete partition override` to force-delete the protected partition without disabling the recovery agent first
    - Open **Disk Management** from the Start menu
    - Right-click your primary C: drive and select Extend Volume
-8. Enable Remote desktop in Windows and create a NodePort service to access WIN11 remotely
+8. Enable Remote desktop in Windows and create a NodePort service to access WIN11 remotely  
+9. Add optional feature OpenSSH server to Windows and enable ssh access, while adding a NodePort to it too
+10. Download Codesys IDE 3.5 SP22 and install complete
+11. Copy the project archive you find [here](workloads/Codesys/09_19_426pmRedHat_Demo_MarketingStand_Working.projectarchive). Remember to use GIT LFS to push and pull this file.  
+
 In case you cannot connect, make sure to check this blog entry to terminate installation offline: https://medium.com/@zorozeri/windows-11-arm-having-no-network-connection-on-vmware-fusion-pro-5b06e894811e  
 
 #### OPCUA Manufacturing Server (simulated process)
