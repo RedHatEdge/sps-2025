@@ -300,10 +300,11 @@ Some additional tweaks:
 - Flightctl manages IPC4 itself
   ![alt text](image-4.png)
 
-
-### Setup Nvidia Jetson
+#### Setup Nvidia Jetson device
+You can follow the instructions [here](https://github.com/lucamaf/edge-defect-detector#flashing-your-nvidia-device-to-latest-jetpack) to flash the device and then build a Bootc Image for it.  
 
 ## Workloads
+Basically eveything under [this folder](workloads/)
 
 ### IPC4
 #### GitOps & Gitea manual deployment 
@@ -455,7 +456,7 @@ Adapted from [here](https://github.com/kubevirt/kubevirt-tekton-tasks/tree/main/
    - Type `delete partition override` to force-delete the protected partition without disabling the recovery agent first
    - Open **Disk Management** from the Start menu
    - Right-click your primary C: drive and select Extend Volume
-   
+8. Enable Remote desktop in Windows and create a NodePort service to access WIN11 remotely
 In case you cannot connect, make sure to check this blog entry to terminate installation offline: https://medium.com/@zorozeri/windows-11-arm-having-no-network-connection-on-vmware-fusion-pro-5b06e894811e  
 
 #### OPCUA Manufacturing Server (simulated process)
