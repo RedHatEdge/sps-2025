@@ -440,11 +440,22 @@ Adapted from [here](https://github.com/kubevirt/kubevirt-tekton-tasks/tree/main/
    `$ curl "https://software.download.prss.microsoft.com/dbazure/Win11_25H2_EnglishInternational_x64.iso?t=A_TOKEN" -o win11_x64.iso`
 3. Create a new project (for example `codesys`)
 4. Create the configmap that contains the [unattended.xml file](https://raw.githubusercontent.com/kubevirt/kubevirt-tekton-tasks/refs/heads/main/release/pipelines/windows-efi-installer/configmaps/windows-efi-installer-configmaps.yaml):  
-   `$ oc --kubeconfig kubeconfig -n codesys create -f WIN11/windows-efi-installer-configmaps.yaml`  
-5. Run the pipeline that download, imports, create golden image of WIN11 (using unattended configuration):  
-   `$ oc --kubeconfig kubeconfig create -f WIN11/pipelineruns.yaml`  
-6.   
-Before getting to the WIN11 installation wizard, make sure to assing a `e1000` network driver to the VMI, Windows doesn't like `virtio` card much at first installation. After that, make sure to make the switch, since `virtio` network card is much more performant (install the local virtio-win drivers).  
+   `$ oc --kubeconfig kubeconfig -n codesys create -f workloads/WIN11-VM/windows-efi-installer-configmaps.yaml`  
+5. Run the pipeline that download, imports, create golden image of WIN11 (using unattended configuration) and delete the temp VMI:  
+   `$ oc --kubeconfig kubeconfig create -f workloads/WIN11-VM/pipelineruns.yaml`  
+6. Before starting the VM (*Create VM from InstanceType*), make sure to assing a `e1000` network driver to the VMI, Windows doesn't like `virtio` card much at first installation. After that, make sure to make to switch, since `virtio` network card is much more performant (after installing the `virtio-win` drivers). 
+7. In case you find with a smaller disk than expected, you can force delete the Recovery Partition(s) using `cmd`:
+   - Open the Windows Start menu, type `cmd`, right-click Command Prompt, and choose Run as administrator
+   - Type `diskpart` and press Enter to launch the tool
+   - Type `list disk` to view all connected storage drives
+   - Type `select disk X` (replace X with the disk number that contains your recovery partition, such as disk 0)
+   - Type `list partition` to display all partitions on that disk
+   - Identify the recovery partition number from the list (look for type "Recovery" or a matching size)
+   - Type `select partition Y` (replace Y with the recovery partition number, such as partition 4)
+   - Type `delete partition override` to force-delete the protected partition without disabling the recovery agent first
+   - Open **Disk Management** from the Start menu
+   - Right-click your primary C: drive and select Extend Volume
+   
 In case you cannot connect, make sure to check this blog entry to terminate installation offline: https://medium.com/@zorozeri/windows-11-arm-having-no-network-connection-on-vmware-fusion-pro-5b06e894811e  
 
 #### OPCUA Manufacturing Server (simulated process)

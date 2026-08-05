@@ -1,0 +1,31 @@
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: windows11-installer-run-
+  namespace: codesys
+spec:
+  params:
+    - name: winImageDownloadURL
+      value: "https://software.download.prss.microsoft.com/dbazure/Win11_25H2_English_x64_v2.iso?t=8be99aa8-1e1f-42aa-b377-a69c83ae6e14&P1=1785952196&P2=602&P3=2&P4=h1gXQ2xjMrdy5GhLG3pcymdwJ8mRfY%2fIBJbtQxHc3ozlZTjxOvUFfc%2fDJgf%2bGvuq5QBSKaEXFh6HRa8Hc9rFwJBNZYvL66IyjXKnmwi2dhyKnoHR37j1vda67z48LV5RRGABNrOMuTN47hUKFKCsagZJbT7wKH0FK6bmR2xOdp%2fo4TlJI80%2fWOSNSalbLYnXj9MkJ7SiFYvM0UJ%2bDXe102WUlqU1L7U2J2E%2fmUoJa9dDDeE%2bGCHG1TxGIcHws5SwLj3jxLzzOyZg3OI3iAhdrvzKu%2bpSnBY%2bD4C%2fcymIWTvrjNsPtiaTXOxMfPJexKUFGga2X0iGET8%2b%2fNJNs62t6Q%3d%3d" 
+    - name: acceptEula
+      value: true
+  pipelineRef:
+    resolver: hub
+    params:
+      - name: catalog
+        value: kubevirt-tekton-pipelines
+      - name: type
+        value: artifact
+      - name: kind
+        value: pipeline
+      - name: name
+        value: windows-efi-installer
+      - name: version
+        value: v0.24.0
+  taskRunSpecs:
+    - pipelineTaskName: "modify-windows-iso-file"
+      podTemplate:
+        securityContext:
+          runAsUser: 107
+          fsGroup: 107   
