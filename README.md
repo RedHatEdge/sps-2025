@@ -1,6 +1,4 @@
-
-
-# SPS-2025
+# SPS Munich-Singapore Lab
 This repository contains setup information/automation for the Red Hat demos for SPS 2025. It is provided "as-is", for educational and informative reasons only.
 
 ## Table of Contents
@@ -333,8 +331,30 @@ Some additional tweaks:
 - Flightctl manages IPC4 itself
   ![alt text](image-4.png)
 
-#### Setup Nvidia Jetson device
+### Setup Nvidia Jetson device
 You can follow the instructions [here](https://github.com/lucamaf/edge-defect-detector#flashing-your-nvidia-device-to-latest-jetpack) to flash the device and then build a Bootc Image for it.  
+
+### Setup Groov IO Modules
+Detailed specs for GroovIO Opto22: 
+
+![alt text](image-6.png)
+![alt text](image-5.png)
+
+![alt text](image-11.png)
+
+![alt text](image-12.png)
+
+
+### Setup AppliedMotion Servo Drive
+Detailed specs for TSM23X3B-IP: 
+![alt text](image-14.png)
+
+
+![alt text](image-9.png)
+![alt text](image-7.png)
+![alt text](image-8.png)
+![alt text](image-10.png)
+
 
 ## Workloads
 Basically eveything under [this folder](workloads/)
@@ -492,9 +512,18 @@ Windows VM creation adapted from [here](https://github.com/kubevirt/kubevirt-tek
 8. Enable Remote desktop in Windows and create a NodePort service to access WIN11 remotely  
 9. Add optional feature OpenSSH server to Windows and enable ssh access, while adding a NodePort to it too
 10. Download Codesys IDE 3.5 SP22 and install complete
-11. Copy the project archive you find [here](workloads/Codesys/09_19_426pmRedHat_Demo_MarketingStand_Working.projectarchive). Remember to use GIT LFS to push and pull this file.  
+11. Install Codesys Virtual Control for Linux SL too (the vPLC component)
+12. Copy the project archive you find [here](workloads/Codesys/09_19_426pmRedHat_Demo_MarketingStand_Working.projectarchive). Remember to use GIT LFS to push and pull this file.  
 
 In case you cannot connect, make sure to check this blog entry to terminate installation offline: https://medium.com/@zorozeri/windows-11-arm-having-no-network-connection-on-vmware-fusion-pro-5b06e894811e  
+
+#### Codesys Application
+On opening the project with Codesys IDE, do not update any library (as suggested) and download the missing devices description (with right click).
+For Groov RIO you can find the missing package in the Opto22 store: https://www.opto22.com/support/resources-tools/downloads/opto-22-library-package-for-codesys-development-sy
+Install it and the then right-click and perform an **Update device**, keep the preselected one, and click **Update**
+![alt text](image-13.png)
+
+For the AppliedMotion servo, install the [EDS](workloads/ETH-IP-StepServoDrive/TSM23XIP-XD%20r3.03.eds), from the **Device Repository** in Codesys IDE and the warning should clear.
 
 #### Ethernet/IP IO - Groov Opto22
 To find devices on the network install [groov find](workloads/ETH-IP-IO-Module/groovFind.exe)

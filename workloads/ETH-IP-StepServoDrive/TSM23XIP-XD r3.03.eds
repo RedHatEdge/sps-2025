@@ -1,0 +1,1217 @@
+$ EZ-EDS Version 3.21.1.20161208 Generated Electronic Data Sheet
+
+[File]
+        DescText = "TSM23XIP-XD Integrated StepSERVO Drive";
+        CreateDate = 06-18-2018;
+        CreateTime = 11:31:58;
+        ModDate = 06-27-2018;
+        ModTime = 06:37:06;
+        Revision = 3.2;
+        HomeURL = "www.applied-motion.com";
+
+[Device]
+    $ Applied Motion Products Vendor ID = 0x3C, 60 decimal
+        VendCode = 60;
+        VendName = "Applied Motion Products, Inc";
+        ProdType = 43;
+    $ Stepper Drive with vendor specific profile.
+        ProdTypeStr = "Generic Device";
+        ProdCode = 310;
+        MajRev = 3;
+        MinRev = 3;
+        ProdName = "TSM23XIP-XD";
+        Catalog = "TSM23XIP-XD";
+        Icon = "IMG_1542.ico";
+        IconContents =
+                "AAABAAEAQEAAAAAAIAAoQgAAFgAAACgAAABAAAAAgAAAAAEAIAAAAAAAAIAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAA4eHhKuPe4zfj4+M34+PjN+Pj4zfj4+M34+PjN+Pj4zfj"
+                "4+M34+PjN+Pj4zfj4+M34+PjN+Pj4zfj4+M34+PjN+Pj4zfj4+M34+PjN+Pj"
+                "4zfj4+M34+PjN+Pj4zfj4+M34+PjN+Pj4zfj4+M34+PjN+Pj4zfj4+M34+Pj"
+                "N+Pe4zfe3uM33t7jN97e4zfe3uM33t7jN97e4zfe3t433t7jN97e4zfe3t43"
+                "3t7eN97e3jfe3t433t7eN97e3jfe3t433t7eN97a3jfe2t433treN97a3jfe"
+                "2t432treN9ra3jfa2t432treN9ra2jfa2to32traN9ra2jfa2to32dnjG+Df"
+                "4LHg3+Dm4t/i5uLg4ubi4OLm4uDi5uLg4+bi4OPm4uDj5uLg4+bg4OPm4ODj"
+                "5uLg4+bi4OLm4uDj5uLg4+bi4OPm4+Lj5uPi5Obi4uPm4uLj5uLi5Obi4OPm"
+                "4uDj5uPg5Obj4OTm4uDj5uLg4+bg4OPm4ODj5uDf4+bf3uLm397g5t/e4Obf"
+                "3uDm393g5t/d4Obf3eDm3tzf5t7c3+bd3d/m3dzf5t3c3+bd3N7m3dze5t3c"
+                "3ubd3N7m3Nze5tzb3ubc297m3Nvd5tva3ebc2t3m29rd5tva3Obb2tzm2tnc"
+                "5trZ3ObZ2dvm2djb5tnY2+bZ2Nvm2djb5trY3Hbg3+DL4N/g/+Dg4P/h4OH/"
+                "4eDh/+Hg4v/i4OL/4uDi/+Pi4//j4uP/4+Lj/+Pi4//j4eP/4uHj/+Lh4//i"
+                "4uP/4uHj/+Li4//j4+T/4+Pk/+Pj5P/k4+T/5OPk/+Pi5P/j4uP/4+Lj/+Ph"
+                "4//i4eL/4uHi/+Hh4v/h4eL/4eDh/+Df4f/f3+D/397g/9/e4P/f3uD/3t7g"
+                "/9/e4P/e3t//3t3f/97d3//e3d//3t3f/93c3v/e3uD/3t7g/97d3//d3d//"
+                "3dze/93c3v/d3N7/3Nze/9zc3v/c293/3Nvd/9va3f/b2tz/2tnc/9rZ3P/a"
+                "2dz/2tnc/9rZ3P/b2duI4N7gy9/e4P/f3uD/39/g/+Df4P/h3+H/4eDh/+Hg"
+                "4f/h4eH/4uHj/+Pi4//j4uP/4+Lj/+Lh4//i4eP/4+Lj/+Pj4//k4+P/5OPk"
+                "/+Tj5P/k4+T/5OPk/+Tj5P/k4+T/4+Lj/+Li4v/i4uL/4eHi/+Hh4v/h4eH/"
+                "4N/h/+Df4f/f3+D/397g/97e3//e3t//3t7g/97e3//e3t//3t7f/97d3//e"
+                "3d//3t3f/97d3//e3d//3t7g/9/e4P/f3uD/3t7f/97d3//e3d//3t3f/97d"
+                "3//e3d//3d3f/93c3v/d297/3Nvd/9vb3f/c293/3Nvd/9za3f/b2tz/29nd"
+                "iN7d38ve3t7/3t3f/97d3//e3t//397g/9/f4P/g3+H/4ODh/+Dg4f/h4OL/"
+                "4eHi/+Hh4v/j4uL/4+Li/+Pi4//k4+P/5OPk/+Tj5P/k4+T/5ePk/+Tk5P/k"
+                "5OT/4+Pj/+Li4v/h4eL/4eDh/+Df4f/f3+D/39/g/9/e3//f3t//3t7f/97d"
+                "3//e3d//3t3f/97d3//e3d//3d3e/97d3//e3d//3t3f/97e3//e3d//3t3f"
+                "/97e4P/f3uD/39/g/9/e4P/e3uD/3t7g/9/e4P/f3uD/397g/97e4P/e3d//"
+                "3d3f/93c3v/d3N7/3dze/93c3v/d3N7/3Nvd/93b3Yje3d7L3dze/9zc3v/c"
+                "3N7/3dze/93d3v/e3uD/3t7g/97f4P/e3uD/397g/97e4P/e3+D/39/f/9/f"
+                "3//g4OD/4ODg/+Dg4P/h4OH/4+Lj/+Tj4//j4uP/4uLj/+Hg4f/h4OH/4N/g"
+                "/9/e3//e3t//3t7f/97d3v/e3d7/3d3e/93d3v/d3d7/3d3e/93d3v/d3N7/"
+                "3dze/93d3v/e3d7/3t7f/97e3//e3t//3t7f/97e3//f3+D/39/g/+Df4P/g"
+                "3+D/39/g/9/f4P/f3+D/4N/h/+Df4P/f3+D/397g/97e4P/e3d//3t3e/97d"
+                "3v/e3d//3t3f/97d3//f3d+I3dvey9vb3P/b293/29vd/9vb3f/b293/29zd"
+                "/9zc3v/c3N7/293e/9vc3v/b293/2tvd/9ra3P/a2tz/2trb/9jZ2//V1df/"
+                "1dbX/9bW1//U1Nb/1NTW/9PU1f/V1dX/2tna/9va2//a2dv/2trb/9ra2//a"
+                "2tv/29rb/9vb3P/c29z/3Nzc/9zc3f/c3N3/3Nzd/9zc3f/c3N3/3d3d/93d"
+                "3f/e3t7/3t7f/97d3v/e3d7/397f/9/f3//g3+D/4N/g/+Dg4f/g4OH/4N/h"
+                "/+Hf4P/h4OD/4eDg/+Hg4P/g3+D/4N/g/+Df4P/g3uD/4N7g/+De4P/f3t//"
+                "393fiNra28va2tv/2trc/9ra3P/a293/2trc/9rb3f/a293/29vd/9vc3v/a"
+                "3N7/2tvd/9ja3P/Y2tz/2Nrb/9fZ2v/U1df/wsPF/7K0tf+ipaf/gYOC/1lb"
+                "W/9FRkf/MzMz/0JCQ/+joqL/xsbG/9HR0v/V1Nb/19fY/9nY2v/Z2dr/29rb"
+                "/9vb2//c3Nz/3Nzc/9zc3f/d3N3/3dzd/93d3v/d3d7/3t7e/9/e3v/f3t7/"
+                "397f/+Df3//g39//4ODg/+Df4P/g3+D/4eDg/+Hg4f/h4OH/4eHh/+Lh4f/h"
+                "4eH/4eDh/+Hg4P/g3+D/4N/f/+Df3//g39//397f/9/f34jZ2drL2Nnb/9nZ"
+                "2//Z2tz/2drc/9na3P/Y2tz/2drc/9nb3f/a293/2tzd/9rc3f/Z293/2Nrc"
+                "/9ja2//Y2dr/09TV/2xsbf8zMzP/JSYn/yUlJv8nJyj/KSgq/ysrK/8wMTL/"
+                "Q0NE/4uKiv+7urr/ysnJ/87Ozv/T0tL/1dTU/9jY2P/a2tr/29vb/9zc2//d"
+                "3Nz/3dzc/93d3v/e3d7/3t7e/9/e3v/f3t7/397e/+Df3v/g39//4N/f/+Hg"
+                "4P/g39//4N/f/+Hg4P/h4OD/4uHg/+Lh4P/i4eH/4uHh/+Hg4P/h4OD/4d/f"
+                "/+Df3//g39//4N/f/9/e3//f39+I2Njay9jY2v/Y2dr/2Nnb/9jZ2//Z2tz/"
+                "2Nrc/9ja3P/Z293/2dvd/9rc3f/a3N3/2dzd/9rb3P/a29z/2tvc/9XU1P9Y"
+                "WFn/MTE0/0FBRP8nKCn/JCMk/xsbHP8nJyj/MTEy/zw9Pf9FRUT/f358/7Sz"
+                "sf/Kycj/zs3M/9DPzv/U09P/1tbW/9jY1//a2dn/29ra/9zb2//d3N3/3t3d"
+                "/97d3f/e3d3/397d/9/e3v/f397/4N/f/+Df3//g39//4eDf/+Lg4P/i4eD/"
+                "4eDg/+Lh4P/i4eD/4+Hh/+Ph4f/i4eD/4uDg/+Lg3//h4N//4d/f/+Hf3//g"
+                "39//39/fiNjY2cvX19n/19jZ/9bY2f/W2Nr/19na/9ja2//Y2tv/2Nrc/9na"
+                "2//Z29v/2tvc/9vc3f/c3N3/3Nzd/9zd3f/S0ND/V1dY/2doav9jZGf/Jycp"
+                "/xsbHP8KCgr/Kyoq/zU1Nv8/QD//QkJC/1RTU/9wbm3/sK6r/8zKx//Ozcv/"
+                "0tHP/9PT0f/V1NP/19bV/9jX1//Z2Nj/29ra/9zb2//d3Nv/3d3c/93d3P/e"
+                "3t3/397e/+Df3//g39//4eDf/+Hg3//i4N//4uHg/+Ph4f/j4eD/4+Lg/+Pi"
+                "4f/j4uH/4+Hg/+Pg3//i4N//4uDf/+Lf3//h397/4N/e/+Hf34jW1tnL1tfZ"
+                "/9bX2f/W2Nn/1tja/9fY2v/Y2dr/2Nra/9jZ2v/Z2dr/2dna/9ra2//b29v/"
+                "3Nzb/9zc2//c3Nv/y8vI/1ZXV/+jpKX/Pj4+/ycnJ/8XFxf/CAgI/yooJ/81"
+                "NTX/QkNC/0lISP9eXV3/UE9P/2NiYf+wrar/zMnH/9LRzP/T0c7/1NPQ/9XU"
+                "0v/V1NP/1tXV/9jY1v/Z2dj/29rZ/9zb2v/d3Nz/3t3d/9/e3v/h4N//4eDf"
+                "/+Lg3//i4N//4uHg/+Ph4P/k4uH/5OLh/+Ti4f/k4uH/5OLh/+Ph4P/j4N//"
+                "4uDf/+Dg3v/g397/4d/e/+He3v/h39+I1dXYy9bW2P/W19j/19fZ/9fX2f/W"
+                "2Nn/19jZ/9jY2f/Y2Nn/2NnZ/9jZ2P/Z2dj/2dnY/9ra2f/b2tn/29rZ/8LC"
+                "wf9PUE//XWBg/zM0M/8qKir/Hh4f/wcICP8pKSj/NjY2/05OTv9MTEr/XFtZ"
+                "/4F/fP9/fXr/WFdU/7Kvqv/Rzsr/0tHM/9LRzP/S0c7/1NPR/9XU0//Y2Nb/"
+                "2dnY/9va2P/c29r/3dzc/97d3f/f3t3/4eDf/+Hh3//i4d//4uHf/+Ph4P/k"
+                "4uD/5OLg/+Xi4P/k4uH/5OLg/+Ti4P/k4uD/5ODg/+Lg3v/h4N7/4d/e/+He"
+                "3v/g3d3/4d3diNTU1svU1db/1dXX/9XW1//V1tf/1tfX/9fY2P/X19j/19fX"
+                "/9fX1//X19f/19fX/9fX1v/X19b/2NfW/9jX1v+7urn/SkpK/1lZWf85OTn/"
+                "JSQk/xQUFf8HCAj/JCQj/zU2Nv9RUlD/UVFQ/1JRT/97enj/v7y4/399ev9U"
+                "U1D/u7q1/9PSzf/V08//1dTQ/9bV0v/X1tP/2djW/9rZ1//c29n/3dza/97d"
+                "3P/f3t3/4N/d/+Hg3v/i4d//4uLg/+Pi3//k4+D/5OLh/+Xj4P/l4uH/5eLg"
+                "/+Xi4P/l4eD/5OHf/+Pg3v/i393/4d7d/+Dd3P/g3dz/4Nzc/9/d24jU1NXL"
+                "1NTV/9TU1v/V1db/1tbX/9bX1//X2Nj/19fY/9fX1//X19f/19fX/9fX1//X"
+                "19b/19fW/9fX1v/X19b/uLe2/0dHRv9PT07/Ojk5/ygnJ/8cHBz/CAkJ/ysr"
+                "Kf84ODn/U1NS/1lZWP9ubmz/cXBu/5uZlP/Gw7z/mpmU/7u6tf/b2dT/29nU"
+                "/9va1P/b2tX/3NrV/9za1//d3Nn/3t3a/97d2//g39z/4eDd/+Hg3v/j4d//"
+                "4+Lg/+Ti4P/k4uH/5OLg/+Ti4P/k4uD/5OHg/+Th3//k4d//5OHf/+Pf3v/i"
+                "3t3/4d3c/+Dd3P/f3Nv/3tza/97a2v/d2dmI1NPUy9PT1P/U1NX/1dXV/9bW"
+                "1v/W19f/2NjY/9jY2P/Y2Nj/2NjY/9jY2P/Z2Nj/2djY/9rZ1//a2df/2tnX"
+                "/7i4tf9AQD//Hh0d/xoaG/8pKCj/FxYW/wgJCv8oKCb/ODg4/1dXVv9fX17/"
+                "dHNy/2pqaP9kZGH/lZKO/9DMxf/BwLr/4N7Y/+De2P/g3tj/4N7Y/+Dd2P/g"
+                "3dj/4N/a/+Hg2//i4N3/4uHd/+Lh3v/i4t//5OLg/+Pi4P/j4uD/4+Lg/+Pi"
+                "3//j4t//4+Hf/+Pg3//i4N7/4eDe/+Lf3f/g3t3/4N3c/97c2v/d2tn/3NnZ"
+                "/9vZ2P/a2Nf/2djYiNPT08vT0tP/09PU/9TU1P/V1dX/1tbW/9fX1//Y19f/"
+                "2djZ/9rZ2f/a2dn/29rZ/9va2v/c29n/3d3a/93c2f+5uLT/ODg4/xcXF/8U"
+                "FRX/LSws/xISE/8JCQr/HBsb/zY2Nv9aW1n/ZGNi/3R0cf9tbWr/Y2Ng/2Nj"
+                "YP+PjYf/xMG7/+Ph2v/i4Nr/4uDa/+Lg2v/i39r/4eDa/+Hg2//i4dz/4+Hd"
+                "/+Pi3v/j4t7/4+Lf/+Pi3v/i4d7/4uDf/+Lg3v/i4N7/4eDe/+Hf3f/g3t3/"
+                "4N7d/9/d3P/f3Nv/3tza/93b2f/a2Nf/2dfW/9jW1v/X1tX/19TU/9bU1IjR"
+                "0NHL0dDR/9LR0f/S0tL/09PT/9TU1P/X1tX/19fW/9jX1//Y19f/2tnY/9va"
+                "2f/b29n/3dza/97d2//e3dr/t7ay/zc2Nv8cHBz/FhYX/zAwMP8tNTj/Jy8w"
+                "/yUnJ/84Nzf/Xl5b/2traP99fXn/d3dz/2ZlY/9xcW//bGxp/8XCvv/k4tz/"
+                "4+Hb/+Pg2//j4Nv/4+Db/+Hg2//h4Nv/4uDb/+Hg3P/h4N3/4uHe/+Lh3v/h"
+                "4N3/4d/d/+Df3f/g3t3/397d/9/e3P/e3Nr/3dva/93b2v/c2tr/29nZ/9vY"
+                "2P/Z19b/1tXU/9XU1P/U09P/1NLS/9PR0f/S0tKIz87Py8/Oz//Q0NH/0dHR"
+                "/9HR0f/S0tL/1NPT/9bV1P/W1dT/1tbV/9jY1//Z2Nf/2tnY/9zb2f/c29n/"
+                "3dzZ/7Oyrv80NTP/HBsb/xUVFv83Nzb/TVhc/0pYXP8pLS3/ODg2/1dXVP9n"
+                "Z2P/dndy/3Bwbf9mZ2T/iImF/3Jyb//Fw73/5OLc/+Pi3P/j4dz/4+Hc/+Lh"
+                "2//h4Nz/4ODb/+Df2v/g39r/4N/b/9/f2//f3tv/397b/97d2//e3Nv/3dvb"
+                "/9zb2v/b2tr/29nZ/9rY2P/Z2Nj/2dfX/9jW1v/W1dX/1dPT/9LR0f/R0NH/"
+                "0M/Q/8/Oz//Ozc7/zszOiMzLy8vKysv/zMvM/83Mzf/Ozc7/z87O/9DQz//R"
+                "0ND/09LR/9PT0v/V1NP/1tXU/9fW1f/Y2Nb/2djW/9rZ1v+sq6f/MTAw/xwb"
+                "G/8WFRT/KCcl/xgaG/8ZHyD/HB0d/zU1M/9VVVP/WlpY/2pqZ/93d3P/amlm"
+                "/2loZv9ra2n/wb+6/+Hf2f/h39n/4d/a/+Df2v/g3tr/397Z/93d2f/c3Nn/"
+                "3NzZ/93c2f/b29j/29rX/9rZ1//Z2df/2djX/9nY1//Y19f/19bW/9bV1P/V"
+                "1NT/1dTT/9PT0//S0dH/0dDR/9DPz//Ozc7/zczN/8zLzP/Lysz/ysnL/8rK"
+                "zIjGxsfLxsXH/8fHyP/Jycn/y8vL/8zMzP/Nzc3/zs7N/9DPzv/Q0M//0tLR"
+                "/9PS0v/U09P/1dTT/9fX1f/Y2NX/o6Kf/y4uLv8cHBv/GBgX/yopKP8XGRr/"
+                "Fxwe/yUmJv82NjX/XV5c/2RkYv9cXVn/aGlm/3Bwbf9zcXD/a2tp/769tv/e"
+                "3Nb/3tzX/93d2P/d3dj/3dzY/93c1//c29f/29vX/9ra1//Z2df/2djV/9jX"
+                "1f/X1tX/19bV/9bV1f/V1NT/1dPT/9PT0v/S0dH/0dDQ/9DP0P/Pzs//zs3O"
+                "/8zMzf/Lysz/ysnK/8nIyv/Ix8n/xsbI/8PEx//DxcmIwcHCy8DAwv/CwsT/"
+                "w8TF/8XFxv/Gx8j/ysrK/8vKyv/Ly8v/zMzM/83Nzf/Ozs3/0M/O/9LR0f/T"
+                "0tH/1NPR/5mYlP8rKyr/Hh0d/xQUFf8rKij/Fxka/xgcHf8dHh7/MDAw/2pp"
+                "Zv9mZmP/ZGVh/1hYVv9sbWr/b25r/25vbP+4trH/2dfS/9nY0v/Y2NP/2NjT"
+                "/9jX1P/X19P/19fT/9fW0//W1tL/1dXS/9XU0v/U1NL/09LR/9LR0f/R0dH/"
+                "0dDQ/9DPz//Pzs7/zczN/8zLzP/Lysv/ysnK/8jIyv/Hx8n/xsbI/8TFxv/D"
+                "xMb/wcPF/8DBxP++v8P/v8HDiLy9v8u6vL7/u7y+/72/wP+/wMH/wMHC/8PD"
+                "xf/Fxcb/xsbG/8fHyP/IyMn/ycnJ/8vKyv/MzM3/zc3N/87Ozf+OjIr/Kysq"
+                "/yAgIP8aGRn/MDAu/y82Of8lLTD/ICEh/y0tLP9hYV7/ZGRh/2VmYv9VVlT/"
+                "bW1p/4aHgv93eHT/sa+r/9PSzf/T0s3/09LO/9PTzv/S0s//0tLP/9LSz//S"
+                "0c//0dHP/9HQzv/Q0M7/z8/O/87Ozv/Nzc3/zczN/8zLzf/Ly8z/ysrL/8jI"
+                "yv/Hx8n/xsfI/8XFx//ExMf/wsPG/8HDxf+/wMT/vb/D/7y+wv+7vcH/ubu/"
+                "/7q7v4i2uLvLtLi6/7W5vP+4ur3/ury+/7u9v/+9v8H/v8HC/8DCw//Cw8T/"
+                "w8XF/8XFxv/Gxsf/yMjI/8nJyf/Jycr/g4KB/yIiIv8jIyP/GRkY/zU2Nf9S"
+                "YGT/OkNF/ygoJ/8rLCv/SktJ/1JSUP9WV1X/X2Be/4aFgf+Sko7/hoaC/6+t"
+                "qf/Ozcr/z8/L/8/Py//Pz8z/z8/M/8/Pzf/Pz83/z8/N/87Pzf/Ozs3/zc7O"
+                "/83Ozf/Nzc3/zMzN/8zMzf/Ly83/ycvM/8nJy//GyMr/xcfJ/8XGyP/Excf/"
+                "wsTH/8HDxv/AwsX/vcDE/7y/w/+7vsL/ubzA/7e6v/+2ur2IsLO3y62ytv+v"
+                "tLn/sba5/7O4uv+1ub3/t7q+/7m8v/+7vcD/vL/A/73Awf+/wcL/wMLD/8LD"
+                "xf/DxMX/w8XF/3h5d/8jIyP/JiYl/xoaGf8yMjD/VV9g/0ZMTf8jIyP/Jico"
+                "/0JDQv9CQ0P/R0dH/01PTv+Kiof/eHh2/15fXv+lpaL/zMzJ/83Ny//Ozcv/"
+                "zs7M/87OzP/Ozs3/zs/N/8/Pzf/Oz83/zs7N/83Ozv/Nzs7/zc3O/8zNzf/M"
+                "zM3/y8vN/8nLzP/Jysv/x8nK/8bIyv/Fx8n/xMbI/8LEx/++wsX/v8LF/73A"
+                "xP+8v8P/ur3B/7i8wP+3u7//tLq9iKius8unrrP/qLC1/6uytv+ts7f/r7W4"
+                "/7G3uv+yuLv/tLq9/7e6vv+5vL7/ur2//7u+wP+9v8L/vsDC/7/Cw/9xcnH/"
+                "IyMi/ysqKP8aGhj/Jycj/yszKf8hJyn/EhIW/yUmJ/9FR0b/VldX/0pMSv9I"
+                "SUf/jY2I/6Sjnv+SkY7/mJmY/83My//Nzcv/zs7M/87Ozf/Pz83/z8/O/8/P"
+                "zv/Pz87/z8/P/8/Qz//Pz8//z8/P/87Pz//Nzs7/zc3O/8vNzv/LzM7/ysvN"
+                "/8jKy//HyMv/xsfK/8TGyP/DxMf/wMPG/8DCxf+9wMT/vL/D/7q9wf+6vcH/"
+                "uLzA/7a7v4ifqbDLn6iu/6CqsP+jrLL/pq6z/6ivtf+rsrf/rbS5/662uv+x"
+                "uLv/tLq9/7W7vv+3vb//u7/B/7zAwv+9wcL/bW9u/xgYF/8hIB7/HBwb/z07"
+                "OP9pbGn/dXhz/yUnJP8iJCP/Q0VE/1RWVf9kZWP/oaGd/5ydl/92eHT/cnJw"
+                "/5STkv/P0M3/0NDO/9HQz//R0dD/0dHQ/9LS0f/S0tH/0tLR/9HS0f/R0tL/"
+                "0dLS/9HR0v/Q0dL/z9DR/87Q0f/Nz9D/zM7Q/8zNz//Ky83/yMrM/8fJy//G"
+                "yMr/xMbJ/8PFyP/CxMf/wMPG/7/Cxf++wMT/vL/C/7u+wv+6vcGImqaty5un"
+                "rv+eqK//oaux/6Ots/+nr7T/qrK3/6y0uf+utrr/sbi7/7S6vv+2vMD/ub7B"
+                "/7u/w/+9wcP/v8PF/2xubv8mJiX/Li4t/yQjIv83NjP/W15a/1teW/8jJSP/"
+                "IiQk/zk7PP9TVVT/VVdW/0xQTv9+f33/hoiD/1xdW/+MjYv/0dHQ/9HR0f/S"
+                "0tH/0tLR/9LT0v/T09L/09PS/9PT0v/S09P/0tPT/9HT0//R0tP/0NLS/8/S"
+                "0v/P0dH/ztDR/83P0P/Mzs//y8zO/8rMzf/Iy8z/x8nL/8fJy//GyMr/xcjK"
+                "/8TGyP/Bw8X/vb/D/7y/w/+8vsL/u7/DiJmmrcuap67/naiw/6Crsf+krbP/"
+                "p7C1/6qzuP+ttbn/r7e8/7G5vf+1vMD/uL7C/7q/w/+8wsT/vsPF/8DEx/9t"
+                "bm//Kiop/zMxMP8dHRv/Li4s/ycpKf81NzX/MDEv/yQnJv9KTEz/UlRS/1lb"
+                "WP9RU1L/UFJR/05QT/9qa2r/h4iH/9LS0f/S0tH/0tPS/9PT0v/T1NP/09TT"
+                "/9PU0//T1NP/09TT/9PT1P/T09T/0tPT/9DS0//Q0tP/0NHS/8/R0f/Pz9H/"
+                "zc/R/8vOz//Lzc//yszO/8rLzf/Jy8z/yMrL/8fIyv/Dxcf/vb/D/7u9wf+8"
+                "v8L/vL7C/7u/w4iZpq7LnKev/56psf+hrLL/pa61/6ixtv+rtLj/rra7/7G4"
+                "vf+zur//t73B/7m/wv+7wcP/vsPG/7/Exv/Bxcj/bW9v/zAwLv84ODT/IB8d"
+                "/yssK/8SFRX/Njg3/0BAPf8lKCf/WFpY/09SUP9XWVj/T1FP/1laWP9VVlb/"
+                "cHFu/35/f//T09P/09PT/9TU0//U1NT/1NXU/9TU1P/U1NT/09TU/9PU0//T"
+                "1NT/0tTU/9LT1P/R09P/0dLT/9DR0v/P0dL/z9DR/87Q0f/Nz9D/zM7P/8zN"
+                "zv/LzM7/ysvN/8jJy//Exsj/v8LF/7q9wP+6vcD/u77C/7u9wf+6vcGImqeu"
+                "y5yor/+eqbD/oqyy/6autf+osbb/rLW5/662u/+xub3/tLu//7e+wf+5v8P/"
+                "u8LF/77Ex//Axcf/wsbI/29wb/8yMS//Ozo3/yYmJP88PT3/GRwb/z1BQP9B"
+                "QT//JScm/zY4Of87Pj7/QURE/0BCQv9TVVL/UVJR/3Fxb/90dHX/09PT/9TU"
+                "1P/U1dT/1NXU/9TV1P/U1dT/1NTU/9PU1P/T1NT/0tTV/9LU1P/S1NT/0dPT"
+                "/9HS0//R0tP/0NHS/8/R0v/P0NL/ztDR/83P0P/Nzc//y8vN/8jJy//Fx8n/"
+                "wMLF/7u9wf+6vcD/u73A/7q9wf+5u7//trq9iJqmrsucp6//n6mw/6Kssv+m"
+                "r7T/qbG2/621uv+vt7v/sbm9/7S7v/+3vsL/ur/D/7vBxf+/xMb/wMbH/8LH"
+                "yP9vcXD/NjUz/z07OP8mJiX/Q0VC/1FVVv9UWFj/MzQy/yYnKP80NzX/NTg4"
+                "/zY4OP83Ojr/S01N/1FRUf9sa2n/a2xs/9TU1P/U1NT/1NXV/9TV1f/U1dX/"
+                "09XU/9PU1P/T1NT/09TU/9LU1f/S1NT/0tTU/9HT1P/R09T/0dLT/9HS0//Q"
+                "0tP/0NHS/8/Q0f/OztD/zM3O/8nKzP/Fx8j/wcPG/72+wv+6vcH/ur3A/7q8"
+                "wP+4u7//tbi8/7K2u4iapK3Lm6at/56or/+hq7L/pa2z/6evtv+rs7n/rra6"
+                "/7C3vP+zur7/tr3B/7m+wv+7wMT/vsPG/7/Ex//Bxsj/fX19/zo7Of9FRkL/"
+                "UlFP/1xbWf9eXl3/V1hY/0JGRf9AQ0P/LjAx/zAyNP85Ozz/PT8+/zw/Pv9A"
+                "Q0L/aGhn/2doaP/S09P/0tTU/9PU1P/T1NT/09TU/9PU1f/T1NX/1NXV/9TV"
+                "1f/T1NX/0tTU/9LT1P/R09T/0dPT/9HS0v/Q0dL/0NDR/8/Q0P/Mzs//yszN"
+                "/8jJy//Fxsj/wcPF/72/w/+8vsH/u77B/7q9wP+5vL//uLu+/7a6vf+0uL2I"
+                "maSsy5qlrf+dqK7/oKqx/6Sss/+nrrX/qrO4/661uf+vt7z/srm9/7W8wP+4"
+                "vsL/u7/D/77Cxv++xMb/wMXI/6+ztf+OlJP/c3h5/2FlZ/9QVFX/SUxO/0pM"
+                "Tv9OUVL/VVha/0lNT/9BREX/Oz09/zk7PP89P0D/QkRE/0NGRf9iY2P/0tPT"
+                "/9LT1P/T1NT/09TV/9PV1f/U1tb/1dbW/9XV1v/U1NX/0tPU/9LT1P/S09T/"
+                "0tPU/9LT0//R0tL/z9DR/8/P0P/Nzs//ysvM/8jJy//Exsj/wcLF/73Bw/+9"
+                "v8P/vL/C/7y+wf+7vcD/uby//7i7vv+3ub3/tri9iJikrMuZpKz/nKeu/5+q"
+                "sP+jrLL/pq60/6mytv+stLj/rra6/7G5vf+0u7//t73B/7q+w/+9wcX/vsPG"
+                "/8DEx//Cxsn/w8fK/8XIyv+9wMH/naCh/46Rkv+PkZP/lZeZ/46Qkf+GiYj/"
+                "bnFy/25wcP9qbW3/V1ha/09RUv9PUVL/aGlp/9LT0//T09T/09TV/9TV1f/V"
+                "1dX/1dbW/9XV1f/T1NT/0dPT/9HS0//R09T/0tPU/9LT0//R0tL/0NHR/87P"
+                "0P/Lzc3/ycrM/8XHyf/Dxcf/wcPF/77BxP+9wcP/vcDD/73Aw/+8vsH/ur3A"
+                "/7m7v/+3ur7/tbi8/7S4u4iYo6vLmKOr/5umrP+fqK//oqux/6Wts/+osLb/"
+                "q7O4/621uf+xt7z/tLq+/7a8wP+5vsL/vMDF/73Cxf+/w8f/wcXI/8LGyf/E"
+                "x8r/xsnL/8jLzP/JzM3/y83O/8vNz//Mzs//0dLQ/7m6u/+3uLj/s7W2/6Wn"
+                "qP+kpqf/pKam/66vsP/S09T/09TU/9TU1f/U1dX/1dXW/9TU1P/T09P/0NLS"
+                "/9DR0v/Q0dL/0dLT/9LT1P/R0tL/z9DR/87Oz//LzM3/x8nK/8XHyP/BxMb/"
+                "wMPG/7/Cxf+/wcT/v8HE/77AxP+9v8P/u73B/7q8wP+4ur7/t7m9/7S3u/+0"
+                "truIlqCpy5ijq/+bpaz/nqev/6Gqsf+krbL/qLC2/6qyt/+ttLn/sLa7/7O5"
+                "vf+2u8D/uL3C/7rAxP+9wcX/vsPH/8DEyP/Cxsn/xMfK/8bJy//Hysz/yczN"
+                "/8rNzv/Lzc7/zM7P/83Pz//Nz9D/ztDR/8/Q0f/P0dH/0NHR/9DR0v/S09P/"
+                "09PU/9TU1f/V1dX/1dXV/9TU1P/R0tP/z9HS/8/R0v/P0dL/0NHS/9HS0//R"
+                "0tP/z9DR/8zOz//Ky8z/x8jJ/8TGyf/Cxcf/wcTG/8DDxv/Aw8X/wMLF/7/C"
+                "xP+9wMP/vb/C/7q9wP+5u7//t7m9/7W4vP+ztrr/sra6iJijq8uZpKv/nKas"
+                "/6Cpr/+irLH/pa6z/6mxtv+qs7f/rbW5/7G3u/+0ur7/tr3A/7q+wv+8wcT/"
+                "vsLF/7/Ex//Cxsj/xMfJ/8XJyv/IzMv/yMzN/8rOzf/Mz87/zM/P/83P0P/O"
+                "0ND/z9HR/8/R0f/Q0tL/0dPT/9LT0//T1NP/1dXU/9bW1v/X19b/1tbW/9XW"
+                "1v/U1NT/0dLT/9DS0v/Q0tL/0NPT/9LT1P/T1NT/0tPT/8/Q0f/Mzs//yczM"
+                "/8bJyv/GyMn/xcjJ/8XIyP/Ex8j/w8bH/8LFxv/CxMX/v8LE/7/Bw/+8v8D/"
+                "u76//7m8vv+3ur3/tbm7/7K2uoiYo6vLmKSq/5umrP+eqa//oqux/6Stsv+n"
+                "sLX/qrK2/620t/+wt7r/s7q8/7W8vv+4vcD/u8DD/7zCxP++w8X/wcXH/8PG"
+                "yP/FyMn/x8vM/8nLzP/Jzc3/y87O/8zPz//Mz8//zdDQ/8/R0v/Q0tL/0dPS"
+                "/9LU1P/T1NT/1NXV/9XW1v/V1tb/1dXV/9TV1P/T09P/0dLS/8/R0v/P0dL/"
+                "0NLS/9HT0//S1NP/0dLS/87R0f/Lzc7/yMvL/8fKy//Hysv/x8rK/8fJyv/G"
+                "yMn/xcfI/8THx//Cxcb/wcTF/8DCxP++wcP/vL/A/7q+v/+5vL7/t7q8/7a5"
+                "u/+0uLqIlqOpy5ijqf+apav/naet/6GqsP+jrLH/pq+z/6mxtf+rs7f/rra5"
+                "/7G5u/+0ur7/try//7m/wv+7wMT/vcLF/7/Exv/Bxcf/xMfI/8bJy//Iysv/"
+                "yMzM/8rNzf/Lzs7/y87P/8zP0P/O0dH/z9LS/9HS0v/S09P/09TU/9TU1f/U"
+                "1dX/1NTU/9PU0//R0tL/z9LR/87R0P/O0ND/ztHR/8/R0f/Q09L/0NLS/87Q"
+                "0P/Lzs7/x8vL/8fLy//Hysv/x8rL/8fKy//Hysr/xcjJ/8THyP/Dxsf/wsTG"
+                "/8DDxP+/wcP/vcDC/7u+wP+5vb//uLu9/7a6vP+1uLv/tLa6iJWiqMuWoqn/"
+                "maWr/5ynrf+gqa//oquw/6Wus/+osLP/qrK2/620uP+wt7r/s7m9/7W7vv+3"
+                "vsH/ur/D/7zBxP++w8X/wMTG/8PGx//FyMn/xsnL/8fLy//IzMz/yczN/8rN"
+                "zv/Lzs//ztDQ/8/R0f/Q0tL/0tPT/9PT0//T1NT/0tPT/9HS0v/P0dH/ztDQ"
+                "/83Q0P/N0M//zdDQ/83Q0P/P0dH/z9HR/83Pz//Kzc3/yMvL/8fKy//Hysv/"
+                "yMrL/8jKy//Hysv/x8nK/8XIyf/Ex8j/wsXH/8HExf+/wsT/vsHD/73Awf+6"
+                "vb//uLy+/7e7vP+2ubv/tLe5/7K2uoiUoKjLlaGo/5ikqv+bpqz/n6iu/6Gq"
+                "r/+krbL/p6+z/6ixtf+rs7f/rra5/7G3u/+0ur3/tr2//7m+wv+6wML/vcLE"
+                "/7/Dxf/BxMb/w8fI/8TIyv/Fycr/x8vL/8jLzP/Jzc3/ys7O/87P0P/P0NH/"
+                "z9HR/9HS0v/R0tP/0NPT/8/R0f/N0ND/zM/P/8zPz//Mzs//zM7O/8zPz//M"
+                "z8//ztDQ/83Pz//JzMz/x8vL/8fLy//Hysv/x8rL/8jLy//Hy8v/x8rK/8bJ"
+                "yv/Ex8j/w8bH/8LFxv/Aw8X/v8HE/73Awv+8v8H/uby//7e7vv+2urz/tbi6"
+                "/7O2uf+ytriIlKCoypaiqf6ZpKv+nKet/p+pr/6iq7D+pK2y/qevtP6psrb+"
+                "rLS4/q+2uf6xuLv+tLu+/re9v/65vsL+u8DD/r3CxP6/w8b+wcXH/sPGyP7E"
+                "yMn+xsnK/sfLy/7JzM3+ys7O/szPz/7O0ND+z9HR/tDS0f7Q0tL+z9LS/s7R"
+                "0f7N0ND+zM/P/szOzv7Mzs7+zM7P/szPz/7Mz8/+zM/P/szPzv7Kzc3+yMzM"
+                "/sjLzP7JzMz+yczM/snMzP7Jy8z+yMvM/sfKy/7Gycr+xcjJ/sPHyP7Cxcf+"
+                "wMPF/r/CxP69wML+vL/B/rm9v/64u77+trm8/rS4uv6ztrn+sbO3h5SeqDKW"
+                "oqo/lqKqP5qmrj+eqq4/oqquP6Kusj+mrrI/qrK2P6qytj+utro/sra6P7K6"
+                "vj+2vr4/ur7CP7q+wj++wsI/vsLGP77Cxj/CxsY/wsbKP8bKyj/Gyso/ysrK"
+                "P8rOzj/Ozs4/zs7OP87Szj/O0tI/ztLSP87S0j/Ozs4/ys7OP8rOzj/Kzs4/"
+                "ys7OP8rOzj/Kzs4/ys7OP8rOzj/Kzs4/xsrKP8bKyj/Gyso/ysrKP8rKyj/K"
+                "yso/ysrKP8bKyj/Gyso/xsrKP8LGxj/CxsY/wsbGP77Cxj++wsI/vr7CP7q+"
+                "vj+6ur4/trq+P7a6uj+ytro/sra6P7KyuSEAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAA////////////////////////////////"
+                "////////////////////////////////////////////////////////////"
+                "/////////////////////////wAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//////"
+                "////////////////////////////////////////////////////////////"
+                "//////////////////////////////////////////////////8=";
+
+[Device Classification]
+        Class1 = EtherNetIP;
+
+[Params]
+        Param1 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Command Word",         $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param2 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Jog Speed",            $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param3 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Jog Accel",            $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param4 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Jog Decel",            $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param5 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Point-to-Point Velocity",    $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param6 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Point-to-Point Acceleration",    $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param7 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Point-to-Point Deceleration",    $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param8 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Point-to-Point Distance",    $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param9 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Current Command",      $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param10 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "SCL Command Letters",  $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param11 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Data/SCL Register 1",  $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param12 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Data/SCL Register 2",  $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param13 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Reserved 1",           $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param14 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Reserved 2",           $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param15 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Reserved 3",           $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param16 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Reserved 4",           $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param80 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                ">IP Address",          $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param81 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC3,                   $ Data Type
+                2,                      $ Data Size in bytes
+                ">Status Word",         $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param82 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC3,                   $ Data Type
+                2,                      $ Data Size in bytes
+                ">Alarm Word",          $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param83 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC3,                   $ Data Type
+                2,                      $ Data Size in bytes
+                ">Supply Voltage",      $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param84 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC3,                   $ Data Type
+                2,                      $ Data Size in bytes
+                ">Actual Current",      $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param85 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC3,                   $ Data Type
+                2,                      $ Data Size in bytes
+                ">Drive Temperature",   $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param86 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                ">Encoder Position",    $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param87 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                ">Absolute Position",   $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param88 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC3,                   $ Data Type
+                2,                      $ Data Size in bytes
+                ">Actual Velocity",     $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param89 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC3,                   $ Data Type
+                2,                      $ Data Size in bytes
+                ">Input Status (main)", $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param90 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC3,                   $ Data Type
+                2,                      $ Data Size in bytes
+                ">Input Status (ext)",  $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param91 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC3,                   $ Data Type
+                2,                      $ Data Size in bytes
+                ">Output Status",       $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param100 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Status Code",          $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param101 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Alarm Code",           $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param102 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Supply Voltage",       $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param103 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Actual Current",       $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param104 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Drive Temperature",    $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param105 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Encoder Position",     $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param106 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Absolute Position",    $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param107 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Position Error",       $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param108 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Actual Velocity",      $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param109 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Input Status (extended)",    $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param110 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Input Status (main)",  $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param111 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Output Status",        $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param112 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Analog Input 1",       $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+        Param113 =
+                0,                      $ reserved, shall equal 0
+                ,,                      $ Link Path Size, Link Path
+                0x0000,                 $ Descriptor
+                0xC4,                   $ Data Type
+                4,                      $ Data Size in bytes
+                "Analog Input 2",       $ name
+                "",                     $ units
+                "",                     $ help string
+                ,,0,                    $ min, max, default data values
+                ,,,,                    $ mult, div, base, offset scaling
+                ,,,,                    $ mult, div, base, offset links
+                ;                       $ decimal places
+
+[Assembly]
+        Object_Name = "Assembly Object";
+        Object_Class_Code = 0x04;
+        MaxInst = 1;
+        Number_Of_Static_Instances = 1;
+        Max_Number_Of_Dynamic_Instances = 0;
+        Assem100 =
+                "DriveStatus (legacy)",
+                "20 04 24 64 30 03",
+                30,
+                0x0000,
+                ,,
+                32,Param80,
+                16,Param81,
+                16,Param82,
+                16,Param83,
+                16,Param84,
+                16,Param85,
+                32,Param86,
+                32,Param87,
+                16,Param88,
+                16,Param89,
+                16,Param90,
+                16,Param91;
+        Assem101 =
+                "INPUT (T2O)",
+                "20 04 24 65 30 03",
+                56,
+                0x0000,
+                ,,
+                32,Param100,
+                32,Param101,
+                32,Param102,
+                32,Param103,
+                32,Param104,
+                32,Param105,
+                32,Param106,
+                32,Param107,
+                32,Param108,
+                32,Param109,
+                32,Param110,
+                32,Param111,
+                32,Param112,
+                32,Param113;
+        Assem112 =
+                "OUTPUT (O2T)",
+                "20 04 24 70 30 03",
+                64,
+                0x0000,
+                ,,
+                32,Param1,
+                32,Param2,
+                32,Param3,
+                32,Param4,
+                32,Param5,
+                32,Param6,
+                32,Param7,
+                32,Param8,
+                32,Param9,
+                32,Param10,
+                32,Param11,
+                32,Param12,
+                32,Param13,
+                32,Param14,
+                32,Param15,
+                32,Param16;
+
+[Connection Manager]
+        Object_Name = "Connection Manager Object";
+        Object_Class_Code = 0x06;
+        Connection1 =
+                0x04010002,             $ 0-15    = supported transport classes
+                                        $ 16      = trigger: cyclic
+                                        $ 17      = trigger: change of state
+                                        $ 18      = trigger: application
+                                        $ 19-23   = trigger: reserved
+                                        $ 24      = application type: listen-only
+                                        $ 25      = application type: input-only
+                                        $ 26      = application type: exclusive-owner
+                                        $ 27      = application type: redundant-owner
+                                        $ 28-30   = reserved
+                                        $ 31      = Direction: Client = 0 / Server = 1
+                0x44640405,             $ 0       = O->T fixed size supported
+                                        $ 1       = O->T variable size supported
+                                        $ 2       = T->O fixed size supported
+                                        $ 3       = T->O variable size supported
+                                        $ 4-5     = O->T number of bytes per slot (obsolete)
+                                        $ 6-7     = T->O number of bytes per slot (obsolete)
+                                        $ 8-10    = O->T Real time transfer format
+                                        $ 11      = reserved
+                                        $ 12-14   = T->O Real time transfer format
+                                        $ 15      = reserved
+                                        $ 16      = O->T connection type: NULL
+                                        $ 17      = O->T connection type: MULTICAST
+                                        $ 18      = O->T connection type: POINT2POINT
+                                        $ 19      = O->T connection type: reserved
+                                        $ 20      = T->O connection type: NULL
+                                        $ 21      = T->O connection type: MULTICAST
+                                        $ 22      = T->O connection type: POINT2POINT
+                                        $ 23      = T->O connection type: reserved
+                                        $ 24      = O->T priority: LOW
+                                        $ 25      = O->T priority: HIGH
+                                        $ 26      = O->T priority: SCHEDULED
+                                        $ 27      = O->T priority: reserved
+                                        $ 28      = T->O priority: LOW
+                                        $ 29      = T->O priority: HIGH
+                                        $ 30      = T->O priority: SCHEDULED
+                                        $ 31      = T->O priority: reserved
+                ,64,Assem112,           $ O->T RPI, size, format
+                ,56,Assem101,           $ T->O RPI, size, format
+                ,,                      $ proxy config size, format
+                ,,                      $ target config size, format
+                "Exclusive Owner",      $ Connection Name
+                "",                     $ help string
+                "20 04 24 66 2C 70 2C 65";    $ Path
+        Connection2 =
+                0x04010002,             $ 0-15    = supported transport classes
+                                        $ 16      = trigger: cyclic
+                                        $ 17      = trigger: change of state
+                                        $ 18      = trigger: application
+                                        $ 19-23   = trigger: reserved
+                                        $ 24      = application type: listen-only
+                                        $ 25      = application type: input-only
+                                        $ 26      = application type: exclusive-owner
+                                        $ 27      = application type: redundant-owner
+                                        $ 28-30   = reserved
+                                        $ 31      = Direction: Client = 0 / Server = 1
+                0x44640405,             $ 0       = O->T fixed size supported
+                                        $ 1       = O->T variable size supported
+                                        $ 2       = T->O fixed size supported
+                                        $ 3       = T->O variable size supported
+                                        $ 4-5     = O->T number of bytes per slot (obsolete)
+                                        $ 6-7     = T->O number of bytes per slot (obsolete)
+                                        $ 8-10    = O->T Real time transfer format
+                                        $ 11      = reserved
+                                        $ 12-14   = T->O Real time transfer format
+                                        $ 15      = reserved
+                                        $ 16      = O->T connection type: NULL
+                                        $ 17      = O->T connection type: MULTICAST
+                                        $ 18      = O->T connection type: POINT2POINT
+                                        $ 19      = O->T connection type: reserved
+                                        $ 20      = T->O connection type: NULL
+                                        $ 21      = T->O connection type: MULTICAST
+                                        $ 22      = T->O connection type: POINT2POINT
+                                        $ 23      = T->O connection type: reserved
+                                        $ 24      = O->T priority: LOW
+                                        $ 25      = O->T priority: HIGH
+                                        $ 26      = O->T priority: SCHEDULED
+                                        $ 27      = O->T priority: reserved
+                                        $ 28      = T->O priority: LOW
+                                        $ 29      = T->O priority: HIGH
+                                        $ 30      = T->O priority: SCHEDULED
+                                        $ 31      = T->O priority: reserved
+                ,64,Assem112,           $ O->T RPI, size, format
+                ,30,Assem100,           $ T->O RPI, size, format
+                ,,                      $ proxy config size, format
+                ,,                      $ target config size, format
+                "Exclusive Owner - DriveStatus (legacy)",    $ Connection Name
+                "",                     $ help string
+                "20 04 24 66 2C 70 2C 64";    $ Path
+        Connection3 =
+                0x02010002,             $ 0-15    = supported transport classes
+                                        $ 16      = trigger: cyclic
+                                        $ 17      = trigger: change of state
+                                        $ 18      = trigger: application
+                                        $ 19-23   = trigger: reserved
+                                        $ 24      = application type: listen-only
+                                        $ 25      = application type: input-only
+                                        $ 26      = application type: exclusive-owner
+                                        $ 27      = application type: redundant-owner
+                                        $ 28-30   = reserved
+                                        $ 31      = Direction: Client = 0 / Server = 1
+                0x44640305,             $ 0       = O->T fixed size supported
+                                        $ 1       = O->T variable size supported
+                                        $ 2       = T->O fixed size supported
+                                        $ 3       = T->O variable size supported
+                                        $ 4-5     = O->T number of bytes per slot (obsolete)
+                                        $ 6-7     = T->O number of bytes per slot (obsolete)
+                                        $ 8-10    = O->T Real time transfer format
+                                        $ 11      = reserved
+                                        $ 12-14   = T->O Real time transfer format
+                                        $ 15      = reserved
+                                        $ 16      = O->T connection type: NULL
+                                        $ 17      = O->T connection type: MULTICAST
+                                        $ 18      = O->T connection type: POINT2POINT
+                                        $ 19      = O->T connection type: reserved
+                                        $ 20      = T->O connection type: NULL
+                                        $ 21      = T->O connection type: MULTICAST
+                                        $ 22      = T->O connection type: POINT2POINT
+                                        $ 23      = T->O connection type: reserved
+                                        $ 24      = O->T priority: LOW
+                                        $ 25      = O->T priority: HIGH
+                                        $ 26      = O->T priority: SCHEDULED
+                                        $ 27      = O->T priority: reserved
+                                        $ 28      = T->O priority: LOW
+                                        $ 29      = T->O priority: HIGH
+                                        $ 30      = T->O priority: SCHEDULED
+                                        $ 31      = T->O priority: reserved
+                ,0,,                    $ O->T RPI, size, format
+                ,56,Assem100,           $ T->O RPI, size, format
+                ,,                      $ proxy config size, format
+                ,,                      $ target config size, format
+                "Input Only",           $ Connection Name
+                "",                     $ help string
+                "20 04 24 66 2C 67 2C 65";    $ Path
+        Connection4 =
+                0x02010002,             $ 0-15    = supported transport classes
+                                        $ 16      = trigger: cyclic
+                                        $ 17      = trigger: change of state
+                                        $ 18      = trigger: application
+                                        $ 19-23   = trigger: reserved
+                                        $ 24      = application type: listen-only
+                                        $ 25      = application type: input-only
+                                        $ 26      = application type: exclusive-owner
+                                        $ 27      = application type: redundant-owner
+                                        $ 28-30   = reserved
+                                        $ 31      = Direction: Client = 0 / Server = 1
+                0x44640305,             $ 0       = O->T fixed size supported
+                                        $ 1       = O->T variable size supported
+                                        $ 2       = T->O fixed size supported
+                                        $ 3       = T->O variable size supported
+                                        $ 4-5     = O->T number of bytes per slot (obsolete)
+                                        $ 6-7     = T->O number of bytes per slot (obsolete)
+                                        $ 8-10    = O->T Real time transfer format
+                                        $ 11      = reserved
+                                        $ 12-14   = T->O Real time transfer format
+                                        $ 15      = reserved
+                                        $ 16      = O->T connection type: NULL
+                                        $ 17      = O->T connection type: MULTICAST
+                                        $ 18      = O->T connection type: POINT2POINT
+                                        $ 19      = O->T connection type: reserved
+                                        $ 20      = T->O connection type: NULL
+                                        $ 21      = T->O connection type: MULTICAST
+                                        $ 22      = T->O connection type: POINT2POINT
+                                        $ 23      = T->O connection type: reserved
+                                        $ 24      = O->T priority: LOW
+                                        $ 25      = O->T priority: HIGH
+                                        $ 26      = O->T priority: SCHEDULED
+                                        $ 27      = O->T priority: reserved
+                                        $ 28      = T->O priority: LOW
+                                        $ 29      = T->O priority: HIGH
+                                        $ 30      = T->O priority: SCHEDULED
+                                        $ 31      = T->O priority: reserved
+                ,0,,                    $ O->T RPI, size, format
+                ,30,Assem100,           $ T->O RPI, size, format
+                ,,                      $ proxy config size, format
+                ,,                      $ target config size, format
+                "Input Only - DriveStatus (legacy)",    $ Connection Name
+                "",                     $ help string
+                "20 04 24 66 2C 67 2C 64";    $ Path
+
+[Capacity]
+        MaxIOConnections = 2;
+        MaxMsgConnections = 6;
+        MaxConsumersPerMcast = 254;
+    $ Producing IO Data
+        TSpec1 = Tx, 30, 100;
+    $ Command Data
+        TSpec2 = Tx, 56, 100;
+    $ Heartbeat
+        TSpec3 = Rx, 64, 100;
+
+
