@@ -700,6 +700,9 @@ data:
                                 createImmediate: false
                           virtualization:
                             commonBootImageImport: false
+                            vlanNetworkAttachmentDefinitions:
+                              - vlan: 1
+                                bridgeInterface: br-eno8603
                           itAutomation:
                             overrideAnsibleAutomationPlatformVersion: stable-2.6
                             ansibleAutomationPlatform:
@@ -711,6 +714,19 @@ data:
                                 disabled: true
                           pipelines:
                             version: latest
+                          networkInterfaceManagement:
+                            - name: node0-bridge-eno8603
+                              node: node0
+                              interfaces:
+                                - name: br-eno8603
+                                  type: linux-bridge
+                                  state: up
+                                  bridge:
+                                    port:
+                                      - name: eno8603
+                                    options:
+                                      stp:
+                                        enabled: false
                   ---
                   apiVersion: machineconfiguration.openshift.io/v1
                   kind: MachineConfig

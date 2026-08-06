@@ -48,35 +48,78 @@ Other helpers placed by the image include networking and storage setup systemd u
 
 ## 3) GitOps wiring: Gitea → ArgoCD → ACP services
 
-- After MicroShift brings up `gitea` and the `mirror-repo` job runs, the repository `acp-standard-services-public` is mirrored into the Gitea instance (`http://code.gitea.apps.ipc4.sps2025.com/admin/acp-standard-services-public.git`). This is the same upstream repository used to define the ACP services and charts.
+### 3a) Gitea is a *live pull mirror*, not a one-time copy
 
-- The OCP agent install process (created by the `ocp-agent-install` manifests) creates an ArgoCD `Application` on the ACP cluster once the ACP is installed. See the `apply-acp-standard-services` job embedded in [images/ipc4/ocp-agent-install/configmap.yaml](images/ipc4/ocp-agent-install/configmap.yaml). That job creates:
-  - A repository secret for ArgoCD pointing to the local Gitea repo.
-  - An ArgoCD `Application` named `acp-standard-services` which points at `charts/acp-standard-services` in the mirrored repo and syncs the `dev` branch.
+When the `mirror-repo` Job runs (see [images/ipc4/gitea/job.yaml](images/ipc4/gitea/job.yaml)), it doesn't just clone `https://github.com/RedHatEdge/acp-standard-services-public.git` into Gitea once — it registers Gitea's `admin/acp-standard-services-public` repo as a **pull mirror** (Gitea API `POST /repos/migrate` with `"mirror": true, "mirror_interval": "1h"`). From then on, **Gitea automatically re-fetches from GitHub every hour**, for as long as IPC4 runs.
 
-- The `acp-standard-services` Application installs a set of operators and charts on ACP. The `ImageSetConfiguration` and `oc-mirror` ensure required operator catalogs and images are available from the IPC4 mirror so the ACP installation and subsequent ArgoCD sync can use them offline.
+This matters for two reasons:
 
-Key operator/components included by the chart (see the rendered manifest in the [ConfigMap](images/ipc4/ocp-agent-install/configmap.yaml) starting at line 666):
+- **Any branch that also exists upstream on GitHub (e.g. `dev`, `main`) gets kept in sync with upstream on every cycle.** Pushing commits directly to one of these branches in Gitea is not durable — the next hourly sync fetches from GitHub and updates the branch to match, discarding anything upstream doesn't have.
+- **Gitea mirrors default to `enable_prune = true`**, which also *deletes* any local-only branch that doesn't exist upstream, on every sync. So even a brand-new, uniquely-named branch created only in Gitea isn't safe from a mirror sync until prune is turned off for that repo.
+
+Prune has been disabled for this specific mirror (`enable_prune = false`, confirmed directly via Gitea's `mirror` table and its `PATCH /api/v1/repos/{owner}/{repo}` `enable_prune` field — this is a real, working API field on Gitea 1.25.4, despite some older Gitea versions/docs not exposing it). The `mirror-repo` Job now does this automatically right after creating the mirror, so it's set correctly on any future fresh install too — see [images/ipc4/gitea/job.yaml](images/ipc4/gitea/job.yaml). With prune off, a genuinely new, Gitea-local-only branch survives the hourly sync indefinitely; see [§5, Lab customization workflow](#5-lab-customization-workflow-dedicated-branch) below for how that's actually used.
+
+### 3b) ArgoCD Application structure: one bootstrap Application, several rendered children
+
+The OCP agent install process (created by the `ocp-agent-install` manifests) creates exactly **one** ArgoCD `Application` on the ACP cluster, once, during initial install. See the `apply-acp-standard-services` Job embedded in [images/ipc4/ocp-agent-install/configmap.yaml](images/ipc4/ocp-agent-install/configmap.yaml) — a plain `batch/v1 Job` (not a CronJob, doesn't re-run on its own) that waits for cluster operators to be healthy, then `oc apply`s:
+  - A repository `Secret` for ArgoCD pointing at the local Gitea repo.
+  - An ArgoCD `Application` named `acp-standard-services`, pointing at `charts/acp-standard-services` in the mirrored repo, `targetRevision: dev`, with a Helm `values` block baked directly into the Job's manifest.
+
+`charts/acp-standard-services` is an **umbrella/app-of-apps Helm chart** — each template under its `templates/` directory (`local-storage.yaml`, `virtualization.yaml`, `it-automation.yaml`, `pipelines.yaml`, `network-interface-management.yaml`, ...) renders a **child** `Application` object, gated behind a `{{- with .Values.<key> }}` block: if that key isn't set in the parent's values, the child Application simply never gets created. So enabling a new service (e.g. Pipelines, or a bridged network interface) means adding the corresponding key to the *parent* Application's values — it doesn't require a new top-level Application.
+
+```
+acp-standard-services (the only Application created directly, by the one-shot bootstrap Job)
+├─ values.localStorage                → child Application "local-storage"
+├─ values.virtualization              → child Application "virtualization"
+├─ values.itAutomation                → child Application "it-automation"
+├─ values.pipelines                   → child Application "pipelines"
+└─ values.networkInterfaceManagement  → child Application "network-interface-management"
+```
+
+None of these 5 Applications have `ownerReferences`, and there's no `ApplicationSet` on the cluster — ArgoCD's own reconciliation never touches the parent Application's spec.
+
+### 3c) What's git-tracked, and what's the real durability gap
+
+- **Git-tracked** (auto-syncs normally, `selfHeal: true`): everything under `charts/*/templates/` in the repo. Push a change to the branch ArgoCD is watching, it picks it up within the sync window.
+- **NOT git-tracked**: the root `acp-standard-services` Application's own `spec.source.helm.values` — the values that decide which child Applications exist and how they're configured. This only lives in two places: (1) live on the cluster (`oc patch application ...` for immediate effect), and (2) baked into the one-shot bootstrap Job's heredoc in `images/ipc4/ocp-agent-install/configmap.yaml` in **this** repo.
+
+Because the bootstrap Job only ever runs once (at initial cluster install), a live patch to the Application's values takes effect immediately and is safe from ArgoCD reverting it — but is **not** safe from a future reinstall, which would recreate the bootstrap Job fresh and re-apply whichever values were baked into this repo's `images/ipc4/ocp-agent-install/configmap.yaml` at ISO-build time, silently reverting any live-only changes. **To make a change durable, update both**: the live Application (immediate effect) and the bootstrap Job's values in this repo, synced to IPC4's `/etc/microshift/manifests.d/ocp-agent-install/configmap.yaml` (this doesn't affect the *currently running* ACP cluster — only the *next* generated install ISO).
+
+The `acp-standard-services` app also sets local storage configuration (device classes, force-wipe options), virtualization flags, and other values that control how services are deployed on the ACP nodes. Refer to the `apply-acp-standard-services` job in [images/ipc4/ocp-agent-install/configmap.yaml](images/ipc4/ocp-agent-install/configmap.yaml) for the exact applied YAML fragment.
+
+Key operator/components enabled at initial install (see the rendered manifest in the [ConfigMap](images/ipc4/ocp-agent-install/configmap.yaml)):
 
 - `ansible-automation-platform-operator` (stable-2.6)
 - `kubernetes-nmstate-operator`
 - `kubevirt-hyperconverged`
 - `lvms-operator`
 - `openshift-gitops-operator` (ArgoCD)
-- `openshift-pipelines-operator` (Tekton)
 
-The `acp-standard-services` app also sets local storage configuration (device classes, force-wipe options), virtualization flags, and other values that control how services are deployed on the ACP nodes. Refer to the `apply-acp-standard-services` job in [images/ipc4/ocp-agent-install/configmap.yaml](images/ipc4/ocp-agent-install/configmap.yaml) for the exact applied YAML fragment.
+`openshift-pipelines-operator-rh` was added later, live, following the durable two-step process above — see [Troubleshoot-July2026.md](Troubleshoot-July2026.md) for the full story (it also required mirroring the operator into IPC4's local registry first, since it wasn't part of the original `ImageSetConfiguration`).
 
 ## 4) Typical run sequence (high level)
 
 1. Build `images/ipc4` image and create an ISO from it (script `scripts/create-iso.sh` is provided).
 2. Boot the target machine from the generated ISO (this becomes IPC4). MicroShift starts and applies manifests from `/etc/microshift/manifests.d`.
 3. MicroShift brings up DHCP/DNS/NTP/Gitea and the oc-mirror/local registry. `oc-mirror` job mirrors operator catalogs/images into the local registry.
-4. Gitea is created and the `acp-standard-services-public` repository is mirrored from GitHub into the local Gitea instance.
+4. Gitea is created and the `acp-standard-services-public` repository is registered as a **pull mirror** of GitHub (re-syncs every hour, for as long as IPC4 runs — see §3a).
 5. The ocp-agent-install manifests generate and serve an agent ISO that you download and use to install ACP on target hardware. When ACP finishes installing and ArgoCD becomes available, the `apply-acp-standard-services` job creates an ArgoCD Application pointing at the mirrored repo.
 6. ArgoCD syncs `acp-standard-services` and deploys the operators/services (ansible AAP, kubevirt, LVMS, etc.) onto the ACP cluster.
 
-## 5) Where to look in this repo
+## 5) Lab customization workflow (dedicated branch)
+
+Chart customizations specific to this lab (things upstream `RedHatEdge/acp-standard-services-public` has no reason to know about — e.g. a bridged network interface for a specific NIC on this specific node) should **not** be pushed to `dev`. Since `dev` is the branch ArgoCD watches *and* the branch Gitea keeps in sync with upstream every hour, any local commits on it are at real risk of being silently discarded the next time the mirror syncs (see §3a).
+
+The pattern instead:
+
+1. **Create a new branch that does not exist upstream** — e.g. `ipc4-local` — directly in Gitea. Because prune is now disabled for this mirror (§3a), a branch with no upstream counterpart is not touched by the hourly sync: it won't be force-updated (nothing to sync from) and won't be pruned (prune is off).
+2. Push lab-specific chart changes to that branch (new `NodeNetworkConfigurationPolicy`/`NetworkAttachmentDefinition` entries, values overrides, anything that only makes sense for this specific ACP node's hardware).
+3. Point the specific ArgoCD Application(s) that need the customization at that branch via `targetRevision`, rather than `dev` — this can be done per-Application, so most services can stay on `dev` (tracking upstream) while only the customized ones point at `ipc4-local`.
+4. Before trusting a new branch for anything real, verify it actually survives a sync cycle: push a throwaway commit, wait past the mirror's 1-hour interval (or trigger "Synchronize Now" from Gitea's repo settings), confirm the commit is still there.
+
+This keeps the lab's local hardware-specific configuration clearly separated from anything that could plausibly be upstreamed, while still benefiting from `dev` tracking real updates from `RedHatEdge/acp-standard-services-public` for everything else.
+
+## 6) Where to look in this repo
 
 - Boot image Containerfile: [images/ipc4/Containerfile](images/ipc4/Containerfile)
 - MicroShift manifests placed into the image:
@@ -87,8 +130,10 @@ The `acp-standard-services` app also sets local storage configuration (device cl
   - Gitea operator: [images/ipc4/gitea-operator](images/ipc4/gitea-operator)
   - oc-mirror: [images/ipc4/oc-mirror](images/ipc4/oc-mirror)
   - ocp-agent-install: [images/ipc4/ocp-agent-install](images/ipc4/ocp-agent-install)
+- Deeper ArgoCD Application / umbrella-chart mechanics: [SNO-GitOps-Workflow.md](SNO-GitOps-Workflow.md)
+- Incident history and root-cause writeups (IPC4/IPC3/ACP): [Troubleshoot-July2026.md](Troubleshoot-July2026.md)
 
-## 6) Troubleshooting tips
+## 7) Troubleshooting tips
 
 - If `oc-mirror` fails while pinning manifests (for example due to a missing `gcr.io/kubebuilder/kube-rbac-proxy` manifest), you can either:
   - Patch the operator catalog bundle to replace the broken image reference with a maintained image (rebuild/push the catalog and point your `ImageSetConfiguration` at it), or
@@ -161,7 +206,7 @@ flowchart LR
   IPC4 -->|applies manifests| DHCP[DHCP / DNS / NTP / supporting services]
   DHCP[DHCP / DNS / NTP / supporting services] --> SVC
   OC_MIRROR --> |mirrors images from <br> RH registry |REG
-  GITEA -->|copy repo from| Github[Github<br>acp-standard-services]
+  GITEA -->|pull mirror, resyncs<br>hourly, dev/main branches| Github[Github<br>acp-standard-services]
   AGENT_GEN -->|serves ocp agent ISO| Dev
   Dev -->|install from ocp agent ISO| ACP
   REG -->|provides operator images| ACP

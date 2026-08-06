@@ -2,6 +2,8 @@
 
 How changes to the SNO cluster's GitOps-managed services (storage, virtualization, IT automation, pipelines, network interfaces, etc.) actually get applied, what's tracked by git vs. not, and the durable way to make changes so they survive a reinstall.
 
+> This is a focused deep-dive on the ArgoCD Application/umbrella-chart mechanics specifically. For the full end-to-end picture (IPC4 build → MicroShift → Gitea mirror behavior → ArgoCD sync → lab customization branch workflow), see [HOW_IT_WORKS.md](HOW_IT_WORKS.md) §3–5, which supersedes/expands on this doc for anything about the Gitea mirror itself (pull-mirror sync interval, `enable_prune`, and the dedicated-branch pattern for lab customizations — none of which is covered below).
+
 ## The structure
 
 There is exactly **one** ArgoCD Application created directly on the cluster: `acp-standard-services` (namespace `openshift-gitops`). Its Helm chart (`charts/acp-standard-services` in the [acp-standard-services-public](http://code-gitea.apps.ipc4.sps2025.com/admin/acp-standard-services-public.git) repo) is an **umbrella/app-of-apps chart** — each template under `charts/acp-standard-services/templates/` (`local-storage.yaml`, `virtualization.yaml`, `it-automation.yaml`, `pipelines.yaml`, `network-interface-management.yaml`, etc.) renders a **child** `Application` object, gated behind a `{{- with .Values.<key> }}` block. If the corresponding key isn't set in the parent's values, that child Application simply never gets created.

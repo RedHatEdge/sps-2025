@@ -113,3 +113,41 @@ While mirroring a new operator package into IPC4's registry (`images/ipc4/oc-mir
 **Separately**: noticed (and initially attempted to clean up) an unrelated stale kubelet artifact on IPC4 — `/var/lib/kubelet/pods/26440fd7-1d80-4bc5-9363-19b2dea46ec7`, dated April 20 (predates this doc entirely), for a pod UID that no longer exists anywhere in the cluster. It was spamming `UnmountVolume failed` errors into the system log every reconcile. Confirmed no live pod referenced that UID and removed the on-disk directory — **but the errors kept recurring anyway**. Two more stale UIDs later turned up the same way, from gitea's old `code`/`postgresql-code` pods (force-deleted/scaled down earlier in this doc's storage recovery work). Root cause: kubelet tracks CSI volume mount/unmount state in an **in-memory** reconciler cache ("actual state of world"), independent of whatever exists on disk — deleting the pod directory doesn't touch that cache, so it kept retrying the same phantom unmounts regardless. The only real fix is a kubelet restart to rebuild that cache from scratch, which (since kubelet runs embedded inside the `microshift` process on MicroShift, not as its own systemd unit) means restarting `microshift.service` itself.
 
 **Fixed**: with the original root causes (etcd corruption, storage wipe, corrupted lvmd config) all resolved and the service having run stably for 2+ weeks with 0 restarts, did a controlled `systemctl restart microshift` — came back in 5s, `NRestarts` stayed at 0, all pods stayed healthy, and the stale-volume errors stopped completely (confirmed 0 occurrences in the following minutes). While verifying, also noticed MicroShift's manifest reconciler retrying gitea's already-completed `mirror-repo` Job every ~10s forever, hitting the same "field is immutable" pattern seen elsewhere in this doc — deleted the completed Job so the reconciler could recreate it fresh; it completed in 6s (a clean no-op, since the mirror-repo script itself checks whether the repo already exists before doing anything) and the recurring error stopped.
+
+## Follow-up: bridged network interface for Win11 VM industrial-network access (SNO)
+
+Goal: let the Win11 VM (running via OpenShift Virtualization on the SNO/ACP cluster) reach the legacy 192.168.1.x industrial network directly, instead of via NAT/masquerade (10.0.2.x). Physical NIC `eno8603` was confirmed cabled and link-up to that network as a plain untagged/access port.
+
+Before patching anything, checked whether this required a dedicated Gitea branch (see `HOW_IT_WORKS.md` §5) or could go through `dev` via Helm values alone. Cloned the `dev` branch of `acp-standard-services-public` and inspected both relevant charts directly:
+
+- `charts/network-interface-management/templates/nodenetworkconfigurationpolicy.yaml` just `range`s over `.Values.networkInterfaceManagement` — no node/interface names hardcoded.
+- `charts/virtualization/templates/networkattachmentdefinition.yaml` just `range`s over `.Values.virtualization.vlanNetworkAttachmentDefinitions` — same, fully generic `cnv-bridge` NAD built from whatever `bridgeInterface` is supplied.
+
+Both child Applications (rendered by `charts/acp-standard-services`'s umbrella templates) already track `dev` via the shared `gitBranch` value. So this needed no chart-template edits and no dedicated branch — just the same live-values-patch pattern already used for `pipelines`.
+
+**Applied** (durable two-step process from `HOW_IT_WORKS.md` §3c / `SNO-GitOps-Workflow.md`):
+
+1. **Live**: `oc patch application acp-standard-services -n openshift-gitops --type merge` adding:
+   ```yaml
+   networkInterfaceManagement:
+     - name: node0-bridge-eno8603
+       node: node0
+       interfaces:
+         - name: br-eno8603
+           type: linux-bridge
+           state: up
+           bridge:
+             port:
+               - name: eno8603
+             options:
+               stp:
+                 enabled: false
+   virtualization:
+     vlanNetworkAttachmentDefinitions:
+       - vlan: 1              # naming label only — plain access port, no real 802.1Q tagging applied
+         bridgeInterface: br-eno8603
+   ```
+   (kept all other existing values unchanged). The `network-interface-management` child Application appeared automatically, installed the `kubernetes-nmstate-operator`, and the `NodeNetworkConfigurationPolicy` reached `Available/SuccessfullyConfigured` — confirmed `br-eno8603` is `UP` on node0 via `oc debug node/node0`. The `virtualization` Application picked up the new `vlan1` `NetworkAttachmentDefinition` (`cnv-bridge` CNI bound to `br-eno8603`).
+2. **Bootstrap source**: added the same two blocks to the baked-in values in `images/ipc4/ocp-agent-install/configmap.yaml` (this repo), and synced the change to IPC4's live manifest copy at `/etc/microshift/manifests.d/ocp-agent-install/configmap.yaml` — verified via byte-for-byte diff that only the intended two blocks were added (live already had several pieces of pre-existing, previously-flagged drift from the repo — a missing `pipelines` key, missing `gitRepoURL`/`catalogSource`, `commonBootImageImport: true` vs. live cluster's actual `false` — none of that was touched here, left as-is per the existing note in `SNO-GitOps-Workflow.md` "The catch").
+
+**Next step (not yet done)**: attach the `vlan1` NAD as a second network interface on the Win11 VM spec, so it gets an address from the 192.168.1.x network directly instead of relying on masquerade/NAT.
