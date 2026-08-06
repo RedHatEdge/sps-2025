@@ -155,3 +155,15 @@ spec:
                 "${GITEA_URL}/api/v1/repos/migrate" \
               && echo "Mirror created successfully" \
               || { echo "Failed to create mirror"; exit 1; }
+
+              # Disabling prune stops the periodic mirror sync from deleting any
+              # local-only branches pushed directly to this repo (e.g. for lab
+              # customizations that don't exist on the upstream GitHub repo).
+              echo "Disabling prune on the mirror..."
+              curl -sf -X PATCH \
+                -H "Content-Type: application/json" \
+                -u "${GITEA_USER}:${GITEA_PASS}" \
+                -d '{"enable_prune": false}' \
+                "${GITEA_URL}/api/v1/repos/${GITEA_USER}/${REPO_NAME}" \
+              && echo "Prune disabled successfully" \
+              || { echo "Failed to disable prune"; exit 1; }

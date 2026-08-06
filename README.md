@@ -1,5 +1,38 @@
-# sps-2025
+
+
+# SPS-2025
 This repository contains setup information/automation for the Red Hat demos for SPS 2025. It is provided "as-is", for educational and informative reasons only.
+
+## Table of Contents
+- [Demo Architecture](#demo-architecture)
+- [Setup](#setup)
+  - [Basic setup](#basic-setup)
+    - [Setting basic variables](#setting-basic-variables)
+  - [Setup bootstrap on IPC4](#setup-bootstrap-on-ipc4)
+  - [Setup the SNO (ACP)](#setup-the-sno-acp)
+    - [Setup ACP Operator Catalog for disconnected scenario](#setup-acp-operator-catalog-for-disconnected-scenario)
+    - [Adding / mirroring new container image on ACP](#adding--mirroring-new-container-image-on-acp)
+    - [Additional disconnected procedures](#additional-disconnected-procedures)
+    - [Setup Nvidia Jetson device](#setup-nvidia-jetson-device)
+- [Workloads](#workloads)
+  - [IPC4](#ipc4)
+    - [GitOps & Gitea manual deployment](#gitops--gitea-manual-deployment)
+  - [Nvidia Jetson](#nvidia-jetson)
+    - [Defect detector application](#defect-detector-application)
+  - [Single Node Openshift (ACP)](#single-node-openshift-acp)
+    - [MES Critical Manufacturing](#mes-critical-manufacturing)
+    - [German Edge Cloud Oncite](#german-edge-cloud-oncite)
+    - [MQTT Broker](#mqtt-broker)
+    - [Codesys IDE (win11 on OCP-V)](#codesys-ide-win11-on-ocp-v)
+    - [Ethernet/IP IO - Groov Opto22](#ethernetip-io---groov-opto22)
+    - [Ethernet/IP Drive - AppliedMotion TSM23X3B-IP](#ethernetip-drive---appliedmotion-tsm23x3b-ip)
+    - [FTView - Win2019 VM](#ftview---win2019-vm)
+    - [OPCUA Manufacturing Server (simulated process)](#opcua-manufacturing-server-simulated-process)
+    - [OPCUA / MQTT gateway (Takebishi)](#opcua--mqtt-gateway-takebishi)
+    - [Defect recognition application (simulated process)](#defect-recognition-application-simulated-process)
+    - [HMI open source connected to MQTT Broker](#hmi-open-source-connected-to-mqtt-broker)
+    - [Dell iDrac Service Module](#dell-idrac-service-module)
+- [Access to systems for SPS 2025](#access-to-systems-for-sps-2025)
 
 ## Demo Architecture
 
@@ -463,12 +496,16 @@ Windows VM creation adapted from [here](https://github.com/kubevirt/kubevirt-tek
 
 In case you cannot connect, make sure to check this blog entry to terminate installation offline: https://medium.com/@zorozeri/windows-11-arm-having-no-network-connection-on-vmware-fusion-pro-5b06e894811e  
 
-### Ethernet/IP IO - Groov Opto22
+#### Ethernet/IP IO - Groov Opto22
 To find devices on the network install [groov find](workloads/ETH-IP-IO-Module/groovFind.exe)
 
 
-### Ethernet/IP Drive - AppliedMotion TSM23X3B-IP
+#### Ethernet/IP Drive - AppliedMotion TSM23X3B-IP
 To find the drive on the network install their [step-servo-tuner](workloads/ETH-IP-StepServoDrive/Step-Servo-Quick-Tuner-Setup-3.0.21.1120(AMP).exe)
+
+#### FTView - Win2019 VM
+You can find the zipped image here: https://drive.google.com/file/d/15HqzSuJ-Bt8H59C7CkSe4P1LT49a9kGi/view?ts=6920940b
+Unzip it with: `$ gzip -d SPS/sps-2025/workloads/FTView-VM/export-ftview-win2019.img.gz`
 
 #### OPCUA Manufacturing Server (simulated process)
 
