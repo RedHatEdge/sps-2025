@@ -1,6 +1,6 @@
 # CODESYS workflow — Marketing Demo Stand
 
-How the `RedHat_Demo_MarketingStand_Working` CODESYS project gets from source in this repo to running PLC logic driving the physical demo stand, and how that fits into the rest of the SPS-2025 stack (IPC4 → SNO/ACP → Win11 VM).
+This doc focuses on **Purdue Model Level 0 (physical process) and Level 1 (basic control)** for the marketing demo stand: the field devices themselves, the CODESYS logic that controls them, and how a logic change turns into a running container on IPC1. It does not cover the platform/GitOps layers (IPC4 build, Gitea, ArgoCD, SNO) — see [HOW_IT_WORKS.md](../../HOW_IT_WORKS.md) for that.
 
 ## 1) What's in this folder
 
@@ -9,120 +9,96 @@ How the `RedHat_Demo_MarketingStand_Working` CODESYS project gets from source in
 
 Treat the `.xml` as the reviewable record of what the logic does; treat the `.projectarchive` as the thing you actually open in CODESYS IDE to keep working on it.
 
-## 2) The physical demo stand and its I/O
+## 2) Level 0 — the physical process
 
-The stand's I/O is split across two Opto 22 **groov RIO** EtherNet/IP I/O modules and one Applied Motion Products **TSM23XIP-XD** integrated step-servo drive, all on the `192.168.1.0/24` industrial network:
+Level 0 of the Purdue Model is the physical process itself: the sensors and actuators that do the actual work, with no logic of their own. On this demo stand that's pushbuttons, indicator LEDs, toggle switches, a potentiometer, a three-color stack light, a relay, and a small motor — wired to three EtherNet/IP field devices on the `192.168.1.0/24` network:
 
-| Device | Role | Address |
-|---|---|---|
-| `Opto22_RIO1` | Red/Green/Blue pushbuttons + their LEDs, `Relay_In`, `Relay_Out` | `192.168.1.11` |
-| `Opto22_RIO2` | Red/Yellow/Green stack lights, `Potentiometer` (analog in), `Toggle_1`, `Toggle_2` | `192.168.1.12` |
-| `TSM23XIP_XD` | Integrated step-servo drive driving the demo motor | `192.168.1.13` (configured in the EtherNet/IP scanner's target-IP parameter) |
+| Device | Role | Address | I/O it exposes |
+|---|---|---|---|
+| `Opto22_RIO1` — [groov RIO](https://www.opto22.com/products/groov-rio) | Universal edge I/O | `192.168.1.11` | `Red_Button`, `Green_Button`, `Blue_Button` (digital in) → `Red_Button_LED`, `Green_Button_LED`, `Blue_Button_LED` (digital out); `Relay_In`, `Relay_Out` |
+| `Opto22_RIO2` — [groov RIO](https://www.opto22.com/products/groov-rio) | Universal edge I/O | `192.168.1.12` | `Toggle_1`, `Toggle_2` (digital in), `Potentiometer` (analog in) → `Red_Stacklight`, `Yellow_Stacklight`, `Green_Stacklight` (digital out) |
+| `TSM23XIP_XD` — Applied Motion [TSM23 integrated step-servo](https://www.applied-motion.com/products/series/ethernet-ip-products) | Motion / actuation | `192.168.1.13` | Demo motor motion commands + status, over CIP explicit and implicit (I/O) messaging |
 
-Reference material for these devices lives alongside this folder: [ETH-IP-IO-Module](../ETH-IP-IO-Module/) (groov RIO — `groovFind.exe` for discovery, groov RIO user guide) and [ETH-IP-StepServoDrive](../ETH-IP-StepServoDrive/) (TSM23XIP-XD hardware manual, EDS file, step-servo tuner).
+**groov RIO** (Opto 22): a rack-free, PoE-powered edge I/O module. Each unit here provides 8 software-configurable channels (any mix of digital/analog in or out) plus 2 electromechanical relays, an onboard I/O processor, and — beyond the EtherNet/IP CIP adapter mode used by this project — native support for MQTT/Sparkplug, OPC UA, Modbus/TCP and REST, none of which this demo currently uses. Reference: [ETH-IP-IO-Module](../ETH-IP-IO-Module/) in this repo (`groovFind.exe` for discovery, the groov RIO user's guide), and Opto 22's own [groov RIO data sheet](https://documents.opto22.com/2317_groov_RIO_Data_Sheet.pdf).
 
-## 3) CODESYS project structure (logic)
+**TSM23XIP-XD** (Applied Motion Products): a NEMA 23 integrated closed-loop step-servo — motor, drive electronics, and an EtherNet/IP interface combined into one unit, powered at 24–48VDC. It exposes over 100 commands and 130 registers over EtherNet/IP for motion control, I/O, and configuration. Reference: [ETH-IP-StepServoDrive](../ETH-IP-StepServoDrive/) in this repo (hardware manual, EDS file, step-servo tuner utility), and Applied Motion's [EtherNet/IP product line](https://www.applied-motion.com/products/series/ethernet-ip-products).
 
-Under the `Device` → `Application`:
+All three are **EtherNet/IP CIP adapters** (targets): they accept the Class 1 (implicit, cyclic I/O) connection from a scanner and expose input/output assemblies, and also answer Class 3 (explicit) service requests. They never initiate traffic themselves — that's the scanner's job, which is where Level 1 comes in.
 
-- **`PLC_PRG`** — main program, scheduled by **`MainTask`**.
-- **`ENIPScannerIOTask`** / **`ENIPScannerServiceTask`** — the two tasks the EtherNet/IP scanner uses to cycle I/O data and handle service/explicit messaging with the three field devices above.
-- **`FUNC_SCALE`** — scales a raw input (the `Potentiometer` reading) to an engineering range.
-- **`LIGHT_CYCLE`** — drives the stack-light sequencing logic.
-- **`MOTOR`** — commands the `TSM23XIP_XD` servo drive.
-- **`GVL`** — global variable list tying the I/O channel mappings together.
+## 3) Level 1 — basic control (the vPLC)
 
-The device tree (`Ethernet` → `EtherNet_IP_Scanner`) is what maps these POUs to the physical channels listed in §2 — e.g. `Opto22_RIO1`'s channels are named directly after the buttons/relay they represent (`Red_Button`, `Blue_Button_LED`, `Relay_Out`, ...).
+Level 1 is the controller that closes the loop on Level 0: it scans inputs, runs logic, and drives outputs. Here that's a **CODESYS soft-PLC runtime (vPLC) running as a Podman container on IPC1** (a RHEL9 host — not yet documented elsewhere in this repo). The runtime is [CODESYS Virtual Control SL](https://www.codesys.com/products/runtime/virtual-control-sl/), CODESYS's runtime built specifically to run under a container or hypervisor rather than bare metal.
 
-## 4) Where it runs: IDE + vPLC on the Win11 VM
+Inside the `Device` → `Application`, the project structure is:
 
-Per the main [README.md](../../README.md#codesys-ide-win11-on-ocp-v) setup steps, the Windows 11 VM (created via the `kubevirt-tekton-tasks` windows-efi-installer pipeline — [workloads/WIN11-VM](../WIN11-VM/) — running under OpenShift Virtualization on the SNO/ACP cluster) hosts two things:
+- **`PLC_PRG`** — the main program, cyclically scheduled by **`MainTask`**. It reads the Level 0 inputs (buttons, toggles, potentiometer), runs the demo logic, and writes the Level 0 outputs (LEDs, stack lights, motor commands).
+- **`FUNC_SCALE`** — scales the raw `Potentiometer` analog reading into an engineering-range value used elsewhere in the logic.
+- **`LIGHT_CYCLE`** — drives the red/yellow/green stack-light sequencing.
+- **`MOTOR`** — issues motion commands to the `TSM23XIP_XD` servo drive.
+- **`GVL`** — the global variable list binding these POUs to the actual I/O channel names shown in the table above.
 
-- **CODESYS IDE 3.5 SP22** — the engineering tool used to open/edit the project and download logic to the runtime.
-- **CODESYS Virtual Control for Linux SL** (the **vPLC**) — the actual soft-PLC runtime that executes `PLC_PRG` and runs the EtherNet/IP scanner talking to the three field devices.
+The EtherNet/IP side of Level 1 is handled by the `Ethernet` → `EtherNet_IP_Scanner` device, which acts as the CIP **scanner** (connection originator) for all three Level 0 adapters, and by two dedicated tasks:
 
-The VM has two virtual NICs for two different jobs:
+- **`ENIPScannerIOTask`** — the cyclic Class 1 I/O scan: pulls current input assemblies from `Opto22_RIO1`/`Opto22_RIO2`/`TSM23XIP_XD` and pushes current output assemblies to them, on every scan.
+- **`ENIPScannerServiceTask`** — Class 3 explicit/service messaging (e.g. one-off parameter reads/writes, diagnostics) to the same three devices.
 
-- The original **masquerade** interface (10.0.2.x) — management/programming access: RDP into the VM, SSH, and CODESYS IDE↔runtime communication if done locally on the VM.
-- The **bridged** interface, via the `vlan1` `NetworkAttachmentDefinition` (`cnv-bridge` CNI, bound to the `br-eno8603` Linux bridge, itself on the physical `eno8603` port as a plain untagged access port) — this is what puts the vPLC's EtherNet/IP scanner directly on the `192.168.1.0/24` segment the three field devices live on, with a manually-configured static IP (no DHCP on that network). See [Troubleshoot-July2026.md](../../Troubleshoot-July2026.md) for how that bridge was set up and made durable across a reinstall, and [HOW_IT_WORKS.md](../../HOW_IT_WORKS.md) for the broader GitOps mechanics behind it.
+For this to reach the field devices, IPC1's network interface carrying the vPLC container needs an address on `192.168.1.0/24` — the same segment `Opto22_RIO1`, `Opto22_RIO2`, and `TSM23XIP_XD` live on.
 
-## 5) End-to-end workflow
+## 4) Change → build → deploy workflow
 
-1. **IPC4** builds MicroShift, brings up Gitea (mirroring `acp-standard-services-public`) and the local operator mirror.
-2. **SNO/ACP** installs from the generated agent ISO; ArgoCD syncs `acp-standard-services`, which brings in `kubevirt-hyperconverged` (OpenShift Virtualization), the `kubernetes-nmstate-operator`, and — via the values described in §4 — the `br-eno8603` bridge and `vlan1` NAD.
-3. The **Win11 VM** is created via the windows-efi-installer pipeline, then CODESYS IDE and the vPLC runtime are installed manually per the README steps, and the `vlan1` interface is attached to the VM.
-4. The `.projectarchive` from this folder is opened in CODESYS IDE on the VM, missing device descriptions are resolved (Opto 22 library from the Opto 22 store, TSM23XIP-XD EDS from [workloads/ETH-IP-StepServoDrive](../ETH-IP-StepServoDrive/)), and the project is downloaded to the local vPLC runtime.
-5. The vPLC's EtherNet/IP scanner, now reachable on `192.168.1.0/24` through the bridged NIC, connects to the two `groov RIO` modules and the `TSM23XIP-XD` drive and starts cycling I/O — buttons/toggles/potentiometer in, LEDs/stack lights/servo motion out.
-6. Logic changes made in the IDE get re-exported to `RedHat_Demo_MarketingStand_Working.xml` (and the `.projectarchive` re-saved) and committed back to this repo, so the demo logic stays version-controlled alongside the rest of the stack.
+1. An engineer edits the logic in CODESYS IDE, opening the `.projectarchive` from this folder, and re-exports the project to `RedHat_Demo_MarketingStand_Working.xml` (re-saving the `.projectarchive` too) — both get committed back to this repo, so the demo logic stays version-controlled.
+2. A new container image is built that embeds the exported project on top of the CODESYS Virtual Control SL runtime base image. (The build pipeline/Containerfile for this is not yet documented in this repo.)
+3. The new image is deployed to run as a **Podman** container on **IPC1** (RHEL9 host — not yet documented in this repo).
+4. On start, the containerized vPLC loads the project, `MainTask`/`PLC_PRG` begins cycling, and the EtherNet/IP scanner opens Class 1 connections to `Opto22_RIO1`, `Opto22_RIO2`, and `TSM23XIP_XD` over IPC1's `192.168.1.0/24` interface.
+5. Level 1 now closes the loop on Level 0 continuously: button/toggle/potentiometer state in, LED/stack-light/servo-motion commands out.
 
 ## Diagram
 
 ```mermaid
-flowchart TB
+flowchart LR
   subgraph Repo[This repo]
-    XML[RedHat_Demo_MarketingStand_Working.xml<br/>git-diffable export]
-    ARCHIVE[.projectarchive<br/>full project + libraries, Git LFS]
+    ARCHIVE[.projectarchive<br/>opened/edited in CODESYS IDE]
+    XML[RedHat_Demo_MarketingStand_Working.xml<br/>re-exported on every change]
   end
 
-  subgraph IPC4[IPC4 - MicroShift]
-    GITEA[Gitea pull mirror]
-    MIRROR[oc-mirror local registry]
+  subgraph Build[Container build]
+    IMG[New container image:<br/>CODESYS Virtual Control SL<br/>+ exported project]
   end
 
-  subgraph SNO[SNO / ACP - OpenShift]
-    ARGO[ArgoCD]
-    KVIRT[OpenShift Virtualization / KubeVirt]
-    NMSTATE[nmstate: br-eno8603 bridge]
-    NAD[NAD: vlan1 - cnv-bridge]
-
-    subgraph WIN11[Win11 VM]
-      IDE[CODESYS IDE 3.5 SP22]
-      VPLC[CODESYS Virtual Control for Linux SL - vPLC runtime<br/>PLC_PRG / MainTask / ENIPScanner tasks]
-      NIC1[NIC1: masquerade 10.0.2.x<br/>management / RDP / IDE-runtime]
-      NIC2[NIC2: bridged, static 192.168.1.x]
-    end
+  subgraph IPC1[IPC1 - RHEL9 host, Podman - not yet documented]
+    VPLC[vPLC Podman container<br/>MainTask / PLC_PRG<br/>ENIPScannerIOTask / ENIPScannerServiceTask]
   end
 
-  subgraph Field[EtherNet/IP field devices - 192.168.1.0/24]
+  subgraph Field["Level 0 - EtherNet/IP field devices - 192.168.1.0/24"]
     RIO1[Opto22 groov RIO 1<br/>192.168.1.11<br/>buttons, LEDs, relay]
-    RIO2[Opto22 groov RIO 2<br/>192.168.1.12<br/>stack lights, potentiometer, toggles]
+    RIO2[Opto22 groov RIO 2<br/>192.168.1.12<br/>toggles, potentiometer, stack lights]
     SERVO[Applied Motion TSM23XIP-XD<br/>192.168.1.13<br/>step-servo drive]
   end
 
   subgraph Stand[Physical demo stand]
-    BTNS[Pushbuttons + LEDs<br/>Red / Green / Blue]
+    BTNS[Pushbuttons + LEDs]
     TOGGLES[Toggles + Potentiometer]
-    LIGHTS[Stack light<br/>Red / Yellow / Green]
+    LIGHTS[Stack light]
     MOTOR[Motor]
   end
 
-  GITEA -->|charts| ARGO
-  MIRROR -->|operator images| SNO
-  ARGO -->|deploys| KVIRT
-  ARGO -->|deploys| NMSTATE
-  ARGO -->|deploys| NAD
-  KVIRT --> WIN11
-  NMSTATE --> NIC2
-  NAD --> NIC2
+  ARCHIVE -- edit --> XML
+  XML -- embedded into --> IMG
+  IMG -- deployed to --> VPLC
 
-  IDE -->|download project| VPLC
-  ARCHIVE -. opened in .-> IDE
-  IDE -. exports .-> XML
-
-  VPLC -- EtherNet/IP scanner --> NIC2
-  NIC2 -- untagged access port --> RIO1
-  NIC2 -- untagged access port --> RIO2
-  NIC2 -- untagged access port --> SERVO
+  VPLC -- EtherNet/IP scanner<br/>CIP Class 1 + Class 3 --> RIO1
+  VPLC -- EtherNet/IP scanner --> RIO2
+  VPLC -- EtherNet/IP scanner --> SERVO
 
   RIO1 --- BTNS
   RIO2 --- TOGGLES
   RIO2 --- LIGHTS
   SERVO --- MOTOR
 
-  classDef infra fill:#e8f5e9,stroke:#2e7d32;
   classDef control fill:#e3f2fd,stroke:#1565c0;
   classDef field fill:#fff3e0,stroke:#e65100;
-  class IPC4,GITEA,MIRROR infra;
-  class ARGO,KVIRT,NMSTATE,NAD,IDE,VPLC control;
+  classDef repo fill:#e8f5e9,stroke:#2e7d32;
+  class ARCHIVE,XML,IMG repo;
+  class VPLC control;
   class RIO1,RIO2,SERVO,Stand field;
 ```
