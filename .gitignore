@@ -16,3 +16,6 @@ pull-secret*
 pullsecret*
 oc-mirror*
 workloads/FTView-VM/export-ftview-win2019.img.gz
+
+# local packages
+*.rpm

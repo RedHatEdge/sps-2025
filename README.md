@@ -452,6 +452,8 @@ For building the Defect Detector Application you can find the instructions [here
 
 You can either use Flightctl to deploy Quadlets for autostarting Defect Detector Application and AMQ Artemis or [manually deploy them](https://github.com/lucamaf/edge-defect-detector#how-to-start-everything-automatically-at-system-boot)  
 
+![alt text](image-16.png)  
+
 
 ###  3.3. <a name='SingleNodeOpenshiftACP'></a>Single Node Openshift (ACP)  
 ####  3.3.1. <a name='MESCriticalManufacturing'></a>MES Critical Manufacturing

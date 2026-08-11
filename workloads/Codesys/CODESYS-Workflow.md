@@ -15,9 +15,9 @@ Level 0 of the Purdue Model is the physical process itself: the sensors and actu
 
 | Device | Role | Address | I/O it exposes |
 |---|---|---|---|
-| `Opto22_RIO1` — [groov RIO](https://www.opto22.com/products/groov-rio) | Universal edge I/O | `192.168.1.11` | `Red_Button`, `Green_Button`, `Blue_Button` (digital in) → `Red_Button_LED`, `Green_Button_LED`, `Blue_Button_LED` (digital out); `Relay_In`, `Relay_Out` |
-| `Opto22_RIO2` — [groov RIO](https://www.opto22.com/products/groov-rio) | Universal edge I/O | `192.168.1.12` | `Toggle_1`, `Toggle_2` (digital in), `Potentiometer` (analog in) → `Red_Stacklight`, `Yellow_Stacklight`, `Green_Stacklight` (digital out) |
-| `TSM23XIP_XD` — Applied Motion [TSM23 integrated step-servo](https://www.applied-motion.com/products/series/ethernet-ip-products) | Motion / actuation | `192.168.1.13` | Demo motor motion commands + status, over CIP explicit and implicit (I/O) messaging |
+| `Opto22_RIO1` — [groov RIO](https://www.opto22.com/products/groov-rio) | Universal edge I/O | `192.168.100.11` | `Red_Button`, `Green_Button`, `Blue_Button` (digital in) → `Red_Button_LED`, `Green_Button_LED`, `Blue_Button_LED` (digital out); `Relay_In`, `Relay_Out` |
+| `Opto22_RIO2` — [groov RIO](https://www.opto22.com/products/groov-rio) | Universal edge I/O | `192.168.100.12` | `Toggle_1`, `Toggle_2` (digital in), `Potentiometer` (analog in) → `Red_Stacklight`, `Yellow_Stacklight`, `Green_Stacklight` (digital out) |
+| `TSM23XIP_XD` — Applied Motion [TSM23 integrated step-servo](https://www.applied-motion.com/products/series/ethernet-ip-products) | Motion / actuation | `192.168.100.13` | Demo motor motion commands + status, over CIP explicit and implicit (I/O) messaging |
 
 **groov RIO** (Opto 22): a rack-free, PoE-powered edge I/O module. Each unit here provides 8 software-configurable channels (any mix of digital/analog in or out) plus 2 electromechanical relays, an onboard I/O processor, and — beyond the EtherNet/IP CIP adapter mode used by this project — native support for MQTT/Sparkplug, OPC UA, Modbus/TCP and REST, none of which this demo currently uses. Reference: [ETH-IP-IO-Module](../ETH-IP-IO-Module/) in this repo (`groovFind.exe` for discovery, the groov RIO user's guide), and Opto 22's own [groov RIO data sheet](https://documents.opto22.com/2317_groov_RIO_Data_Sheet.pdf).
 
@@ -43,6 +43,65 @@ The EtherNet/IP side of Level 1 is handled by the `Ethernet` → `EtherNet_IP_Sc
 - **`ENIPScannerServiceTask`** — Class 3 explicit/service messaging (e.g. one-off parameter reads/writes, diagnostics) to the same three devices.
 
 For this to reach the field devices, IPC1's network interface carrying the vPLC container needs an address on `192.168.1.0/24` — the same segment `Opto22_RIO1`, `Opto22_RIO2`, and `TSM23XIP_XD` live on.
+
+## 4) Manual deployment of the Codesys Application to softPLC
+
+Deploy Control SL (softPLC) to the Device
+![alt text](image-3.png)
+
+Connect to the new Device
+![alt text](image-4.png)
+
+Install Virtual Control to the Device
+![alt text](image-5.png) 
+
+Installed
+![alt text](image-6.png)
+
+Add a new instance of Virtual Control
+![alt text](image-7.png)
+
+New VPLC container
+![alt text](image-8.png)
+
+Configure exposed / mapped ports
+![alt text](image-10.png)
+
+Start the instance
+![alt text](image-9.png)
+
+Opening target Device properties
+![alt text](image.png)  
+
+Adding new Device (IPC2)
+![alt text](image-1.png)
+
+Have to open firewall port 11740
+![alt text](image-2.png)
+
+Connected!
+![alt text](image-11.png)
+
+Before uploading the application, make sure the IP addresses for Ethernet/IP components are correct
+![alt text](image-16.png)  
+![alt text](image-15.png)  
+![alt text](image-17.png)  
+![alt text](image-18.png)
+
+Deploy the application to VPLC
+![alt text](image-12.png)
+
+User management for VPLC (using for now `R3dh4t123!`)
+![alt text](image-13.png)
+
+Upload the application to VPLC
+![alt text](image-14.png)
+
+Start the application on VPLC
+![alt text](image-20.png)
+
+Codemeter Licensing
+![alt text](image-19.png)
 
 ## 4) Change → build → deploy workflow
 
@@ -70,9 +129,9 @@ flowchart LR
   end
 
   subgraph Field["Level 0 - EtherNet/IP field devices - 192.168.1.0/24"]
-    RIO1[Opto22 groov RIO 1<br/>192.168.1.11<br/>buttons, LEDs, relay]
-    RIO2[Opto22 groov RIO 2<br/>192.168.1.12<br/>toggles, potentiometer, stack lights]
-    SERVO[Applied Motion TSM23XIP-XD<br/>192.168.1.13<br/>step-servo drive]
+    RIO1[Opto22 groov RIO 1<br/>192.168.100.11<br/>buttons, LEDs, relay]
+    RIO2[Opto22 groov RIO 2<br/>192.168.100.12<br/>toggles, potentiometer, stack lights]
+    SERVO[Applied Motion TSM23XIP-XD<br/>192.168.100.13<br/>step-servo drive]
   end
 
   subgraph Stand[Physical demo stand]

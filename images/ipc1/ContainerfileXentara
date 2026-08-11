@@ -1,0 +1,13 @@
+# This image will be tagged as quay.io/luferrar/sps:ipc-rh10-rt-xentara
+FROM quay.io/luferrar/sps:ipc-rh10-rt
+
+# copy rpms to the image
+COPY xentara-2.0.11-1.el10.x86_64.rpm xentara-modbus-driver-2.0+1.2.1-1.el10.x86_64.rpm xentara-mqtt-client-2.0+2.2-1.el10.x86_64.rpm  xentara-cpp-control-2.0+1.0.2-1.el10.x86_64.rpm /tmp/
+
+# install xentara rpms
+RUN dnf -y install libstdc++ && \
+    dnf -y install /tmp/xentara-*.rpm && \
+    dnf clean all
+
+# Lint the build
+RUN bootc container lint
