@@ -1,0 +1,132 @@
+# This image will be tagged as quay.io/luferrar/sps:ipc-rh10rt
+FROM registry.redhat.io/rhel10/rhel-bootc:latest
+
+#Install rt-kernel
+RUN dnf config-manager --set-enabled rhel-10-for-x86_64-rt-rpms
+RUN dnf remove -y kernel kernel-{core,modules,modules-core} \
+    && dnf install -y kernel-rt-core kernel-rt-modules kernel-rt-modules-core \
+    && ls -la /usr/lib/modules \
+    && find /usr/lib/modules/ -mindepth 1 -maxdepth 1 -type d ! -iname '*rt*' -exec rm -rf {} +
+
+#Install tuned & realtime stuff
+RUN dnf install -y \
+    tuned \
+    tuned-profiles-realtime \
+    realtime-tests \
+    realtime-setup \
+    rteval \
+    rteval-loads \
+    rtla \
+    tuna \
+    stress-ng \
+    tmux \
+    && dnf clean all
+RUN systemctl enable tuned 
+
+ARG TARGET_PROFILE
+#since we cannot apply tuned during the build we create a systemd unit that will be executed on the first boot and apply tuned profile.
+COPY rt-tuning-first-boot.sh /usr/local/sbin/custom-rt-tuning-first-boot.sh 
+RUN chmod +x /usr/local/sbin/custom-rt-tuning-first-boot.sh
+COPY rt-post-install-tuning.service /usr/lib/systemd/system/rt-post-install-tuning.service
+RUN systemctl enable rt-post-install-tuning
+RUN systemctl disable irqbalance
+
+#Replacing placeholder in the script with actual profile name
+RUN sed -i "s/<profile_name>/${TARGET_PROFILE}/" /usr/local/sbin/custom-rt-tuning-first-boot.sh
+
+#adding arguments for RT kernel
+RUN rm /usr/lib/bootc/kargs.d/*.toml ;\
+  echo -e "kargs = [\"iommu=pt\"]\nmatch-architectures = [\"x86_64\"]" > /usr/lib/bootc/kargs.d/01-iommu-pt.toml ; \
+  echo -e "kargs = [\"intel_iommu=on\"]\nmatch-architectures = [\"x86_64\"]" > /usr/lib/bootc/kargs.d/02-intel-iommu.toml ; \
+  echo -e "kargs = [\"default_hugepagesz=1G\"]\nmatch-architectures = [\"x86_64\", \"aarch64\"]" > /usr/lib/bootc/kargs.d/03-hugepage.toml ; \
+  echo -e "kargs = [\"idle=poll\"]\nmatch-architectures = [\"x86_64\", \"aarch64\"]" > /usr/lib/bootc/kargs.d/04-idle-pool.toml ; \
+  echo -e "kargs = [\"rcutree.nocb_patience_delay=1000\"]\nmatch-architectures = [\"x86_64\", \"aarch64\"]" > /usr/lib/bootc/kargs.d/05-rcu-patience.toml ; \
+  echo -e "kargs = [\"console=ttyS1,115200\"]\nmatch-architectures = [\"x86_64\"]" > /usr/lib/bootc/kargs.d/00-console-intel.toml ; \
+  echo -e "kargs = [\"console=tty0 console=ttyAMA0,115200n81\"]\nmatch-architectures = [\"aarch64\"]" > /usr/lib/bootc/kargs.d/00-console-arm.toml ;  
+
+ARG RTCPU_LIST=1
+#adding in the end so that if we build image for guest and host we can use cache
+RUN sed -i "s/^isolated_cores.*/isolated_cores=${RTCPU_LIST}/" /etc/tuned/${TARGET_PROFILE}-variables.conf
+
+# Additional packages including graphical
+#RUN dnf -y group install GNOME && \
+RUN dnf -y install \
+#    firefox \
+    cockpit \
+    cockpit-podman \
+    mkpasswd \
+#    nmstate \
+    vim-enhanced \
+    NetworkManager-wifi \
+    iwl* \
+    systemd-container \
+    git \
+    lorax \
+    ansible-core \
+    && dnf clean all
+
+# Podman-compose
+# Install packages from EPEL
+RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm \
+    && dnf clean all
+RUN dnf install -y \
+    podman-compose \
+    btop \
+    && dnf clean all
+
+# Flightctl CLI and agent
+RUN dnf config-manager --add-repo https://rpm.flightctl.io/flightctl-epel.repo
+RUN dnf install -y \
+    flightctl-agent \
+    flightctl-cli \
+    && dnf clean all
+
+# install and enable firewall 
+RUN dnf -y install firewalld && \
+    dnf -y clean all
+
+# copy rpms to the image
+COPY xentara-2.0.11-1.el10.x86_64.rpm xentara-modbus-driver-2.0+1.2.1-1.el10.x86_64.rpm xentara-mqtt-client-2.0+2.2-1.el10.x86_64.rpm  xentara-cpp-control-2.0+1.0.2-1.el10.x86_64.rpm /tmp/
+
+# install xentara rpms
+RUN dnf -y install libstdc++ && \
+    dnf -y install /tmp/xentara-*.rpm && \
+    dnf clean all
+
+RUN firewall-offline-cmd --add-service=cockpit && \
+    systemctl enable firewalld
+
+# Enable cockpit
+RUN systemctl enable cockpit.socket
+
+## Flightctl automatic enrollment, feel free to remove if you don't want to use it. 
+## You can also use the flightctl login command manually after the first boot.
+ARG FLIGHTCTL_API_URL
+ARG FLIGHTCTL_USERNAME
+ARG FLIGHTCTL_PASSWORD
+
+# Flightctl enrollment
+RUN rm /var/lib/flightctl/certs/* || true
+RUN flightctl login "https://${FLIGHTCTL_API_URL}" --username "${FLIGHTCTL_USERNAME}" --password "${FLIGHTCTL_PASSWORD}" --provider my-keycloak --insecure-skip-tls-verify
+RUN flightctl certificate request --signer=enrollment --expiration=365d --output=embedded > /etc/flightctl/config.yaml
+
+
+# Disable auto-updating
+RUN systemctl mask bootc-fetch-apply-updates.timer
+
+# enable sudo without password for wheel group
+RUN echo "%wheel        ALL=(ALL)       NOPASSWD: ALL" > /etc/sudoers.d/wheel-sudo
+
+# adding realtime group via systemd-sysusers (runs at boot, not build time,
+# so it survives the /etc passwd/group local-state merge that a build-time
+# groupadd does not). 
+COPY realtime-group.conf /usr/lib/sysusers.d/realtime-group.conf
+
+COPY add-realtime-group.sh /usr/local/sbin/add-realtime-group.sh
+RUN chmod +x /usr/local/sbin/add-realtime-group.sh
+COPY realtime-group-first-boot.service /usr/lib/systemd/system/realtime-group-first-boot.service
+RUN systemctl enable realtime-group-first-boot
+
+
+# Lint the build
+RUN bootc container lint

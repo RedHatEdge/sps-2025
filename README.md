@@ -446,7 +446,11 @@ The basic ACP services have already been deployed and the source can be found [h
 
 ###  3.2. <a name='NvidiaJetson'></a>Nvidia Jetson  
 ####  3.2.1. <a name='Defectdetectorapplication'></a>Defect detector application  
-For Device flashing and GPU application deployment you can find the instructions [here](https://github.com/lucamaf/edge-defect-detector)
+For Device flashing you can find the instructions [here](https://github.com/lucamaf/edge-defect-detector#installing-rhel-imagemode-98-on-nvidia-jetson)  
+
+For building the Defect Detector Application you can find the instructions [here](https://github.com/lucamaf/edge-defect-detector#how-to-build-and-run-the-container)  
+
+You can either use Flightctl to deploy Quadlets for autostarting Defect Detector Application and AMQ Artemis or [manually deploy them](https://github.com/lucamaf/edge-defect-detector#how-to-start-everything-automatically-at-system-boot)  
 
 
 ###  3.3. <a name='SingleNodeOpenshiftACP'></a>Single Node Openshift (ACP)  

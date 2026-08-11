@@ -1,0 +1,14 @@
+[Unit]
+Description=Service to tune RT after installation of bootc
+Requires=tuned.service
+After=tuned.service
+ConditionPathExists=!/var/lib/rt-post-install-tuning.done
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/custom-rt-tuning-first-boot.sh
+ExecStartPost=/usr/bin/touch /var/lib/rt-post-install-tuning.done
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
