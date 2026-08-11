@@ -102,3 +102,215 @@ flowchart LR
   class VPLC control;
   class RIO1,RIO2,SERVO,Stand field;
 ```
+
+## 5) WIP: defect-check workflow (target design)
+
+**Not implemented yet.** This section documents the target design for gating the motion sequence on an MQTT-based defect check, and where it hooks into the logic that already exists. It's a plan to implement in CODESYS IDE, not a description of current behavior.
+
+### Target behavior
+
+0. **On PLC start**, the machine is in **Standby**: `Yellow_Stacklight` and `Green_Button_LED` both blink, nothing else active.
+1. User pushes **Green Button** → blinking stops, machine enters **Running**, and the drive moves to the next position.
+2. Once the move completes, the vPLC publishes an MQTT message signaling "position reached."
+3. The defect-detection app (running elsewhere, subscribed to that message) analyzes the piece and publishes a single result (defective / not defective) to a results topic, then goes idle again.
+4. The vPLC reads that result:
+   - **No defect** → green stack light on, wait 3 seconds, then move to the next position.
+   - **Defect** → red stack light on, red button LED on, and the sequence holds.
+5. User pushes **Red Button** to acknowledge the defect → drive moves to the next position.
+6. At any point while **Running** (outside of an active defect-ack hold), pushing **Red Button** stops the routine instead. After 5 seconds, the machine returns to **Standby** (step 0) and resumes blinking.
+
+### What already exists (verified from the project's ladder logic)
+
+- `PLC_PRG` already has a working step sequencer (`Seq0`…`Seq60`, `SeqMov1`, `SeqMov2`, `SeqStop`, `SeqErr`) that: checks run permissives, is started by `Cmd_Run`/`Sequence_Run` (wired alongside `Inp_Green_Button.State`), resets faults, enables the motor, performs an incremental move via the `AMPLib_LD` function blocks (`AMP_Relative_Move_0`, `AMP_Motor_Enable_0`, `AMP_Alarm_Reset_0`, `AMP_Normal_Stop_0`, `AMP_Status_Code_0`), waits for move-complete or a stop, then pauses (`Par_IndexPause` / `TON_IndexPauseDelay`) before looping back for the next move.
+- So **"push Green → move to next position" is already implemented.** What's missing is making it *stop and wait for an external decision* after the move, instead of looping on a fixed timer.
+- `LIGHT_CYCLE` currently just mirrors whichever pushbutton is pressed onto its matching LED/stack light (a demo/test-rig pattern) — it has no concept of defect/ack/standby yet and will need rework, not extension.
+- `Inp_Red_Button` is currently wired as the sequence's **Stop** input (`Cmd_Stop`/`Force_Stop`, per the "Wait For Move To Complete, or Stop button Press" rung) — this maps directly onto the new step 6 above, it just needs the 5-second return-to-standby tacked on.
+- **No MQTT client exists in the project at all** — the library list has `EtherNetIP Services`, `AMPLib_LD`, OPC UA (server), `OSCAT`, and the Opto 22 library, but nothing for MQTT or generic TCP/sockets. This is the main missing piece.
+- **No standby/blink state exists at all** — there's nothing today gating the sequencer behind a Green-Button-to-arm step; it's armed as soon as permissives are satisfied. The blinking itself has an easy building block, though: `OSCAT_BASIC` (already referenced in the project's library list) ships a [`BLINK`](https://content.helpme-codesys.com/en/libs/Util/Current/Signals/BLINK.html) function block for exactly this (on-time/off-time → toggling output) — no need to hand-roll a flip timer pair.
+
+### 1. New top-level state: STANDBY / RUNNING / STOPPING
+
+`DEFECT_CHECK` (below) only covers what happens *during* a run. It needs to sit inside a higher-level machine state that gates the whole sequence behind Green Button and handles the Red-Button-as-stop path:
+
+```iecst
+TYPE E_MachineState : (STANDBY, RUNNING, STOPPING);
+END_TYPE
+
+VAR
+    machineState    : E_MachineState := STANDBY;
+    blinkYellow     : OSCAT_BASIC.BLINK;    // already-referenced library, no new dependency
+    tonStopRecovery : TON;
+END_VAR
+
+CASE machineState OF
+    STANDBY:
+        blinkYellow(EN := TRUE, TIME_HIGH := T#500MS, TIME_LOW := T#500MS);
+        GVL.Out_YellowStack     := blinkYellow.OUT;
+        GVL.Out_GreenButtonLED  := blinkYellow.OUT;
+        IF Inp_Green_Button.State THEN
+            blinkYellow(EN := FALSE);
+            GVL.Out_YellowStack    := FALSE;
+            GVL.Out_GreenButtonLED := FALSE;
+            GVL.Cmd_Run := TRUE;             // arms the existing PLC_PRG sequencer
+            machineState := RUNNING;
+        END_IF
+
+    RUNNING:
+        // Red Button = stop, EXCEPT while DEFECT_CHECK is holding for an ack
+        IF Inp_Red_Button.State AND defectCheck.state <> DEFECT_CHECK.AWAIT_ACK THEN
+            GVL.Cmd_Run   := FALSE;
+            GVL.Cmd_Stop  := TRUE;           // existing Stop path (Cmd_Stop/Force_Stop)
+            tonStopRecovery(IN := TRUE, PT := T#5S);
+            machineState := STOPPING;
+        END_IF
+
+    STOPPING:
+        tonStopRecovery(IN := TRUE, PT := T#5S);
+        IF tonStopRecovery.Q THEN
+            tonStopRecovery(IN := FALSE);
+            GVL.Cmd_Stop            := FALSE;
+            GVL.Out_GreenStack      := FALSE;
+            GVL.Out_RedStack        := FALSE;
+            GVL.Out_RedButtonLED    := FALSE;
+            machineState := STANDBY;
+        END_IF
+END_CASE
+```
+
+`DEFECT_CHECK` should itself only run its `IDLE → WAITING_RESULT` transition while `machineState = RUNNING` — gate it on that, so a stop mid-cycle can't leave it waiting on a stale MQTT exchange.
+
+### 2. Add an MQTT client library
+
+| | [Janz Tec MQTT library](https://store.codesys.com/en/janz-tec-mqtt-library-for-codesys-sl.html) | [stefandreyer/CODESYS-MQTT](https://github.com/stefandreyer/CODESYS-MQTT) |
+|---|---|---|
+| Cost | €49, one license per runtime | Free / open source |
+| QoS | 0 and 1 | 0, 1, and 2 |
+| Requires | `TCP`, `SysSocket`, `CmpErrors` (standard libs) | Its own TCP-based dependencies |
+| Support | Vendor-supported, official CODESYS Store listing | Community, no formal support |
+| Fit here | CODESYS Control V3.5.8.10+ — matches Virtual Control SL | Same runtime family, less formally validated |
+
+Recommended: **Janz Tec**, for vendor support on something that may get shown to customers. Add via **Tools → Library Repository** (or the CODESYS Store integration), then reference it on the `Application` node alongside `AMPLib_LD`/`EtherNetIP Services`.
+
+### 3. Topics and payload contract
+
+Reuses what `workloads/defect-rec-sim/app.py` already speaks:
+
+- vPLC **publishes** `model/sim` = `"on"` once a move completes and the piece is in position.
+- vPLC **subscribes** to `factory1/lineA/results`, payload JSON like `{"defect_type":1,"defective":true,"confidence_score":0.87,...}` — only the `"defective"` boolean is needed; a plain substring search (`FIND(payload, '"defective":true')`, from the already-referenced `Standard` library) is enough, no JSON library required for this.
+- **Companion fix needed on the app side**: `app.py`'s `on_message` handler currently republishes `model/sim`/`"on"` to itself at the end of every cycle (`app.py` around line 48), so it free-runs forever regardless of the PLC. That self-republish needs to be removed so one external trigger produces exactly one result.
+
+### 4. New POU: `DEFECT_CHECK` (Structured Text)
+
+Add as a new ST program on the `Application`, called from `PLC_PRG` each scan — MQTT sequencing and string parsing are much more natural in ST than in the existing ladder:
+
+```iecst
+TYPE E_DefectCheck : (IDLE, WAITING_RESULT, GREEN_DELAY, AWAIT_ACK);
+END_TYPE
+
+VAR
+    state           : E_DefectCheck := IDLE;
+    mqttClient      : MQTT_CLIENT;      // from the chosen library
+    tonGreenDelay   : TON;
+    resultPayload   : STRING(255);
+    defective       : BOOL;
+END_VAR
+
+CASE state OF
+    IDLE:
+        IF GVL.Sts_PositionReached THEN     // pulse set by PLC_PRG when a move finishes
+            mqttClient.Publish('model/sim', 'on');
+            state := WAITING_RESULT;
+        END_IF
+
+    WAITING_RESULT:
+        IF mqttClient.MessageReceived('factory1/lineA/results', resultPayload) THEN
+            defective := FIND(resultPayload, '"defective":true') > 0;
+            IF defective THEN
+                GVL.Out_RedStack := TRUE;
+                GVL.Out_RedButtonLED := TRUE;
+                state := AWAIT_ACK;
+            ELSE
+                GVL.Out_GreenStack := TRUE;
+                tonGreenDelay(IN := TRUE, PT := T#3S);
+                state := GREEN_DELAY;
+            END_IF
+        END_IF
+
+    GREEN_DELAY:
+        tonGreenDelay(IN := TRUE, PT := T#3S);
+        IF tonGreenDelay.Q THEN
+            GVL.Out_GreenStack := FALSE;
+            tonGreenDelay(IN := FALSE);
+            GVL.Cmd_NextIndex := TRUE;      // hands control back to PLC_PRG's mover
+            state := IDLE;
+        END_IF
+
+    AWAIT_ACK:
+        // contextual dual-role: Inp_Red_Button.State is Stop everywhere else,
+        // but read as "acknowledge" while in this state
+        IF Inp_Red_Button.State THEN
+            GVL.Out_RedStack := FALSE;
+            GVL.Out_RedButtonLED := FALSE;
+            GVL.Cmd_NextIndex := TRUE;
+            state := IDLE;
+        END_IF
+END_CASE
+```
+
+Exact `mqttClient.Publish`/message-received call shapes will match whichever library's actual FB signatures — use the example project shipped with the library for those, the names above are illustrative.
+
+### 5. Wiring into the existing sequencer
+
+In `PLC_PRG`, the current "Pause before next index (Loop Up)" rung runs `TON_IndexPauseDelay` and loops straight back into the next move. Change this to: set `GVL.Sts_PositionReached` when `AMP_Relative_Move_0.Done` goes true, and gate the loop-back rung on `GVL.Cmd_NextIndex` (set by `DEFECT_CHECK` above) instead of the fixed timer. `Par_IndexPause`/`TON_IndexPauseDelay` can then either be removed or kept as a separate minimum-cycle-time guard.
+
+### 6. Red Button — contextual three-way role (decided)
+
+`Inp_Red_Button` now means different things depending on `machineState`/`DEFECT_CHECK.state`:
+
+| State | Red Button means |
+|---|---|
+| `STANDBY` | No-op — sequence hasn't started, nothing to stop or ack. |
+| `RUNNING`, not `AWAIT_ACK` | **Stop** — halts the sequence (`Cmd_Stop`/`Force_Stop`, existing behavior) and starts the 5-second return-to-Standby timer. |
+| `RUNNING`, `AWAIT_ACK` | **Acknowledge** the defect — clears the red indicators and resumes to the next move. |
+
+No new hardware input needed — same physical button, read contextually. The tradeoff: Stop is briefly unavailable while acknowledging a defect, which is deliberate for this demo, not an oversight.
+
+### 7. `LIGHT_CYCLE` / `Green_Button_LED` changes needed
+
+Its current button-mirroring logic conflicts with the new state-driven outputs and needs to change for four signals, not three:
+
+- `Out_Green_Stacklight` / `Out_Red_Stacklight` / `Out_Red_Button_LED` — driven by `DEFECT_CHECK`'s state, as before.
+- `Out_Yellow_Stacklight` / `Out_Green_Button_LED` — now driven by the `STANDBY` blink logic in §1 above (`OSCAT_BASIC.BLINK` output), not by whether the buttons are physically pressed.
+
+Strip the old mirroring rungs for those specific outputs and drive them directly from the `GVL` bits set by the new top-level state machine and `DEFECT_CHECK`. Blue Button and its LED can keep their existing demo behavior, since nothing in this design uses them.
+
+### State diagram (top-level + `DEFECT_CHECK` sub-machine)
+
+```mermaid
+stateDiagram-v2
+  [*] --> STANDBY
+
+  STANDBY : STANDBY<br/>Yellow_Stacklight blinks<br/>Green_Button_LED blinks
+  STANDBY --> RUNNING : Green Button pressed<br/>stop blinking, Cmd_Run = TRUE
+
+  state RUNNING {
+    [*] --> IDLE
+
+    IDLE --> WAITING_RESULT : Sts_PositionReached<br/>publish model/sim = "on"
+    WAITING_RESULT --> GREEN_DELAY : result received<br/>defective = false<br/>Out_GreenStack = TRUE
+    WAITING_RESULT --> AWAIT_ACK : result received<br/>defective = true<br/>Out_RedStack = TRUE<br/>Out_RedButtonLED = TRUE
+
+    GREEN_DELAY --> IDLE : TON 3s elapsed<br/>Out_GreenStack = FALSE<br/>Cmd_NextIndex = TRUE
+
+    AWAIT_ACK --> IDLE : Red Button pressed (ack)<br/>Out_RedStack = FALSE<br/>Out_RedButtonLED = FALSE<br/>Cmd_NextIndex = TRUE
+
+    note right of AWAIT_ACK
+      Inp_Red_Button is Stop everywhere
+      else in RUNNING — only read as
+      "acknowledge" in this state
+    end note
+  }
+
+  RUNNING --> STOPPING : Red Button pressed<br/>(not in AWAIT_ACK)<br/>Cmd_Stop = TRUE
+  STOPPING --> STANDBY : TON 5s elapsed<br/>clear all indicators<br/>resume blinking
+```

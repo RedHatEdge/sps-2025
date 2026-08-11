@@ -1,0 +1,275 @@
+{
+  "$schema": "https://docs.xentara.io/xentara/schema-xentara-model.json",
+  "children": [
+    {
+      "@Skill.Modbus.TCPDevice": {
+        "name": "I/O Terminal 1",
+        "UUID": "2a82f42f-ed37-486f-a512-489c2fb199f3",
+        "address": "192.168.100.11:8502",
+        "children": [
+          {
+            "@Skill.Modbus.Coil": {
+              "name": "Red Button LED ",
+              "UUID": "9fc2b9ee-32c0-4cc4-a326-49453ea5b4f3",
+              "address": 513,
+              "poll": "I/O Terminal 1.Poll"
+            }
+          },
+          {
+            "@Skill.Modbus.Coil": {
+              "name": "Green Button LED",
+              "UUID": "e8ca199d-71a1-4274-b3bd-5f697c347bd9",
+              "address": 514,
+              "poll": "I/O Terminal 1.Poll"
+            }
+          },
+          {
+            "@Skill.Modbus.Coil": {
+              "name": "Blue Button LED",
+              "UUID": "db3886e4-5ff4-46c7-8e5a-e8860c0467cf",
+              "address": 515,
+              "poll": "I/O Terminal 1.Poll"
+            }
+          },
+          {
+            "@Skill.Modbus.DiscreteInput": {
+              "name": "Red Button",
+              "UUID": "163ee397-ed1d-4666-ad88-94715de1af60",
+              "address": 516,
+              "poll": "I/O Terminal 1.Poll"
+            }
+          },
+          {
+            "@Skill.Modbus.DiscreteInput": {
+              "name": "Green Button",
+              "UUID": "dba319a6-fec7-4f6e-b819-afddf78ebce1",
+              "address": 516,
+              "poll": "I/O Terminal 1.Poll"
+            }
+          },
+          {
+            "@Skill.Modbus.DiscreteInput": {
+              "name": "Blue Button",
+              "UUID": "d35d3112-d82f-4bdb-b221-e666a932e60e",
+              "address": 517,
+              "poll": "I/O Terminal 1.Poll"
+            }
+          },
+          {
+            "@Skill.Modbus.Poll": {
+              "name": "Poll",
+              "UUID": "b63637d2-4d9e-4074-b2e9-0e7456e1d52c"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "@Track": {
+        "name": "Modbus IO Track",
+        "UUID": "e55d2987-740c-49d2-8f51-77ddd1139555",
+        "children": [
+          {
+            "@Timer": {
+              "name": "100ms Timer",
+              "UUID": "d37c7409-420b-47aa-9301-d6b6293ca181",
+              "period": "100ms"
+            }
+          },
+          {
+            "@Pipeline": {
+              "name": "Pipeline",
+              "UUID": "363beb46-fee9-4a3c-803c-990f0555a781",
+              "triggers": [
+                "Modbus IO Track.100ms Timer.expired"
+              ],
+              "checkpoints": [
+                {},
+                {}
+              ],
+              "segments": [
+                {
+                  "start": 0,
+                  "end": 1,
+                  "tasks": [
+                    {
+                      "function": "I/O Terminal 1.Poll.execute"
+                    },
+                    {
+                      "function": "I/O Terminal 1.writeOutputs"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "@Timer": {
+              "name": "5s Timer",
+              "UUID": "64ead7f6-0e27-422a-85db-19cf9c736922",
+              "period": "5s"
+            }
+          },
+          {
+            "@Pipeline": {
+              "name": "Pipeline 2",
+              "UUID": "41caed09-e21c-46f2-b3c7-1f0ca5f64622",
+              "triggers": [
+                "Modbus IO Track.5s Timer.expired"
+              ],
+              "checkpoints": [
+                {},
+                {}
+              ],
+              "segments": [
+                {
+                  "start": 0,
+                  "end": 1,
+                  "tasks": [
+                    {
+                      "function": "I/O Terminal 1.reconnect"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "@Skill.MQTT.Client": {
+        "name": "MQTT Client",
+        "UUID": "58f20a99-6038-4912-a4fc-2df645f9e002",
+        "brokerAddress": "192.168.100.245",
+        "TLS": {
+          "enabled": false
+        },
+        "MQTTVersion": "3.1.1",
+        "keepaliveInterval": "60s",
+        "children": [
+          {
+            "@Skill.MQTT.Command": {
+              "name": "Command",
+              "UUID": "3eb240f8-290e-4376-b26b-fcd9320bc079",
+              "topic": "defect_detection/results",
+              "payload": [
+                {
+                  "@DataPoint": {
+                    "jsonPath": "$.defective",
+                    "dataPoint": "MQTT Registers.Defective"
+                  }
+                },
+                {
+                  "@DataPoint": {
+                    "jsonPath": "$.confidence",
+                    "dataPoint": "MQTT Registers.Confidence"
+                  }
+                },
+                {
+                  "@DataPoint": {
+                    "jsonPath": "$.timestamp",
+                    "dataPoint": "MQTT Registers.Timestemp"
+                  }
+                },
+                {
+                  "@DataPoint": {
+                    "jsonPath": "$.piece",
+                    "dataPoint": "MQTT Registers.Piece"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "@Group": {
+        "name": "MQTT Registers",
+        "UUID": "961beb3f-a629-433e-aa90-3f1250fdaf06",
+        "children": [
+          {
+            "@Skill.SignalFlow.Register": {
+              "name": "Defective",
+              "UUID": "6c18478b-4e40-43d3-b5eb-45547d5b123e",
+              "defaultValue": [
+                "bool",
+                false
+              ]
+            }
+          },
+          {
+            "@Skill.SignalFlow.Register": {
+              "name": "Confidence",
+              "UUID": "186da9c8-3174-4c61-a159-ea2b10d7fd81",
+              "defaultValue": [
+                "float64",
+                0
+              ]
+            }
+          },
+          {
+            "@Skill.SignalFlow.Register": {
+              "name": "Timestemp",
+              "UUID": "71450ef5-a900-44c5-87be-686c77c92975",
+              "defaultValue": [
+                "timeStamp",
+                "2001-01-01T00:00:00Z"
+              ]
+            }
+          },
+          {
+            "@Skill.SignalFlow.Register": {
+              "name": "Piece",
+              "UUID": "f6fd0bb1-f635-42fc-aff3-c88b66efecc5",
+              "defaultValue": [
+                "int64",
+                0
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "@Track": {
+        "name": "Track MQTT reconnect",
+        "UUID": "a4e6bf75-fe0e-496d-959d-f1e6c5dde41c",
+        "children": [
+          {
+            "@Pipeline": {
+              "name": "Pipeline",
+              "UUID": "87c1b121-50e8-433f-877f-eb9907b2cb78",
+              "triggers": [
+                "Track MQTT reconnect.5s Timer.expired"
+              ],
+              "checkpoints": [
+                {},
+                {}
+              ],
+              "segments": [
+                {
+                  "start": 0,
+                  "end": 1,
+                  "tasks": [
+                    {
+                      "function": "MQTT Client.reconnect"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "@Timer": {
+              "name": "5s Timer",
+              "UUID": "2007d9b9-d13c-4ab3-ae5a-472e274d3872",
+              "period": "5s"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
