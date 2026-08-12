@@ -122,15 +122,17 @@ Start the application on VPLC
 Codemeter Licensing
 ![alt text](image-19.png)
 
-## 4) Change → build → deploy workflow
+## 5) Target workflow: build → push → deploy (not yet implemented)
+
+§4 above is how the application is deployed **today**: manually, through the CODESYS IDE's device wizard, onto a long-lived `vplc` Podman container running the stock `codesyscontrol_virtuallinux` image on IPC2. The intended target workflow instead bakes the application *into* the container image itself, so a logic change ships as a new image rather than an IDE upload:
 
 1. An engineer edits the logic in CODESYS IDE, opening the `.projectarchive` from this folder, and re-exports the project to `RedHat_Demo_MarketingStand_Working.xml` (re-saving the `.projectarchive` too) — both get committed back to this repo, so the demo logic stays version-controlled.
-2. A new container image is built that embeds the exported project on top of the CODESYS Virtual Control SL runtime base image. (The build pipeline/Containerfile for this is not yet documented in this repo.)
-3. The new image is deployed to run as a **Podman** container on **IPC1** (RHEL9 host — not yet documented in this repo).
-4. On start, the containerized vPLC loads the project, `MainTask`/`PLC_PRG` begins cycling, and the EtherNet/IP scanner opens Class 1 connections to `Opto22_RIO1`, `Opto22_RIO2`, and `TSM23XIP_XD` over IPC1's `192.168.1.0/24` interface.
+2. A new container image is built on top of `images/ipc2/ContainerfileCodesys` (which already produces `quay.io/luferrar/sps:ipc-rh10-rt-codesys`, RHEL10 + the CodeMeter RPM), adding a layer that embeds the exported project into the CODESYS Virtual Control SL runtime. (This build step itself — how the project gets baked in — is not yet implemented.)
+3. The new image is pushed to the registry and deployed to run as the `vplc` **Podman** container on **IPC2** (`control2-rt.sps2025`), replacing the manual "Deploy Control SL" + "Upload the application" steps in §4.
+4. On start, the containerized vPLC loads the project, `MainTask`/`PLC_PRG` begins cycling, and the EtherNet/IP scanner opens Class 1 connections to `Opto22_RIO1`, `Opto22_RIO2`, and `TSM23XIP_XD` over the dedicated `eno1`/`192.168.100.225` interface.
 5. Level 1 now closes the loop on Level 0 continuously: button/toggle/potentiometer state in, LED/stack-light/servo-motion commands out.
 
-## Diagram
+## Diagram (§5 target workflow)
 
 ```mermaid
 flowchart LR
@@ -139,15 +141,15 @@ flowchart LR
     XML[RedHat_Demo_MarketingStand_Working.xml<br/>re-exported on every change]
   end
 
-  subgraph Build[Container build]
-    IMG[New container image:<br/>CODESYS Virtual Control SL<br/>+ exported project]
+  subgraph Build[Container build - not yet implemented]
+    IMG[New container image:<br/>ipc-rh10-rt-codesys<br/>+ exported project]
   end
 
-  subgraph IPC1[IPC1 - RHEL9 host, Podman - not yet documented]
-    VPLC[vPLC Podman container<br/>MainTask / PLC_PRG<br/>ENIPScannerIOTask / ENIPScannerServiceTask]
+  subgraph IPC2[IPC2 - control2-rt.sps2025 - RHEL10 realtime, Podman]
+    VPLC[vplc Podman container<br/>MainTask / PLC_PRG<br/>ENIPScannerIOTask / ENIPScannerServiceTask]
   end
 
-  subgraph Field["Level 0 - EtherNet/IP field devices - 192.168.1.0/24"]
+  subgraph Field["Level 0 - EtherNet/IP field devices - 192.168.100.0/24"]
     RIO1[Opto22 groov RIO 1<br/>192.168.100.11<br/>buttons, LEDs, relay]
     RIO2[Opto22 groov RIO 2<br/>192.168.100.12<br/>toggles, potentiometer, stack lights]
     SERVO[Applied Motion TSM23XIP-XD<br/>192.168.100.13<br/>step-servo drive]
@@ -164,9 +166,9 @@ flowchart LR
   XML -- embedded into --> IMG
   IMG -- deployed to --> VPLC
 
-  VPLC -- EtherNet/IP scanner<br/>CIP Class 1 + Class 3 --> RIO1
-  VPLC -- EtherNet/IP scanner --> RIO2
-  VPLC -- EtherNet/IP scanner --> SERVO
+  VPLC -- "EtherNet/IP scanner over eno1<br/>CIP Class 1 + Class 3" --> RIO1
+  VPLC -- EtherNet/IP scanner over eno1 --> RIO2
+  VPLC -- EtherNet/IP scanner over eno1 --> SERVO
 
   RIO1 --- BTNS
   RIO2 --- TOGGLES
@@ -181,7 +183,7 @@ flowchart LR
   class RIO1,RIO2,SERVO,Stand field;
 ```
 
-## 5) WIP: defect-check workflow (target design)
+## 6) WIP: defect-check workflow (target design)
 
 **Not implemented yet.** This section documents the target design for gating the motion sequence on an MQTT-based defect check, and where it hooks into the logic that already exists. It's a plan to implement in CODESYS IDE, not a description of current behavior.
 
