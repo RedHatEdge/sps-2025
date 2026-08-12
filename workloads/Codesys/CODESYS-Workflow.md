@@ -1,6 +1,6 @@
 # CODESYS workflow — Marketing Demo Stand
 
-This doc focuses on **Purdue Model Level 0 (physical process) and Level 1 (basic control)** for the marketing demo stand: the field devices themselves, the CODESYS logic that controls them, and how a logic change turns into a running container on IPC1. It does not cover the platform/GitOps layers (IPC4 build, Gitea, ArgoCD, SNO) — see [HOW_IT_WORKS.md](../../HOW_IT_WORKS.md) for that.
+This doc focuses on **Purdue Model Level 0 (physical process) and Level 1 (basic control)** for the marketing demo stand: the field devices themselves, the CODESYS logic that controls them, and how a logic change gets deployed to the vPLC running on IPC2. It does not cover the platform/GitOps layers (IPC4 build, Gitea, ArgoCD, SNO) — see [HOW_IT_WORKS.md](../../HOW_IT_WORKS.md) for that.
 
 ## 1) What's in this folder
 
@@ -11,7 +11,7 @@ Treat the `.xml` as the reviewable record of what the logic does; treat the `.pr
 
 ## 2) Level 0 — the physical process
 
-Level 0 of the Purdue Model is the physical process itself: the sensors and actuators that do the actual work, with no logic of their own. On this demo stand that's pushbuttons, indicator LEDs, toggle switches, a potentiometer, a three-color stack light, a relay, and a small motor — wired to three EtherNet/IP field devices on the `192.168.1.0/24` network:
+Level 0 of the Purdue Model is the physical process itself: the sensors and actuators that do the actual work, with no logic of their own. On this demo stand that's pushbuttons, indicator LEDs, toggle switches, a potentiometer, a three-color stack light, a relay, and a small motor — wired to three EtherNet/IP field devices on the `192.168.100.0/24` network:
 
 | Device | Role | Address | I/O it exposes |
 |---|---|---|---|
@@ -27,7 +27,14 @@ All three are **EtherNet/IP CIP adapters** (targets): they accept the Class 1 (i
 
 ## 3) Level 1 — basic control (the vPLC)
 
-Level 1 is the controller that closes the loop on Level 0: it scans inputs, runs logic, and drives outputs. Here that's a **CODESYS soft-PLC runtime (vPLC) running as a Podman container on IPC1** (a RHEL9 host — not yet documented elsewhere in this repo). The runtime is [CODESYS Virtual Control SL](https://www.codesys.com/products/runtime/virtual-control-sl/), CODESYS's runtime built specifically to run under a container or hypervisor rather than bare metal.
+Level 1 is the controller that closes the loop on Level 0: it scans inputs, runs logic, and drives outputs. Here that's a **CODESYS soft-PLC runtime (vPLC) running as a Podman container on IPC2** (hostname `control2-rt.sps2025`, a bootc image built from `quay.io/luferrar/sps:ipc-rh10-rt` — RHEL10 with a realtime kernel; see `images/ipc2/ContainerfileCodesys`). The runtime is [CODESYS Virtual Control SL](https://www.codesys.com/products/runtime/virtual-control-sl/), CODESYS's runtime built specifically to run under a container or hypervisor rather than bare metal. §4 covers how it's deployed manually today; §5 covers the target build/push/deploy workflow for shipping application changes as a new container image.
+
+IPC2 has **two network roles** split across separate interfaces:
+
+- **`eno1`, `192.168.100.225/24`** — dedicated to the vPLC container for EtherNet/IP CIP traffic, mapped in via the instance's `Nic` setting. This is on the same `192.168.100.0/24` segment as `Opto22_RIO1`, `Opto22_RIO2`, and `TSM23XIP_XD`.
+- **`192.168.100.227`** — IPC2's management address, used for the CODESYS Gateway connection from the IDE (port `11740`, opened through the firewall for remote management) and for CodeMeter license-server discovery.
+
+The container also exposes `4840` (OPC UA server) and `8080` (WebVisu/HTTP) alongside `11740`. Licensing runs through CodeMeter (WIBU-SYSTEMS) — the container's instance config points its `License Server` setting at `192.168.100.223`; the host itself also runs `codemeter.service` (installed via `images/ipc2/CodeMeter-lite-8.40.7131-502.x86_64.rpm`, see `images/ipc2/ContainerfileCodesys`).
 
 Inside the `Device` → `Application`, the project structure is:
 
@@ -42,7 +49,7 @@ The EtherNet/IP side of Level 1 is handled by the `Ethernet` → `EtherNet_IP_Sc
 - **`ENIPScannerIOTask`** — the cyclic Class 1 I/O scan: pulls current input assemblies from `Opto22_RIO1`/`Opto22_RIO2`/`TSM23XIP_XD` and pushes current output assemblies to them, on every scan.
 - **`ENIPScannerServiceTask`** — Class 3 explicit/service messaging (e.g. one-off parameter reads/writes, diagnostics) to the same three devices.
 
-For this to reach the field devices, IPC1's network interface carrying the vPLC container needs an address on `192.168.1.0/24` — the same segment `Opto22_RIO1`, `Opto22_RIO2`, and `TSM23XIP_XD` live on.
+This is what actually reaches the field devices over `eno1`, as described above.
 
 ## 4) Manual deployment of the Codesys Application to softPLC
 
@@ -108,7 +115,9 @@ Upload the application to VPLC
 ![alt text](image-14.png)
 
 Start the application on VPLC
-![alt text](image-20.png)
+![alt text](image-16.png)
+
+![lab-recording](output.gif)
 
 Codemeter Licensing
 ![alt text](image-19.png)
