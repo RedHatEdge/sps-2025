@@ -46,26 +46,35 @@ For this to reach the field devices, IPC1's network interface carrying the vPLC 
 
 ## 4) Manual deployment of the Codesys Application to softPLC
 
-Deploy Control SL (softPLC) to the Device
+Deploy Control SL (softPLC) to the Device (this will download the softPLC container image to the Device)
 ![alt text](image-3.png)
 
-Connect to the new Device
+Connect to the new Device (via SSH)
 ![alt text](image-4.png)
 
-Install Virtual Control to the Device
+Install Virtual Control to the Device (import image to Podman)
 ![alt text](image-5.png) 
 
-Installed
+Installed!
 ![alt text](image-6.png)
+```bash
+[admin@control2-rt ~]$ sudo podman images
+REPOSITORY                                     TAG                  IMAGE ID      CREATED       SIZE
+quay.io/luferrar/sps                           ipc-rh10-rt-codesys  aa41f53b572c  11 hours ago  3.84 GB
+quay.io/luferrar/sps                           ipc-rh10-rt          f85ac7a8d20f  16 hours ago  3.65 GB
+docker.io/library/codesyscontrol_virtuallinux  4.21.0.0             a6590499224a  8 weeks ago   152 MB
+```
 
-Add a new instance of Virtual Control
+Add a new instance of Virtual Control (configuration of a container)
 ![alt text](image-7.png)
 
 New VPLC container
 ![alt text](image-8.png)
 
 Configure exposed / mapped ports
-![alt text](image-10.png)
+![alt text](image-21.png)
+>Notice how License server address is configured (if you have a valid license there) and Network section is filled in with an interface information (in this case eno1 has to be dedicated since we are using Eth/IP as protocol)  
+> **REFERENCE** for configuration [here](https://content.helpme-codesys.com/en/CODESYS%20Control/_rtsl_reference.html) 
 
 Start the instance
 ![alt text](image-9.png)
@@ -73,17 +82,18 @@ Start the instance
 Opening target Device properties
 ![alt text](image.png)  
 
-Adding new Device (IPC2)
+Adding new Device (IPC2)  
+*Use the other available interface to connect to the IPC*
 ![alt text](image-1.png)
 
-Have to open firewall port 11740
+Have to open firewall port 11740 for remote management
 ![alt text](image-2.png)
 
 Connected!
 ![alt text](image-11.png)
 
 Before uploading the application, make sure the IP addresses for Ethernet/IP components are correct
-![alt text](image-16.png)  
+![alt text](image-10.png)  
 ![alt text](image-15.png)  
 ![alt text](image-17.png)  
 ![alt text](image-18.png)
@@ -91,7 +101,7 @@ Before uploading the application, make sure the IP addresses for Ethernet/IP com
 Deploy the application to VPLC
 ![alt text](image-12.png)
 
-User management for VPLC (using for now `R3dh4t123!`)
+User management for VPLC (using password `R3dh4t123!`)
 ![alt text](image-13.png)
 
 Upload the application to VPLC
