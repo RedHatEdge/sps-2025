@@ -183,63 +183,180 @@ flowchart LR
   class RIO1,RIO2,SERVO,Stand field;
 ```
 
-## 6) WIP: defect-check workflow (target design)
+## 6) Defect-check workflow (implemented)
 
-**Not implemented yet.** This section documents the target design for gating the motion sequence on an MQTT-based defect check, and where it hooks into the logic that already exists. It's a plan to implement in CODESYS IDE, not a description of current behavior.
+The MQTT-gated defect-check design from earlier revisions of this doc has been built and is running on the `vplc` instance. Core control flow (Standby↔Running↔Stopping, MQTT trigger/result round-trip, defect ack) has been validated end-to-end via live testing; **physical motion is not yet confirmed** — see "Known open issues" below. This section documents what's actually deployed, corrected for everything that turned out different from the original plan during implementation.
 
-### Target behavior
+### Architecture
 
-0. **On PLC start**, the machine is in **Standby**: `Yellow_Stacklight` and `Green_Button_LED` both blink, nothing else active.
-1. User pushes **Green Button** → blinking stops, machine enters **Running**, and the drive moves to the next position.
-2. Once the move completes, the vPLC publishes an MQTT message signaling "position reached."
-3. The defect-detection app (running elsewhere, subscribed to that message) analyzes the piece and publishes a single result (defective / not defective) to a results topic, then goes idle again.
-4. The vPLC reads that result:
-   - **No defect** → green stack light on, wait 3 seconds, then move to the next position.
-   - **Defect** → red stack light on, red button LED on, and the sequence holds.
-5. User pushes **Red Button** to acknowledge the defect → drive moves to the next position.
-6. At any point while **Running** (outside of an active defect-ack hold), pushing **Red Button** stops the routine instead. After 5 seconds, the machine returns to **Standby** (step 0) and resumes blinking.
+Two new POUs, plus one new named type, plus targeted patches to `PLC_PRG` and `LIGHT_CYCLE`:
 
-### What already exists (verified from the project's ladder logic)
-
-- `PLC_PRG` already has a working step sequencer (`Seq0`…`Seq60`, `SeqMov1`, `SeqMov2`, `SeqStop`, `SeqErr`) that: checks run permissives, is started by `Cmd_Run`/`Sequence_Run` (wired alongside `Inp_Green_Button.State`), resets faults, enables the motor, performs an incremental move via the `AMPLib_LD` function blocks (`AMP_Relative_Move_0`, `AMP_Motor_Enable_0`, `AMP_Alarm_Reset_0`, `AMP_Normal_Stop_0`, `AMP_Status_Code_0`), waits for move-complete or a stop, then pauses (`Par_IndexPause` / `TON_IndexPauseDelay`) before looping back for the next move.
-- So **"push Green → move to next position" is already implemented.** What's missing is making it *stop and wait for an external decision* after the move, instead of looping on a fixed timer.
-- `LIGHT_CYCLE` currently just mirrors whichever pushbutton is pressed onto its matching LED/stack light (a demo/test-rig pattern) — it has no concept of defect/ack/standby yet and will need rework, not extension.
-- `Inp_Red_Button` is currently wired as the sequence's **Stop** input (`Cmd_Stop`/`Force_Stop`, per the "Wait For Move To Complete, or Stop button Press" rung) — this maps directly onto the new step 6 above, it just needs the 5-second return-to-standby tacked on.
-- **No MQTT client exists in the project at all** — the library list has `EtherNetIP Services`, `AMPLib_LD`, OPC UA (server), `OSCAT`, and the Opto 22 library, but nothing for MQTT or generic TCP/sockets. This is the main missing piece.
-- **No standby/blink state exists at all** — there's nothing today gating the sequencer behind a Green-Button-to-arm step; it's armed as soon as permissives are satisfied. The blinking itself has an easy building block, though: `OSCAT_BASIC` (already referenced in the project's library list) ships a [`BLINK`](https://content.helpme-codesys.com/en/libs/Util/Current/Signals/BLINK.html) function block for exactly this (on-time/off-time → toggling output) — no need to hand-roll a flip timer pair.
-
-### 1. New top-level state: STANDBY / RUNNING / STOPPING
-
-`DEFECT_CHECK` (below) only covers what happens *during* a run. It needs to sit inside a higher-level machine state that gates the whole sequence behind Green Button and handles the Red-Button-as-stop path:
+- **`E_DefectState`** (DUT, named enum) — `(IDLE, WAITING_RESULT, GREEN_DELAY, AWAIT_ACK)`. Has to be a separately-named `TYPE`, not inline/anonymous — CODESYS scopes anonymous enum literals to their declaring POU only, so `DEFECT_CHECK`'s own `state` field wouldn't have been referenceable from `SEQ_SUPERVISOR` otherwise.
+- **`DEFECT_CHECK`** (FB) — the per-cycle defect-check state machine: publishes the analysis trigger, waits for the result, drives the green-delay-and-continue or red-hold-for-ack outcome.
+- **`SEQ_SUPERVISOR`** (PRG) — the top-level Standby/Running/Stopping supervisor. Owns the MQTT client connection, the Standby blink, the remote start/stop listener, and one `DEFECT_CHECK` instance. Wired into `MainTask` alongside `MOTOR`/`PLC_PRG`/`LIGHT_CYCLE`.
 
 ```iecst
-TYPE E_MachineState : (STANDBY, RUNNING, STOPPING);
+TYPE E_DefectState :
+(
+    IDLE,
+    WAITING_RESULT,
+    GREEN_DELAY,
+    AWAIT_ACK
+);
 END_TYPE
+```
 
-VAR
-    machineState    : E_MachineState := STANDBY;
-    blinkYellow     : OSCAT_BASIC.BLINK;    // already-referenced library, no new dependency
-    tonStopRecovery : TON;
+```iecst
+FUNCTION_BLOCK DEFECT_CHECK
+VAR_INPUT
+    state       : E_DefectState := E_DefectState.IDLE;
+    xRemoteStop : BOOL;
 END_VAR
+VAR_IN_OUT
+    mqttClient : MQTT.MQTTClient;
+END_VAR
+VAR
+    mqttPublisher  : MQTT.MQTTPublish;
+    mqttSubscriber : MQTT.MQTTSubscribe;
+    tonGreenDelay  : TON;
+    trigPublish    : R_TRIG;
+    xArmPublish    : BOOL;
+    sPublishMsg    : STRING(20) := 'discrete-on';
+    wsControlTopic : WSTRING(1024) := "defect_detection/control";
+    wsResultFilter : WSTRING(1024) := "defect_detection/results";
+    sResultBuffer  : STRING(255);
+    defective      : BOOL;
+END_VAR
+
+mqttSubscriber(
+    xEnable           := mqttClient.xConnectedToBroker,
+    eSubscribeQoS     := MQTT.MQTT_QOS.QOS0,
+    pbPayload         := ADR(sResultBuffer),
+    udiMaxPayloadSize := SIZEOF(sResultBuffer),
+    mqttClient        := mqttClient,
+    wsTopicFilter     := wsResultFilter
+);
+
+trigPublish(CLK := xArmPublish);
+mqttPublisher(
+    xExecute       := trigPublish.Q,
+    pbPayload      := ADR(sPublishMsg),
+    udiPayloadSize := DINT_TO_UDINT(LEN(sPublishMsg)),
+    mqttClient     := mqttClient,
+    wsTopicName    := wsControlTopic
+);
+xArmPublish := FALSE;
+
+CASE state OF
+    E_DefectState.IDLE:
+        IF GVL.Sts_PositionReached THEN
+            xArmPublish := TRUE;
+            state := E_DefectState.WAITING_RESULT;
+        END_IF
+
+    E_DefectState.WAITING_RESULT:
+        IF mqttSubscriber.xReceived THEN
+            defective := FIND(sResultBuffer, '"defective":true') > 0;
+            IF defective THEN
+                GVL.Cmd_RedStack     := TRUE;
+                GVL.Cmd_RedButtonLED := TRUE;
+                state := E_DefectState.AWAIT_ACK;
+            ELSE
+                GVL.Cmd_GreenStack := TRUE;
+                tonGreenDelay(IN := TRUE, PT := T#3S);
+                state := E_DefectState.GREEN_DELAY;
+            END_IF
+        END_IF
+
+    E_DefectState.GREEN_DELAY:
+        tonGreenDelay(IN := TRUE, PT := T#3S);
+        IF tonGreenDelay.Q THEN
+            GVL.Cmd_GreenStack := FALSE;
+            tonGreenDelay(IN := FALSE);
+            GVL.Cmd_NextIndex := TRUE;
+            state := E_DefectState.IDLE;
+        END_IF
+
+    E_DefectState.AWAIT_ACK:
+        IF NOT Inp_Red_Button.State OR xRemoteStop THEN
+            GVL.Cmd_RedStack     := FALSE;
+            GVL.Cmd_RedButtonLED := FALSE;
+            GVL.Cmd_NextIndex    := TRUE;
+            state := E_DefectState.IDLE;
+        END_IF
+END_CASE
+```
+
+```iecst
+PROGRAM SEQ_SUPERVISOR
+VAR
+    machineState    : (STANDBY, RUNNING, STOPPING) := STANDBY;
+    mqttClient      : MQTT.MQTTClient;
+    defectCheck     : DEFECT_CHECK;
+    tonBlinkOn      : TON;
+    tonBlinkOff     : TON;
+    blinkOut        : BOOL;
+    tonStopRecovery : TON;
+
+    remoteControlSub     : MQTT.MQTTSubscribe;
+    wsRemoteControlTopic : WSTRING(1024) := "plc_application/control";
+    sRemoteControlBuffer : STRING(255);
+    xRemoteStart          : BOOL;
+    xRemoteStop            : BOOL;
+END_VAR
+
+// MQTT connection maintained continuously, independent of machineState
+mqttClient(
+    xEnable            := TRUE,
+    sHostname          := '192.168.100.245',
+    uiPort             := 1883,
+    xUseTLS            := FALSE,
+    xCleanSession      := TRUE,
+    wsUsername         := "admin",
+    wsPassword         := "password",
+    eCommunicationMode := MQTT.COMMUNICATION_MODE.TCP,
+    eMQTTVersion       := MQTT.MQTT_VERSION.V3_1_1
+);
+
+// remote start/stop listener — one topic, distinguished by payload
+remoteControlSub(
+    xEnable           := mqttClient.xConnectedToBroker,
+    eSubscribeQoS     := MQTT.MQTT_QOS.QOS0,
+    pbPayload         := ADR(sRemoteControlBuffer),
+    udiMaxPayloadSize := SIZEOF(sRemoteControlBuffer),
+    mqttClient        := mqttClient,
+    wsTopicFilter     := wsRemoteControlTopic
+);
+xRemoteStart := remoteControlSub.xReceived AND FIND(sRemoteControlBuffer, 'start') > 0;
+xRemoteStop  := remoteControlSub.xReceived AND FIND(sRemoteControlBuffer, 'stop') > 0;
 
 CASE machineState OF
     STANDBY:
-        blinkYellow(EN := TRUE, TIME_HIGH := T#500MS, TIME_LOW := T#500MS);
-        GVL.Out_YellowStack     := blinkYellow.OUT;
-        GVL.Out_GreenButtonLED  := blinkYellow.OUT;
-        IF Inp_Green_Button.State THEN
-            blinkYellow(EN := FALSE);
-            GVL.Out_YellowStack    := FALSE;
-            GVL.Out_GreenButtonLED := FALSE;
-            GVL.Cmd_Run := TRUE;             // arms the existing PLC_PRG sequencer
+        tonBlinkOn(IN := NOT blinkOut, PT := T#500MS);
+        tonBlinkOff(IN := blinkOut, PT := T#500MS);
+        IF tonBlinkOn.Q THEN
+            blinkOut := TRUE;
+        END_IF
+        IF tonBlinkOff.Q THEN
+            blinkOut := FALSE;
+        END_IF
+        GVL.Cmd_YellowStackBlink    := blinkOut;
+        GVL.Cmd_GreenButtonLEDBlink := blinkOut;
+
+        IF Inp_Green_Button.State OR xRemoteStart THEN
+            tonBlinkOn(IN := FALSE);
+            tonBlinkOff(IN := FALSE);
+            GVL.Cmd_YellowStackBlink    := FALSE;
+            GVL.Cmd_GreenButtonLEDBlink := FALSE;
+            defectCheck.state := E_DefectState.IDLE;
+            PLC_PRG.Cmd_Run := TRUE;
             machineState := RUNNING;
         END_IF
 
     RUNNING:
-        // Red Button = stop, EXCEPT while DEFECT_CHECK is holding for an ack
-        IF Inp_Red_Button.State AND defectCheck.state <> DEFECT_CHECK.AWAIT_ACK THEN
-            GVL.Cmd_Run   := FALSE;
-            GVL.Cmd_Stop  := TRUE;           // existing Stop path (Cmd_Stop/Force_Stop)
+        defectCheck(mqttClient := mqttClient, xRemoteStop := xRemoteStop);
+        IF (NOT Inp_Red_Button.State OR xRemoteStop) AND defectCheck.state <> E_DefectState.AWAIT_ACK THEN
+            PLC_PRG.Cmd_Run := FALSE;
             tonStopRecovery(IN := TRUE, PT := T#5S);
             machineState := STOPPING;
         END_IF
@@ -248,149 +365,103 @@ CASE machineState OF
         tonStopRecovery(IN := TRUE, PT := T#5S);
         IF tonStopRecovery.Q THEN
             tonStopRecovery(IN := FALSE);
-            GVL.Cmd_Stop            := FALSE;
-            GVL.Out_GreenStack      := FALSE;
-            GVL.Out_RedStack        := FALSE;
-            GVL.Out_RedButtonLED    := FALSE;
+            GVL.Cmd_GreenStack   := FALSE;
+            GVL.Cmd_RedStack     := FALSE;
+            GVL.Cmd_RedButtonLED := FALSE;
             machineState := STANDBY;
         END_IF
 END_CASE
 ```
 
-`DEFECT_CHECK` should itself only run its `IDLE → WAITING_RESULT` transition while `machineState = RUNNING` — gate it on that, so a stop mid-cycle can't leave it waiting on a stale MQTT exchange.
+### MQTT: library, broker, topics
 
-### 2. Add an MQTT client library
+The **official CODESYS "MQTT Client SL"** library ended up being used (first-party, CODESYS Store), not the Janz Tec library originally proposed — found already referenced in an example project pulled from the CODESYS Store, and adopted since it's the vendor-native option. It depends on the **Memory Block Manager** library (`MBM` namespace) internally, which had to be added separately — its absence produces `C0086: No definition found for interface 'MBM.IDisposable'` at build time.
 
-| | [Janz Tec MQTT library](https://store.codesys.com/en/janz-tec-mqtt-library-for-codesys-sl.html) | [stefandreyer/CODESYS-MQTT](https://github.com/stefandreyer/CODESYS-MQTT) |
-|---|---|---|
-| Cost | €49, one license per runtime | Free / open source |
-| QoS | 0 and 1 | 0, 1, and 2 |
-| Requires | `TCP`, `SysSocket`, `CmpErrors` (standard libs) | Its own TCP-based dependencies |
-| Support | Vendor-supported, official CODESYS Store listing | Community, no formal support |
-| Fit here | CODESYS Control V3.5.8.10+ — matches Virtual Control SL | Same runtime family, less formally validated |
+Broker and topics, confirmed by live testing (not all were right on the first guess — see "Implementation notes" below):
 
-Recommended: **Janz Tec**, for vendor support on something that may get shown to customers. Add via **Tools → Library Repository** (or the CODESYS Store integration), then reference it on the `Application` node alongside `AMPLib_LD`/`EtherNetIP Services`.
+| Purpose | Topic | Payload | Notes |
+|---|---|---|---|
+| Broker | `192.168.100.245`, port `1883` | — | Found in `workloads/xentara/model.json`. Port/credentials (`admin`/`password`) are still an unverified assumption that happens to work. |
+| Analysis trigger (publish) | `defect_detection/control` | `'discrete-on'` | Corrected twice — first guessed `discrete_active` per the [edge-defect-detector](https://github.com/lucamaf/edge-defect-detector) README's documented vocabulary (wrong), then `discrete_active` again per explicit user confirmation (also wrong), finally corrected to `discrete-on` from live testing. The README's documented control vocabulary doesn't match the actual running Jetson code. |
+| Analysis result (subscribe) | `defect_detection/results` | `{"defective":bool,"confidence":real,"timestamp":string,"piece":int}` | Matches both the detector's own README and the field mapping in `workloads/xentara/model.json` — this one was right from the start. |
+| Remote start/stop (subscribe) | `plc_application/control` | `'start'` / `'stop'` | One shared topic/subscription rather than a separate one per command, to avoid adding a third simultaneous `MQTTSubscribe` instance while it's still unclear whether the unlicensed library caps concurrent subscriptions. |
 
-### 3. Topics and payload contract
+### `PLC_PRG` and `MOTOR` — translated from ladder to Structured Text
 
-Reuses what `workloads/defect-rec-sim/app.py` already speaks:
+Both were rewritten from the original ladder logic into ST (kept functionally identical — verified network-by-network against the real ladder in the IDE) so the defect-check patch could be applied as ordinary text edits instead of ladder-diagram surgery. `Cmd_Run` had to move from a plain `VAR` to `VAR_INPUT` in `PLC_PRG`, since `SEQ_SUPERVISOR` needs to write it from outside — CODESYS only allows external writes to `VAR_INPUT`/`VAR_IN_OUT`, never a plain `VAR`.
 
-- vPLC **publishes** `model/sim` = `"on"` once a move completes and the piece is in position.
-- vPLC **subscribes** to `factory1/lineA/results`, payload JSON like `{"defect_type":1,"defective":true,"confidence_score":0.87,...}` — only the `"defective"` boolean is needed; a plain substring search (`FIND(payload, '"defective":true')`, from the already-referenced `Standard` library) is enough, no JSON library required for this.
-- **Companion fix needed on the app side**: `app.py`'s `on_message` handler currently republishes `model/sim`/`"on"` to itself at the end of every cycle (`app.py` around line 48), so it free-runs forever regardless of the PLC. That self-republish needs to be removed so one external trigger produces exactly one result.
+The defect-check patch itself, against the real (ST-translated) ladder networks:
 
-### 4. New POU: `DEFECT_CHECK` (Structured Text)
+- **Network 1** (safe-state/`Cmd_Stop`): removed the `NOT Inp_Red_Button.State` term specifically — kept `Sts_FirstScanBit`/`Sts_SequenceDone`/`Force_Stop`/`eState<>8`. Left in, it would force `Cmd_Stop` on every Red Button press, including during `DEFECT_CHECK`'s `AWAIT_ACK`.
+- **Network 2** (Green Button → `Cmd_Run` latch): disabled entirely — `Cmd_Run` is now set externally by `SEQ_SUPERVISOR`.
+- **Network 9** (wait for move done): added a new `R_TRIG` on `AMP_Relative_Move_0.Done`, driving `GVL.Sts_PositionReached` — this is the actual hook that starts the defect-check cycle.
+- **Network 10** (the real loop-back — a genuine loop, not a straight-through pause as first assumed from the network comments alone): AND-gated the existing `TON_IndexPauseDelay.Q`-driven loop-back on `GVL.Cmd_NextIndex`, with a reset once consumed, so the sequencer holds at the paused step until `DEFECT_CHECK` releases it.
 
-Add as a new ST program on the `Application`, called from `PLC_PRG` each scan — MQTT sequencing and string parsing are much more natural in ST than in the existing ladder:
+### `LIGHT_CYCLE` — the free-running color-cycle engine replaced
+
+Turned out to be a self-oscillating `Cmd_Light` counter (0/1/2, driven by a 1-second `TON`) cycling all three stack lights and two button LEDs together — not per-button mirroring as first guessed from the network comments alone. Disabled entirely and replaced:
 
 ```iecst
-TYPE E_DefectCheck : (IDLE, WAITING_RESULT, GREEN_DELAY, AWAIT_ACK);
-END_TYPE
-
-VAR
-    state           : E_DefectCheck := IDLE;
-    mqttClient      : MQTT_CLIENT;      // from the chosen library
-    tonGreenDelay   : TON;
-    resultPayload   : STRING(255);
-    defective       : BOOL;
-END_VAR
-
-CASE state OF
-    IDLE:
-        IF GVL.Sts_PositionReached THEN     // pulse set by PLC_PRG when a move finishes
-            mqttClient.Publish('model/sim', 'on');
-            state := WAITING_RESULT;
-        END_IF
-
-    WAITING_RESULT:
-        IF mqttClient.MessageReceived('factory1/lineA/results', resultPayload) THEN
-            defective := FIND(resultPayload, '"defective":true') > 0;
-            IF defective THEN
-                GVL.Out_RedStack := TRUE;
-                GVL.Out_RedButtonLED := TRUE;
-                state := AWAIT_ACK;
-            ELSE
-                GVL.Out_GreenStack := TRUE;
-                tonGreenDelay(IN := TRUE, PT := T#3S);
-                state := GREEN_DELAY;
-            END_IF
-        END_IF
-
-    GREEN_DELAY:
-        tonGreenDelay(IN := TRUE, PT := T#3S);
-        IF tonGreenDelay.Q THEN
-            GVL.Out_GreenStack := FALSE;
-            tonGreenDelay(IN := FALSE);
-            GVL.Cmd_NextIndex := TRUE;      // hands control back to PLC_PRG's mover
-            state := IDLE;
-        END_IF
-
-    AWAIT_ACK:
-        // contextual dual-role: Inp_Red_Button.State is Stop everywhere else,
-        // but read as "acknowledge" while in this state
-        IF Inp_Red_Button.State THEN
-            GVL.Out_RedStack := FALSE;
-            GVL.Out_RedButtonLED := FALSE;
-            GVL.Cmd_NextIndex := TRUE;
-            state := IDLE;
-        END_IF
-END_CASE
+Out_Red_Stacklight.0    := GVL.Cmd_RedStack;
+Out_Yellow_Stacklight.0 := GVL.Cmd_YellowStackBlink;
+Out_Green_Stacklight.0  := GVL.Cmd_GreenStack;
+Out_Red_Button_LED.0    := GVL.Cmd_RedButtonLED;
+Out_Green_Button_LED.0  := GVL.Cmd_GreenButtonLEDBlink;
+Out_Blue_Button_LED.0   := FALSE;   // orphaned by disabling the cycling engine, nothing in the new design uses it
 ```
 
-Exact `mqttClient.Publish`/message-received call shapes will match whichever library's actual FB signatures — use the example project shipped with the library for those, the names above are illustrative.
+### Red Button — confirmed NC-wired
 
-### 5. Wiring into the existing sequencer
+`Inp_Red_Button.State` reads `TRUE` at rest and `FALSE` when physically pressed (a fail-safe convention — a broken wire reads the same as "pressed"). Every check in `SEQ_SUPERVISOR`/`DEFECT_CHECK` above uses `NOT Inp_Red_Button.State` to mean "pressed" accordingly. Contextual three-way role, unchanged from the original design: no-op in `STANDBY`, Stop in `RUNNING`, Acknowledge in `AWAIT_ACK` — now also mirrored by the remote `stop` MQTT command via `xRemoteStop`.
 
-In `PLC_PRG`, the current "Pause before next index (Loop Up)" rung runs `TON_IndexPauseDelay` and loops straight back into the next move. Change this to: set `GVL.Sts_PositionReached` when `AMP_Relative_Move_0.Done` goes true, and gate the loop-back rung on `GVL.Cmd_NextIndex` (set by `DEFECT_CHECK` above) instead of the fixed timer. `Par_IndexPause`/`TON_IndexPauseDelay` can then either be removed or kept as a separate minimum-cycle-time guard.
-
-### 6. Red Button — contextual three-way role (decided)
-
-`Inp_Red_Button` now means different things depending on `machineState`/`DEFECT_CHECK.state`:
-
-| State | Red Button means |
-|---|---|
-| `STANDBY` | No-op — sequence hasn't started, nothing to stop or ack. |
-| `RUNNING`, not `AWAIT_ACK` | **Stop** — halts the sequence (`Cmd_Stop`/`Force_Stop`, existing behavior) and starts the 5-second return-to-Standby timer. |
-| `RUNNING`, `AWAIT_ACK` | **Acknowledge** the defect — clears the red indicators and resumes to the next move. |
-
-No new hardware input needed — same physical button, read contextually. The tradeoff: Stop is briefly unavailable while acknowledging a defect, which is deliberate for this demo, not an oversight.
-
-### 7. `LIGHT_CYCLE` / `Green_Button_LED` changes needed
-
-Its current button-mirroring logic conflicts with the new state-driven outputs and needs to change for four signals, not three:
-
-- `Out_Green_Stacklight` / `Out_Red_Stacklight` / `Out_Red_Button_LED` — driven by `DEFECT_CHECK`'s state, as before.
-- `Out_Yellow_Stacklight` / `Out_Green_Button_LED` — now driven by the `STANDBY` blink logic in §1 above (`OSCAT_BASIC.BLINK` output), not by whether the buttons are physically pressed.
-
-Strip the old mirroring rungs for those specific outputs and drive them directly from the `GVL` bits set by the new top-level state machine and `DEFECT_CHECK`. Blue Button and its LED can keep their existing demo behavior, since nothing in this design uses them.
-
-### State diagram (top-level + `DEFECT_CHECK` sub-machine)
+### State diagram
 
 ```mermaid
 stateDiagram-v2
   [*] --> STANDBY
 
   STANDBY : STANDBY<br/>Yellow_Stacklight blinks<br/>Green_Button_LED blinks
-  STANDBY --> RUNNING : Green Button pressed<br/>stop blinking, Cmd_Run = TRUE
+  STANDBY --> RUNNING : Green Button OR MQTT "start"<br/>stop blinking, Cmd_Run = TRUE
 
   state RUNNING {
     [*] --> IDLE
 
-    IDLE --> WAITING_RESULT : Sts_PositionReached<br/>publish model/sim = "on"
-    WAITING_RESULT --> GREEN_DELAY : result received<br/>defective = false<br/>Out_GreenStack = TRUE
-    WAITING_RESULT --> AWAIT_ACK : result received<br/>defective = true<br/>Out_RedStack = TRUE<br/>Out_RedButtonLED = TRUE
+    IDLE --> WAITING_RESULT : Sts_PositionReached<br/>publish "discrete-on" to defect_detection/control
+    WAITING_RESULT --> GREEN_DELAY : result received<br/>defective = false<br/>Cmd_GreenStack = TRUE
+    WAITING_RESULT --> AWAIT_ACK : result received<br/>defective = true<br/>Cmd_RedStack / Cmd_RedButtonLED = TRUE
 
-    GREEN_DELAY --> IDLE : TON 3s elapsed<br/>Out_GreenStack = FALSE<br/>Cmd_NextIndex = TRUE
+    GREEN_DELAY --> IDLE : TON 3s elapsed<br/>Cmd_GreenStack = FALSE<br/>Cmd_NextIndex = TRUE
 
-    AWAIT_ACK --> IDLE : Red Button pressed (ack)<br/>Out_RedStack = FALSE<br/>Out_RedButtonLED = FALSE<br/>Cmd_NextIndex = TRUE
+    AWAIT_ACK --> IDLE : Red Button OR MQTT "stop" (ack)<br/>Cmd_RedStack / Cmd_RedButtonLED = FALSE<br/>Cmd_NextIndex = TRUE
 
     note right of AWAIT_ACK
       Inp_Red_Button is Stop everywhere
       else in RUNNING — only read as
-      "acknowledge" in this state
+      "acknowledge" in this state.
+      MQTT "stop" mirrors the same
+      contextual behavior.
     end note
   }
 
-  RUNNING --> STOPPING : Red Button pressed<br/>(not in AWAIT_ACK)<br/>Cmd_Stop = TRUE
+  RUNNING --> STOPPING : Red Button OR MQTT "stop"<br/>(not in AWAIT_ACK)<br/>Cmd_Run = FALSE
   STOPPING --> STANDBY : TON 5s elapsed<br/>clear all indicators<br/>resume blinking
 ```
+
+### Implementation notes — CODESYS specifics worth remembering
+
+A handful of non-obvious CODESYS behaviors surfaced repeatedly while building this and are worth documenting so they don't need rediscovering:
+
+- **Anonymous inline enums are scoped to their declaring POU only.** `state : (IDLE, WAITING_RESULT, ...)` inside a POU can't be referenced from any other POU, qualified or not — needs a separately-named `TYPE ... END_TYPE` (`E_DefectState` above) to be shared.
+- **External writes require `VAR_INPUT`/`VAR_IN_OUT` — a plain `VAR` can only be read from outside**, never written. This bit both `PLC_PRG.Cmd_Run` and `DEFECT_CHECK.state` during implementation (`'X' is no input of 'Y'` is CODESYS's error text for this, which reads more like a call-parameter error than an access-control one).
+- **`EN`/`ENO` aren't real declared parameters on most vendor function blocks** (`AMPLib_LD` here) — they're a graphical-language-only convenience added automatically by the LD/FBD editor. Calling from ST with `EN := TRUE` fails; just omit it, since ST has no implicit enable-gating anyway.
+- **`REAL`→`DINT` is a narrowing conversion requiring an explicit `REAL_TO_DINT(...)`** (which rounds to nearest, not truncates); the reverse (`DINT`→`REAL`) is a safe implicit widening.
+- **CODESYS forces don't survive a fresh download.** Motion-tuning parameters (`StepsPerRotation`, `Par_SoftwareSpeed`, etc. in `MOTOR`) were validated via forced values during testing, but silently revert to their declared defaults (`0`) on every redownload — they need real initial values in the declaration to persist, not just forces.
+- **`MQTTSubscribe`/similar action FBs only (re)attempt their operation on a rising edge of `xEnable`**, not continuously while held `TRUE`. Hardcoding `xEnable := TRUE` from the very first scan — before `MQTTClient` has actually connected — causes the first (failed) attempt to get permanently stuck reporting `CLIENT_NOT_CONNECTED`, even after the connection comes up. Gate it on `mqttClient.xConnectedToBroker` instead, so the attempt (and any future reconnect) naturally retries via the edge.
+- **`OSCAT_BASIC.BLINK` doesn't exist** in the installed OSCAT Basic 3.3.3.0, despite general documentation describing it — confirmed via IDE autocomplete showing the full alphabetical gap where it should be. Replaced with a hand-rolled two-`TON` blink (`tonBlinkOn`/`tonBlinkOff` in `SEQ_SUPERVISOR` above) with no library dependency.
+
+### Known open issues
+
+- **Physical motion not yet confirmed.** `AMP_Relative_Move_0.Done` has fired successfully, but visually confirmed as *not* corresponding to real movement — most likely because the forced motion parameters (`StepsPerRotation`, `Par_SoftwareSpeed`, `Par_SoftwareDistance_Degrees`, `Par_AccelDeccel`) reverted to `0` after an application restart (forces don't survive a download — see above), and a zero-distance move apparently completes as `Done` rather than `Error` in at least some circumstances. Needs real initial values set in `MOTOR`'s declarations rather than relying on forces.
+- **No automatic recovery from an abnormal sequence end.** If `PLC_PRG`'s sequence terminates via a fault/error/timeout (jumping to `Sequence_Run=99`) rather than the normal `DEFECT_CHECK`-driven loop, `SEQ_SUPERVISOR` has nothing watching for that and stays stuck in `RUNNING` indefinitely — currently the only way out is a manual Stop (physical Red Button or the new MQTT `stop`, which is a workaround, not a fix for the underlying gap).
+- **A full Stop→Start cycle is sometimes needed after a fresh application restart** before the defect-check trigger actually fires on the first `Running` attempt. Not yet root-caused — may be related to the parameter-forcing issue above, or a separate first-call MQTT FB initialization quirk (same class of bug as the `xEnable`/`CLIENT_NOT_CONNECTED` issue, in a different spot).
+- **`IoDrvEtherNetIP`, `MQTT Client SL`, and `Web Socket Client SL` are all running unlicensed** (CodeMeter demo mode) on this `vplc` instance — fine for interactive testing, not viable for durable/unattended remote-lab use until real product licenses are activated.
