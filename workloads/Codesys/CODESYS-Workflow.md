@@ -105,8 +105,9 @@ Before uploading the application, make sure the IP addresses for Ethernet/IP com
 ![alt text](image-17.png)  
 ![alt text](image-18.png)
 
-Deploy the application to VPLC
-![alt text](image-12.png)
+Deploy the application to VPLC (or upload a new version)  
+![alt text](image-12.png)  
+![alt text](image-20.png)
 
 User management for VPLC (using password `R3dh4t123!`)
 ![alt text](image-13.png)
@@ -185,7 +186,32 @@ flowchart LR
 
 ## 6) Defect-check workflow (implemented)
 
-The MQTT-gated defect-check design from earlier revisions of this doc has been built and is running on the `vplc` instance. Core control flow (Standby↔Running↔Stopping, MQTT trigger/result round-trip, defect ack) has been validated end-to-end via live testing; **physical motion is not yet confirmed** — see "Known open issues" below. This section documents what's actually deployed, corrected for everything that turned out different from the original plan during implementation.
+The MQTT-gated defect-check design from earlier revisions of this doc has been built and is running on the `vplc` instance. Both the control flow (Standby↔Running↔Stopping, MQTT trigger/result round-trip, defect ack) and physical motion (indexing, servo tuning, settle-before-trigger timing) have been validated end-to-end via extensive live testing against the real hardware. This section documents what's actually deployed, corrected for everything that turned out different from the original plan during implementation.
+
+### How the flow works (operator's view)
+
+For anyone approaching the stand fresh, here's the end-to-end behavior without any code:
+
+1. **Standby** — the yellow stack light and the Green Button's LED blink slowly. The stand is idle, waiting.
+2. **Press Green Button (or send `'start'` to the `plc_application/control` MQTT topic)** — the blinking stops, and the demo starts running continuously.
+3. **Each cycle** — the motor indexes the disk to the next of its 4 fixed positions, waits briefly for the disk to physically settle (a fast index move overshoots slightly and needs a moment to stop swinging before the camera can trust its own position), then triggers the camera/AI analysis over MQTT.
+4. **If the piece is good** — the green stack light comes on for 3 seconds, then the cycle repeats automatically. No operator action needed.
+5. **If the piece is defective** — the red stack light and Red Button LED come on and *stay* on. The sequence deliberately pauses here: an operator must press the Red Button to acknowledge before the cycle continues.
+6. **Press Red Button (or send `'stop'`) at any other time** — stops the run. The stand finishes whatever it's mid-doing safely (it won't abandon the disk at a random angle between fixed positions), then returns to Standby after a short pause.
+7. Everything above also works identically over MQTT (`plc_application/control`, payloads `'start'`/`'stop'`) for remote/lab operation, in addition to the physical buttons.
+
+Two design choices worth calling out explicitly: the settle-before-trigger delay exists because the servo visibly overshoots and corrects after a fast index move, and triggering the camera before that settles produces an unreliable image; and the defective-piece pause is deliberate, not a bug — it's there so a human has to actively clear a flagged piece rather than the line quietly continuing past it.
+
+### Fixing the Zero Position of the motor 
+You might notice that the position of the pieces and the camera is not correctly aligned, to correct this you can leverage a function inside the Application Logic. These are the steps:
+- Force `Par_SoftwareDistance_Degrees` to a small nudge value — e.g. 5 (or -5 for the opposite direction, if you overshoot). Nothing else writes to this one, so it'll hold reliably.  
+- Force `PLC_PRG.Sequence_Run := 10` . Starting from 10 lets the real fault-check/alarm-reset/enable logic run naturally (handles a residual fault automatically via its own 20 step if one's present, skips it if not), rather than risking a skipped precondition by jumping straight to the energize step. It'll progress on its own: 10 → 30 → 40 (energize, if needed) → 50 (issues the move using your forced 5°) → 55 (waits for Done) → 56.
+- Watch it complete — `GVL.AMP_Relative_Move_0.Done` should fire, and you should see the small nudge happen physically.
+- Force `Sequence_Run := 0` to release it back to idle before the next nudge.
+- When happy with the alignment, set the target position value. Force `Par_SCL_Reg1 := 0` with set+F7.
+- Trigger the zero/save sequence, forcing `Cmd_ZeroPosition := TRUE` once. MOTOR's existing Sequence_ZeroPosition mini-sequencer runs automatically from there — no new code needed.
+- Watch the encoder complete its cycle. `Sequence_ZeroPosition` should progress 0 → 10 → 20 → 30 → 40 → 0. `GVL.AMP_SCL_0.Done` (the EP step) and `GVL.AMP_SCL_1.Done` (the SP step) should both go TRUE without `.Error` along the way
+- Now you can rerun the program, stop and restart the SoftPLC so that forced values are cleared completely from memory.
 
 ### Architecture
 
@@ -297,6 +323,7 @@ VAR
     tonBlinkOff     : TON;
     blinkOut        : BOOL;
     tonStopRecovery : TON;
+    trigSequenceDone : R_TRIG;
 
     remoteControlSub     : MQTT.MQTTSubscribe;
     wsRemoteControlTopic : WSTRING(1024) := "plc_application/control";
@@ -330,6 +357,19 @@ remoteControlSub(
 xRemoteStart := remoteControlSub.xReceived AND FIND(sRemoteControlBuffer, 'start') > 0;
 xRemoteStop  := remoteControlSub.xReceived AND FIND(sRemoteControlBuffer, 'stop') > 0;
 
+// called unconditionally every scan, regardless of machineState — keeps the
+// MQTT publisher/subscriber warm across Stopping/Standby instead of going
+// cold and needing a fresh reconnect on the next Running session
+defectCheck(mqttClient := mqttClient, xRemoteStop := xRemoteStop);
+
+// edge-triggered on purpose — PLC_PRG.Sts_SequenceDone can still be sitting
+// TRUE (stale, from the tail end of the previous run) at the exact moment a
+// fresh Running session begins; a level check would bounce straight back out
+// to Stopping before the new run ever gets a chance to move. Only a genuine
+// rising edge — an abnormal end happening *during this* Running session —
+// should trigger the auto-recovery abort below.
+trigSequenceDone(CLK := PLC_PRG.Sts_SequenceDone);
+
 CASE machineState OF
     STANDBY:
         tonBlinkOn(IN := NOT blinkOut, PT := T#500MS);
@@ -349,13 +389,18 @@ CASE machineState OF
             GVL.Cmd_YellowStackBlink    := FALSE;
             GVL.Cmd_GreenButtonLEDBlink := FALSE;
             defectCheck.state := E_DefectState.IDLE;
+            GVL.Cmd_NextIndex := FALSE;   // clear any stale leftover from an aborted previous run
             PLC_PRG.Cmd_Run := TRUE;
             machineState := RUNNING;
         END_IF
 
     RUNNING:
-        defectCheck(mqttClient := mqttClient, xRemoteStop := xRemoteStop);
         IF (NOT Inp_Red_Button.State OR xRemoteStop) AND defectCheck.state <> E_DefectState.AWAIT_ACK THEN
+            PLC_PRG.Cmd_Run := FALSE;
+            tonStopRecovery(IN := TRUE, PT := T#5S);
+            machineState := STOPPING;
+        END_IF
+        IF trigSequenceDone.Q THEN
             PLC_PRG.Cmd_Run := FALSE;
             tonStopRecovery(IN := TRUE, PT := T#5S);
             machineState := STOPPING;
@@ -394,8 +439,9 @@ The defect-check patch itself, against the real (ST-translated) ladder networks:
 
 - **Network 1** (safe-state/`Cmd_Stop`): removed the `NOT Inp_Red_Button.State` term specifically — kept `Sts_FirstScanBit`/`Sts_SequenceDone`/`Force_Stop`/`eState<>8`. Left in, it would force `Cmd_Stop` on every Red Button press, including during `DEFECT_CHECK`'s `AWAIT_ACK`.
 - **Network 2** (Green Button → `Cmd_Run` latch): disabled entirely — `Cmd_Run` is now set externally by `SEQ_SUPERVISOR`.
-- **Network 9** (wait for move done): added a new `R_TRIG` on `AMP_Relative_Move_0.Done`, driving `GVL.Sts_PositionReached` — this is the actual hook that starts the defect-check cycle.
-- **Network 10** (the real loop-back — a genuine loop, not a straight-through pause as first assumed from the network comments alone): AND-gated the existing `TON_IndexPauseDelay.Q`-driven loop-back on `GVL.Cmd_NextIndex`, with a reset once consumed, so the sequencer holds at the paused step until `DEFECT_CHECK` releases it.
+- **Network 8** (issue the move): the `Error` check originally fired immediately, on every scan, with no grace period — unlike the `.Sent` success check right above it, which correctly waits for `TON_MotorDataDelay[2]`'s 20ms delay before checking. A stale `AMP_Relative_Move_0.Error` left over from a previous session (confirmed still `TRUE` at idle, before a fresh run even started) was being caught on the very first scan of `Sequence_Run=50`, aborting the run before the drive had any chance to process the fresh `Start` and clear its own stale error — this was the actual root cause of the "needs 2-3 start attempts" symptom, hiding underneath several other real-but-secondary bugs (see "Known open issues", now resolved, below). Fixed by gating the `Error` check behind the same `TON_MotorDataDelay[2].Q` the success path already uses.
+- **Network 9** (wait for move done): added `TON_SettleDelay`, gated on a genuine rising edge of `AMP_Relative_Move_0.Done` (via `trigMoveDone`/`SettleArm`, not `Done`'s raw level — a stale level held over from a previous move would otherwise arm a phantom defect-check with no real motion behind it), driving `GVL.Sts_PositionReached` through `trigPositionReached`. This is the actual hook that starts the defect-check cycle, now correctly delayed until the disk has physically stopped oscillating rather than firing the instant the drive's trajectory generator reports `Done` (which happens before the position loop's own overshoot-correction finishes).
+- **Network 10** (the real loop-back — a genuine loop, not a straight-through pause as first assumed from the network comments alone): AND-gated the existing `TON_IndexPauseDelay.Q`-driven loop-back on `GVL.Cmd_NextIndex`, with a reset once consumed, so the sequencer holds at the paused step until `DEFECT_CHECK` releases it. `IndexPauseMin`/`IndexPauseMax` (feeding the potentiometer-scaled `Par_IndexPause`) were left at their implicit `0` default in the original translation — meaning the pause was always `0ms` regardless of pot position — fixed with real declared values.
 
 Full current source:
 
@@ -416,6 +462,8 @@ VAR
 
     R_TRIG_0             : R_TRIG;
     trigPositionReached  : R_TRIG;
+    trigMoveDone         : R_TRIG;
+    SettleArm            : BOOL;
     trigBlueButton       : R_TRIG;
     trigRelayIn          : R_TRIG;
     TON_MotorDataDelay   : ARRAY[0..3] OF TON;
@@ -425,13 +473,15 @@ VAR
     TON_Timeout_Move1    : TON;
     TON_Timeout_Move2    : TON;
     TON_Timeout_Stop     : TON;
+    TON_SettleDelay      : TON;
 
     tStart, tEnd, tDelta, newTimeDelta : TIME;
     ReturnTimeFinish : BOOL;
     MoveDelta        : BOOL;
     RealTimeDelta    : REAL;
     IndexPauseInt                 : REAL;
-    IndexPauseMin, IndexPauseMax  : DINT;
+    IndexPauseMin : DINT := 500;    // ms — potentiometer-scaled inter-move pause, lower bound
+    IndexPauseMax : DINT := 5000;   // ms — upper bound
 
     Seq0, Seq10, Seq20, Seq30, Seq40, Seq50, Seq60 : BOOL;
     SeqMov1, SeqMov2, SeqStop, SeqErr              : BOOL;
@@ -519,7 +569,12 @@ TON_MotorDataDelay[2](IN := (Sequence_Run = 50), PT := T#20MS);
 IF TON_MotorDataDelay[2].Q AND GVL.AMP_Relative_Move_0.Sent THEN
     Sequence_Run := 55;
 END_IF
-IF GVL.AMP_Relative_Move_0.Error THEN
+// Gated behind the same 20ms grace period as the success check above — a
+// stale Error left over from a previous session needs a moment to clear
+// once a fresh Start is actually processed by MOTOR's FB call; checking
+// immediately (the original behavior) caught the stale flag before the
+// drive had any chance to prove the new attempt actually failed.
+IF TON_MotorDataDelay[2].Q AND GVL.AMP_Relative_Move_0.Error THEN
     Sequence_Run := 99;
 END_IF
 TON_Timeout_Move1(IN := (Sequence_Run = 50), PT := T#2S);
@@ -528,17 +583,40 @@ IF TON_Timeout_Move1.Q THEN
     Sequence_Run := 99;
 END_IF
 
-// ---- Network 9: Sequence_Run=55 — wait for move done ----
-trigPositionReached(CLK := GVL.AMP_Relative_Move_0.Done);
+// ---- Network 9: Sequence_Run=55 — wait for move done, then settle before
+//      arming the defect-check trigger ----
+// SettleArm only latches TRUE on a genuine rising edge of Done (trigMoveDone),
+// not its raw level — Done stays TRUE continuously between moves, so gating
+// on the level alone let a stale Done arm a phantom defect-check with no
+// real motion behind it. Clearing SettleArm on Start re-arms it for the next
+// move. TON_SettleDelay is deliberately NOT gated on Sequence_Run=55 — an
+// earlier attempt gated it that way and the timer never got the chance to
+// finish counting, since Sequence_Run itself advances to 56 the same scan
+// Done goes true, killing the gate before the 1.2s could elapse.
+trigMoveDone(CLK := GVL.AMP_Relative_Move_0.Done);
+IF trigMoveDone.Q THEN
+    SettleArm := TRUE;
+END_IF
+IF GVL.AMP_Relative_Move_0.Start THEN
+    SettleArm := FALSE;
+END_IF
+
+TON_SettleDelay(IN := SettleArm, PT := T#1.2S);
+trigPositionReached(CLK := TON_SettleDelay.Q);
 GVL.Sts_PositionReached := trigPositionReached.Q;
 
 IF Sequence_Run = 55 THEN
     IF GVL.AMP_Relative_Move_0.Done THEN
         Sequence_Run := 56;
     END_IF
+    (* Removed: aborting mid-move via Normal_Stop left the disk stopped at an
+       arbitrary angle instead of a fixed position. A Stop request now gets
+       deferred until the current move finishes (Network 10's existing abort
+       check catches it immediately afterward, at a valid position).
     IF NOT Cmd_Run THEN
         Sequence_Run := 60;
     END_IF
+    *)
 END_IF
 TON_Timeout_Move2(IN := (Sequence_Run = 55), PT := T#5S);
 IF TON_Timeout_Move2.Q THEN
@@ -642,6 +720,8 @@ Also rewritten from ladder to ST. `MotorDistance_Steps` is `DINT` (a physical st
 
 **Needs real initial values, not forced ones, to actually move the drive.** `AMP_Relative_Move_0.Done` firing without physical motion turned out to be exactly this — forced values don't survive a download, so `StepsPerRotation`/`Par_SoftwareSpeed`/etc. silently reverted to `0` on every restart, and a zero-distance move apparently completes as `Done` rather than `Error`. Fixed by giving six parameters real declared defaults, confirmed against actual physical motion. `Par_SelectorDistance1/2/3_Degrees`, `Par_PotentiometerMinSpeed`/`MaxSpeed` (the toggle/potentiometer-driven alternative path, currently bypassed by the two `Enable` flags below), and `Par_SCL_Reg1` (used only by the zero-position mini-sequencer) are untouched at their implicit `0`/`FALSE` defaults — none of them have been exercised or given confirmed-working values yet.
 
+**`AMP_Relative_Move_0`'s `Speed`/`Acc`/`Dec` inputs are in rev/sec and rev/sec², not RPM** — confirmed directly against Applied Motion's own function block documentation ("Application Note #61: EtherNet I/P Function Blocks for CODESYS"), which was not obvious from the field names alone and cost real debugging time: `Par_SoftwareSpeed := 5.0`/`Par_AccelDeccel := 1.0` (the original values) were actually commanding **300 rpm at 60 rpm/s²**, and an early attempt to fix perceived sluggishness by bumping both to `10` made it **600 rpm at 600 rpm/s²** — 20x faster than intended, and the direct cause of what looked like "completely uncontrolled" motor oscillation. Corrected to `0.6`/`0.4` (36 rpm / 24 rpm/s²) below, confirmed smooth by physical observation and cross-checked against the servo's own tuning captures (see "Servo tuning" below).
+
 Full current source:
 
 ```iecst
@@ -658,8 +738,8 @@ VAR
     Par_PotentiometerMinSpeed : REAL;
     Par_PotentiometerMaxSpeed : REAL;
     Par_SoftwareSpeedEnable   : BOOL := TRUE;        // bypasses the potentiometer speed scaling
-    Par_SoftwareSpeed         : REAL := 5.0;
-    Par_AccelDeccel           : REAL := 1.0;
+    Par_SoftwareSpeed         : REAL := 0.6;   // rev/sec (NOT rpm) — 0.6 rev/s = 36 rpm
+    Par_AccelDeccel           : REAL := 0.4;   // rev/sec² (NOT rpm/s) — 0.4 rev/s² = 24 rpm/s
 
     EncoderPosition_Degrees : REAL;
     Par_SCL_Reg1            : DINT;
@@ -766,6 +846,25 @@ GVL.AMP_SCL_0(Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE,
 GVL.AMP_SCL_1(Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE,
               Execute := GVL.AMP_SCL_1.Execute, SCL_Cmd := 'SP', Reg1 := Par_SCL_Reg1, Reg2 := 0);
 ```
+
+### Servo tuning (Applied Motion Step-Servo Quick Tuner)
+
+The oscillation the demo motor showed on stop/index turned out to have two separate causes, found in this order:
+
+1. **The rev/s-vs-RPM units mistake above** — accounted for most of the visible "completely uncontrolled" swinging. Fixing `Par_SoftwareSpeed`/`Par_AccelDeccel` alone made the motion visibly smoother.
+2. **Genuinely undertuned position-loop (P Loop) gains on the drive itself** — even at the corrected speed, the disk still overshot its target by roughly 18-19° (≈1,000 steps) before correcting back, taking ~0.5s to settle. This isn't something `PLC_PRG`/`MOTOR` control — it's tuned directly on the `TSM23XIP-XD` drive via Applied Motion's **Step-Servo Quick Tuner** desktop tool (connects to the drive at `192.168.100.13` over the same EtherNet/IP network — the CODESYS application should be stopped first, since the drive only accepts one CIP connection owner at a time; a stale connection from an earlier session may need a drive power-cycle to release before the Tuner can connect).
+
+P Loop tuning arrived at, via iterative Sample Move captures (0.25 rev / 36 rpm / 20 rpm/s² test moves, comparing the Position Error trace before/after each change):
+
+| Parameter | Value | Notes |
+|---|---|---|
+| Gain (KP) | `300` | Left at default — lowering it to `250` made following error worse, not better (weaker pull toward the trajectory during acceleration) |
+| Deri Gain (KD) | `20` | Left at default — doubling to `40` amplified noise into larger oscillation, not less (see below) |
+| Deri Filter (KE) | `10` | Raised from default `1` — this was the actual fix. `KE=1` applied almost no filtering to the derivative term, so extra `KD` gain just picked up encoder/velocity noise and fed it back as erratic correction. Filtering the derivative term (rather than raising its gain) is what tightened the settle. `KE=15` was also tried and was worse than `10` (added phase lag, larger swings, didn't fully converge in the sample window) |
+
+Net result: overshoot/settle behavior went from a wide, slow, two-humped correction (peak +300 / trough -150 counts, several seconds to flatten) to a clean single small bump settling to near-zero within about 0.2-0.3s of the commanded move ending.
+
+**Known caveat, not yet re-verified**: while sampling, SW CCW/CW position limits were set on the drive (required by the Quick Tuner's Sample Move test) to bound how far it's allowed to travel during tuning. These should be cleared before resuming normal `SEQ_SUPERVISOR`-driven operation — the demo's normal indexing doesn't respect them and will fault if left in place with too narrow a range.
 
 ### `LIGHT_CYCLE` — the free-running color-cycle engine replaced
 
@@ -882,9 +981,14 @@ A handful of non-obvious CODESYS behaviors surfaced repeatedly while building th
 - **CODESYS forces don't survive a fresh download.** Motion-tuning parameters (`StepsPerRotation`, `Par_SoftwareSpeed`, etc. in `MOTOR`) were validated via forced values during testing, but silently revert to their declared defaults (`0`) on every redownload — they need real initial values in the declaration to persist, not just forces.
 - **`MQTTSubscribe`/similar action FBs only (re)attempt their operation on a rising edge of `xEnable`**, not continuously while held `TRUE`. Hardcoding `xEnable := TRUE` from the very first scan — before `MQTTClient` has actually connected — causes the first (failed) attempt to get permanently stuck reporting `CLIENT_NOT_CONNECTED`, even after the connection comes up. Gate it on `mqttClient.xConnectedToBroker` instead, so the attempt (and any future reconnect) naturally retries via the edge.
 - **`OSCAT_BASIC.BLINK` doesn't exist** in the installed OSCAT Basic 3.3.3.0, despite general documentation describing it — confirmed via IDE autocomplete showing the full alphabetical gap where it should be. Replaced with a hand-rolled two-`TON` blink (`tonBlinkOn`/`tonBlinkOff` in `SEQ_SUPERVISOR` above) with no library dependency.
+- **A bare level check on a status/error flag is dangerous if that flag can be stale from a previous session.** Hit this three separate times in slightly different shapes: `Sts_SequenceDone` staying `TRUE` right as a fresh `Running` session began (fixed with an edge-triggered `R_TRIG` in `SEQ_SUPERVISOR`, not a level check); `GVL.Cmd_NextIndex` carrying a `TRUE` over from an aborted previous run (fixed by explicitly clearing it on the `Standby→Running` transition); and `AMP_Relative_Move_0.Error` sitting `TRUE` from a prior session's failed move, caught before the drive had a chance to clear it on the new attempt (fixed by gating the check behind the same short `TON` delay the success path already used). The common thread: any check written as "if this flag is true, do X" needs to ask *when* that flag was last legitimately set, not just what it currently reads.
+- **A `TON` gated on a condition that itself changes as a side effect of that same network can starve the timer.** `TON_SettleDelay`'s `IN` was first written as `(Sequence_Run = 55) AND Done` — but `Sequence_Run` advances to `56` the same/next scan `Done` goes true, in the very next lines of the same network, killing the timer's `IN` before it could ever count up to its `PT`. Decoupling the timer from `Sequence_Run` (arming it off a `Done` edge instead, independent of what the sequence state has already moved on to) fixed it.
+- **Vendor FB parameter units aren't always what the field name implies.** `AMP_Relative_Move_0`'s `Speed`/`Acc`/`Dec` are rev/sec and rev/sec² per Applied Motion's own FB documentation, not RPM — cost real time before being caught, since "5.0" and "1.0" look like plausible RPM-ish values for a demo motor and the FB compiled and ran without complaint either way.
+- **Servo-side PID tuning is a separate concern from PLC-side motion parameters**, and symptoms from the two can look identical (both present as "the motor oscillates"). Fixing the units mistake above visibly improved things but didn't fully resolve the overshoot — that needed actual P-loop gain/filter tuning on the drive itself, done outside CODESYS entirely via Applied Motion's Quick Tuner (see "Servo tuning" above).
 
 ### Known open issues
 
-- **No automatic recovery from an abnormal sequence end.** If `PLC_PRG`'s sequence terminates via a fault/error/timeout (jumping to `Sequence_Run=99`) rather than the normal `DEFECT_CHECK`-driven loop, `SEQ_SUPERVISOR` has nothing watching for that and stays stuck in `RUNNING` indefinitely — currently the only way out is a manual Stop (physical Red Button or the new MQTT `stop`, which is a workaround, not a fix for the underlying gap).
-- **A full Stop→Start cycle is sometimes needed after a fresh application restart** before the defect-check trigger actually fires on the first `Running` attempt. Not yet root-caused — may be related to the parameter-forcing issue above, or a separate first-call MQTT FB initialization quirk (same class of bug as the `xEnable`/`CLIENT_NOT_CONNECTED` issue, in a different spot).
 - **`IoDrvEtherNetIP`, `MQTT Client SL`, and `Web Socket Client SL` are all running unlicensed** (CodeMeter demo mode) on this `vplc` instance — fine for interactive testing, not viable for durable/unattended remote-lab use until real product licenses are activated.
+- **SW CCW/CW position limits set on the drive during Quick Tuner sessions need to be manually cleared** before resuming normal operation (see "Servo tuning" above) — nothing in `PLC_PRG`/`SEQ_SUPERVISOR` checks for or clears these automatically.
+- **`IndexPauseMin`/`IndexPauseMax` (`500`/`5000` ms) are placeholder values**, not tuned against the actual camera/analysis round-trip time or desired demo pacing — revisit once the full cycle's real timing is better understood.
+- **ML defect-detection model accuracy** — the camera/AI pipeline recognizes pieces but has not reliably flagged the known-defective one among the four demo pieces; possibly related to the lighting change made above the camera. Explicitly deferred, not investigated further yet.
