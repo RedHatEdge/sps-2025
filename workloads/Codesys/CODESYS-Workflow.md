@@ -386,9 +386,9 @@ Broker and topics, confirmed by live testing (not all were right on the first gu
 | Analysis result (subscribe) | `defect_detection/results` | `{"defective":bool,"confidence":real,"timestamp":string,"piece":int}` | Matches both the detector's own README and the field mapping in `workloads/xentara/model.json` — this one was right from the start. |
 | Remote start/stop (subscribe) | `plc_application/control` | `'start'` / `'stop'` | One shared topic/subscription rather than a separate one per command, to avoid adding a third simultaneous `MQTTSubscribe` instance while it's still unclear whether the unlicensed library caps concurrent subscriptions. |
 
-### `PLC_PRG` and `MOTOR` — translated from ladder to Structured Text
+### `PLC_PRG` — translated from ladder to Structured Text, patched
 
-Both were rewritten from the original ladder logic into ST (kept functionally identical — verified network-by-network against the real ladder in the IDE) so the defect-check patch could be applied as ordinary text edits instead of ladder-diagram surgery. `Cmd_Run` had to move from a plain `VAR` to `VAR_INPUT` in `PLC_PRG`, since `SEQ_SUPERVISOR` needs to write it from outside — CODESYS only allows external writes to `VAR_INPUT`/`VAR_IN_OUT`, never a plain `VAR`.
+Rewritten from the original ladder logic into ST (kept functionally identical — verified network-by-network against the real ladder in the IDE) so the defect-check patch could be applied as ordinary text edits instead of ladder-diagram surgery. `Cmd_Run` had to move from a plain `VAR` to `VAR_INPUT`, since `SEQ_SUPERVISOR` needs to write it from outside — CODESYS only allows external writes to `VAR_INPUT`/`VAR_IN_OUT`, never a plain `VAR`.
 
 The defect-check patch itself, against the real (ST-translated) ladder networks:
 
@@ -397,17 +397,441 @@ The defect-check patch itself, against the real (ST-translated) ladder networks:
 - **Network 9** (wait for move done): added a new `R_TRIG` on `AMP_Relative_Move_0.Done`, driving `GVL.Sts_PositionReached` — this is the actual hook that starts the defect-check cycle.
 - **Network 10** (the real loop-back — a genuine loop, not a straight-through pause as first assumed from the network comments alone): AND-gated the existing `TON_IndexPauseDelay.Q`-driven loop-back on `GVL.Cmd_NextIndex`, with a reset once consumed, so the sequencer holds at the paused step until `DEFECT_CHECK` releases it.
 
-### `LIGHT_CYCLE` — the free-running color-cycle engine replaced
-
-Turned out to be a self-oscillating `Cmd_Light` counter (0/1/2, driven by a 1-second `TON`) cycling all three stack lights and two button LEDs together — not per-button mirroring as first guessed from the network comments alone. Disabled entirely and replaced:
+Full current source:
 
 ```iecst
+PROGRAM PLC_PRG
+VAR_INPUT
+    Cmd_Run : BOOL;
+END_VAR
+VAR
+    Cmd_Stop, Force_Run, Force_Stop : BOOL;
+    Sequence_Run     : DINT;
+    Sts_SequenceDone : BOOL;
+    Sts_FirstScanBit : BOOL := TRUE;
+    Sts_SeqTimeout   : DINT;
+    Par_SingleIndex  : BOOL;
+    Par_IndexPause   : TIME;
+    MotorEnabled     : BOOL;
+
+    R_TRIG_0             : R_TRIG;
+    trigPositionReached  : R_TRIG;
+    trigBlueButton       : R_TRIG;
+    trigRelayIn          : R_TRIG;
+    TON_MotorDataDelay   : ARRAY[0..3] OF TON;
+    TON_IndexPauseDelay  : TON;
+    TON_Timeout_Reset    : TON;
+    TON_Timeout_Enable   : TON;
+    TON_Timeout_Move1    : TON;
+    TON_Timeout_Move2    : TON;
+    TON_Timeout_Stop     : TON;
+
+    tStart, tEnd, tDelta, newTimeDelta : TIME;
+    ReturnTimeFinish : BOOL;
+    MoveDelta        : BOOL;
+    RealTimeDelta    : REAL;
+    IndexPauseInt                 : REAL;
+    IndexPauseMin, IndexPauseMax  : DINT;
+
+    Seq0, Seq10, Seq20, Seq30, Seq40, Seq50, Seq60 : BOOL;
+    SeqMov1, SeqMov2, SeqStop, SeqErr              : BOOL;
+END_VAR
+
+// ---- Network 1: safe-state / stop conditions ----
+// NOT Inp_Red_Button.State term removed — Red Button's meaning (Stop vs
+// Acknowledge) is now owned entirely by SEQ_SUPERVISOR.
+IF Sts_FirstScanBit OR Sts_SequenceDone
+   (* OR NOT Inp_Red_Button.State *)
+   OR Force_Stop OR (TSM23XIP_XD.eState <> 8) THEN
+    Cmd_Stop := TRUE;
+    Force_Stop := FALSE;
+ELSE
+    Cmd_Stop := FALSE;
+END_IF
+
+// ---- Network 2: Green Button start latch — DISABLED ----
+// Cmd_Run is now set externally by SEQ_SUPERVISOR.
+(*
+IF ((Inp_Green_Button.State AND NOT Cmd_Run) OR Force_Run OR Cmd_Run)
+   AND (Sequence_Run = 0) AND NOT Cmd_Stop THEN
+    Cmd_Run := TRUE;
+    Force_Run := FALSE;
+ELSE
+    Cmd_Run := FALSE;
+END_IF
+*)
+
+// ---- Network 3: launch the sequence on Cmd_Run's rising edge ----
+R_TRIG_0(CLK := Cmd_Run);
+IF R_TRIG_0.Q AND (Sequence_Run = 0) THEN
+    Sequence_Run := 10;
+END_IF
+
+// ---- Network 4: Sequence_Run=10 — fault/alarm check ----
+IF Sequence_Run = 10 THEN
+    IF NOT GVL.AMP_Status_Code_0.Drive_Fault AND NOT GVL.AMP_Status_Code_0.Alarm_Present THEN
+        Sequence_Run := 30;
+    END_IF
+    IF GVL.AMP_Status_Code_0.Drive_Fault THEN
+        Sequence_Run := 20;
+    END_IF
+    IF GVL.AMP_Status_Code_0.Alarm_Present THEN
+        Sequence_Run := 20;
+    END_IF
+END_IF
+
+// ---- Network 5: Sequence_Run=20 — fault reset ----
+GVL.AMP_Alarm_Reset_0.Reset := (Sequence_Run = 20);
+TON_MotorDataDelay[0](IN := (Sequence_Run = 20), PT := T#20MS);
+IF TON_MotorDataDelay[0].Q AND GVL.AMP_Alarm_Reset_0.Done THEN
+    Sequence_Run := 30;
+END_IF
+TON_Timeout_Reset(IN := (Sequence_Run = 20), PT := T#2S);
+IF TON_Timeout_Reset.Q THEN
+    Sts_SeqTimeout := 1;
+    Sequence_Run := 99;
+END_IF
+
+// ---- Network 6: Sequence_Run=30 — already enabled? ----
+IF Sequence_Run = 30 THEN
+    IF GVL.AMP_Status_Code_0.Motor_Enabled THEN
+        Sequence_Run := 50;
+    ELSE
+        Sequence_Run := 40;
+    END_IF
+END_IF
+
+// ---- Network 7: Sequence_Run=40 — energize ----
+GVL.AMP_Motor_Enable_0.Enable := (Sequence_Run = 40);
+TON_MotorDataDelay[1](IN := (Sequence_Run = 40), PT := T#20MS);
+IF TON_MotorDataDelay[1].Q AND GVL.AMP_Motor_Enable_0.Done THEN
+    Sequence_Run := 50;
+END_IF
+TON_Timeout_Enable(IN := (Sequence_Run = 40), PT := T#2S);
+IF TON_Timeout_Enable.Q THEN
+    Sts_SeqTimeout := 2;
+    Sequence_Run := 99;
+END_IF
+
+// ---- Network 8: Sequence_Run=50 — issue the move ----
+GVL.AMP_Relative_Move_0.Start := (Sequence_Run = 50);
+TON_MotorDataDelay[2](IN := (Sequence_Run = 50), PT := T#20MS);
+IF TON_MotorDataDelay[2].Q AND GVL.AMP_Relative_Move_0.Sent THEN
+    Sequence_Run := 55;
+END_IF
+IF GVL.AMP_Relative_Move_0.Error THEN
+    Sequence_Run := 99;
+END_IF
+TON_Timeout_Move1(IN := (Sequence_Run = 50), PT := T#2S);
+IF TON_Timeout_Move1.Q THEN
+    Sts_SeqTimeout := 3;
+    Sequence_Run := 99;
+END_IF
+
+// ---- Network 9: Sequence_Run=55 — wait for move done ----
+trigPositionReached(CLK := GVL.AMP_Relative_Move_0.Done);
+GVL.Sts_PositionReached := trigPositionReached.Q;
+
+IF Sequence_Run = 55 THEN
+    IF GVL.AMP_Relative_Move_0.Done THEN
+        Sequence_Run := 56;
+    END_IF
+    IF NOT Cmd_Run THEN
+        Sequence_Run := 60;
+    END_IF
+END_IF
+TON_Timeout_Move2(IN := (Sequence_Run = 55), PT := T#5S);
+IF TON_Timeout_Move2.Q THEN
+    Sts_SeqTimeout := 4;
+    Sequence_Run := 99;
+END_IF
+
+// ---- Network 10: Sequence_Run=56 — inter-move pause, then loop or finish ----
+IF Sequence_Run = 56 THEN
+    IF Cmd_Run THEN
+        TON_IndexPauseDelay(IN := TRUE, PT := Par_IndexPause);
+        IF TON_IndexPauseDelay.Q AND GVL.Cmd_NextIndex THEN
+            Sequence_Run := 50;
+            GVL.Cmd_NextIndex := FALSE;
+        END_IF
+    ELSE
+        TON_IndexPauseDelay(IN := FALSE);
+    END_IF
+
+    IF NOT Cmd_Run OR Par_SingleIndex THEN
+        Sequence_Run := 99;
+        Par_SingleIndex := FALSE;
+    END_IF
+END_IF
+
+// ---- Network 11: Sequence_Run=60 — controlled stop ----
+GVL.AMP_Normal_Stop_0.Stop := (Sequence_Run = 60);
+TON_MotorDataDelay[3](IN := (Sequence_Run = 60), PT := T#20MS);
+IF TON_MotorDataDelay[3].Q AND GVL.AMP_Normal_Stop_0.Done THEN
+    Sequence_Run := 99;
+END_IF
+TON_Timeout_Stop(IN := (Sequence_Run = 60), PT := T#2S);
+IF TON_Timeout_Stop.Q THEN
+    Sts_SeqTimeout := 5;
+    Sequence_Run := 99;
+END_IF
+
+// ---- Network 12: Sequence_Run=99 — done/error, return to idle ----
+IF Sequence_Run = 99 THEN
+    Sequence_Run := 0;
+    Sts_SequenceDone := TRUE;
+ELSE
+    Sts_SequenceDone := FALSE;
+END_IF
+
+// ---- Networks 13-17: manual timing/calibration utility (Blue Button + relay) ----
+trigBlueButton(CLK := inp_Blue_Button.State);
+IF trigBlueButton.Q THEN
+    tStart := TO_TIME(SysTimeGetMs());
+    Out_Relay_Out.0 := TRUE;
+END_IF
+
+trigRelayIn(CLK := In_Relay_In.State);
+ReturnTimeFinish := trigRelayIn.Q;
+IF trigRelayIn.Q THEN
+    tEnd := TO_TIME(SysTimeGetMs());
+    Out_Relay_Out.0 := FALSE;
+END_IF
+
+IF ReturnTimeFinish THEN
+    tDelta := tEnd - tStart;
+    MoveDelta := TRUE;
+ELSE
+    MoveDelta := FALSE;
+END_IF
+
+IF MoveDelta THEN
+    newTimeDelta := tDelta;
+    RealTimeDelta := TO_REAL(newTimeDelta);
+END_IF
+
+IF NOT Inp_Toggle_1.State AND NOT Inp_Toggle_2.State THEN
+    IndexPauseInt := FUNC_SCALE(Inp_Potentiometer.EU, 0, 10, IndexPauseMin, IndexPauseMax);
+    Par_IndexPause := TO_TIME(IndexPauseInt);
+END_IF
+
+// ---- Networks 18-28: step-flag convenience mirrors ----
+Seq0    := (Sequence_Run = 0);
+Seq10   := (Sequence_Run = 10);
+Seq20   := (Sequence_Run = 20);
+Seq30   := (Sequence_Run = 30);
+Seq40   := (Sequence_Run = 40);
+Seq50   := (Sequence_Run = 50);
+SeqMov1 := (Sequence_Run = 55);
+SeqMov2 := (Sequence_Run = 56);
+SeqStop := (Sequence_Run = 60);
+SeqErr  := (Sequence_Run = 99);
+
+// ---- Network 29: motor-enable-command status mirror ----
+MotorEnabled := GVL.AMP_Motor_Enable_0.Done;
+
+// ---- Network 31: first-scan self-reset ----
+IF Sts_FirstScanBit THEN
+    Sts_FirstScanBit := FALSE;
+END_IF
+```
+
+### `MOTOR` — translated from ladder to Structured Text, real initial values
+
+Also rewritten from ladder to ST. `MotorDistance_Steps` is `DINT` (a physical step count is discrete) with `REAL_TO_DINT(...)` at each assignment, since the underlying `Degrees / 360 * StepsPerRotation` math is REAL. `Par_SCL_Reg1` is `DINT` too — the AMP SCL command FB's register parameters are integer, not `REAL` as first assumed. Every `AMPLib_LD` FB call omits `EN` — vendor FBs from this library don't declare it as a real `VAR_INPUT`; `EN`/`ENO` are graphical-editor-only conveniences, not something ST can pass.
+
+**Needs real initial values, not forced ones, to actually move the drive.** `AMP_Relative_Move_0.Done` firing without physical motion turned out to be exactly this — forced values don't survive a download, so `StepsPerRotation`/`Par_SoftwareSpeed`/etc. silently reverted to `0` on every restart, and a zero-distance move apparently completes as `Done` rather than `Error`. Fixed by giving six parameters real declared defaults, confirmed against actual physical motion. `Par_SelectorDistance1/2/3_Degrees`, `Par_PotentiometerMinSpeed`/`MaxSpeed` (the toggle/potentiometer-driven alternative path, currently bypassed by the two `Enable` flags below), and `Par_SCL_Reg1` (used only by the zero-position mini-sequencer) are untouched at their implicit `0`/`FALSE` defaults — none of them have been exercised or given confirmed-working values yet.
+
+Full current source:
+
+```iecst
+PROGRAM MOTOR
+VAR
+    StepsPerRotation : REAL := 20000.0;   // TSM23XIP-XD steps/rev — carried over from the value that worked when forced, not independently re-verified against the hardware manual
+    Par_SelectorDistance1_Degrees : REAL;
+    Par_SelectorDistance2_Degrees : REAL;
+    Par_SelectorDistance3_Degrees : REAL;
+    Par_SoftwareDistanceEnable    : BOOL := TRUE;    // bypasses the toggle-switch distance selector
+    Par_SoftwareDistance_Degrees  : REAL := 90.0;
+    MotorDistance_Steps           : DINT;
+
+    Par_PotentiometerMinSpeed : REAL;
+    Par_PotentiometerMaxSpeed : REAL;
+    Par_SoftwareSpeedEnable   : BOOL := TRUE;        // bypasses the potentiometer speed scaling
+    Par_SoftwareSpeed         : REAL := 5.0;
+    Par_AccelDeccel           : REAL := 1.0;
+
+    EncoderPosition_Degrees : REAL;
+    Par_SCL_Reg1            : DINT;
+    Cmd_ZeroPosition        : BOOL;
+    Sequence_ZeroPosition   : DINT;
+
+    TON_MotorDataDelay : TON;   // declared in the original interface but not used in any network shown here
+END_VAR
+
+// ---- Network 1: move speed — potentiometer-scaled or manual override ----
+IF NOT Par_SoftwareSpeedEnable THEN
+    GVL.AMP_Relative_Move_0.Speed := FUNC_SCALE(Inp_Potentiometer.EU, 0, 10, Par_PotentiometerMinSpeed, Par_PotentiometerMaxSpeed);
+END_IF
+IF Par_SoftwareSpeedEnable THEN
+    GVL.AMP_Relative_Move_0.Speed := Par_SoftwareSpeed;
+END_IF
+
+// ---- Network 3: move distance — 3-position toggle selector or manual override ----
+IF NOT Par_SoftwareDistanceEnable THEN
+    IF NOT Inp_Toggle_1.State AND NOT Inp_Toggle_2.State THEN
+        MotorDistance_Steps := REAL_TO_DINT(Par_SelectorDistance1_Degrees / 360 * StepsPerRotation);
+    END_IF
+    IF NOT Inp_Toggle_1.State AND Inp_Toggle_2.State THEN
+        MotorDistance_Steps := REAL_TO_DINT(Par_SelectorDistance2_Degrees / 360 * StepsPerRotation);
+    END_IF
+    IF Inp_Toggle_1.State AND NOT Inp_Toggle_2.State THEN
+        MotorDistance_Steps := REAL_TO_DINT(Par_SelectorDistance3_Degrees / 360 * StepsPerRotation);
+    END_IF
+END_IF
+IF Par_SoftwareDistanceEnable THEN
+    MotorDistance_Steps := REAL_TO_DINT(Par_SoftwareDistance_Degrees / 360 * StepsPerRotation);
+END_IF
+GVL.AMP_Relative_Move_0.Distance := MotorDistance_Steps;
+
+// ---- Network 4: drive status decode (call every scan) ----
+GVL.AMP_Status_Code_0(Input := GVL.MOTOR_READ);
+
+// ---- Network 5: raw input assembly decode (call every scan) ----
+GVL.AMP_Input_Assembly_0(Input := GVL.MOTOR_READ);
+
+// ---- Network 6: encoder position -> degrees ----
+IF DINT_TO_REAL(GVL.AMP_Input_Assembly_0.Encoder_Position) > StepsPerRotation THEN
+    EncoderPosition_Degrees := OSCAT_BASIC.MODR(IN := DINT_TO_REAL(GVL.AMP_Input_Assembly_0.Encoder_Position), DIVI := StepsPerRotation) / 20000 * 360;
+END_IF
+IF DINT_TO_REAL(GVL.AMP_Input_Assembly_0.Encoder_Position) < StepsPerRotation
+   AND GVL.AMP_Input_Assembly_0.Encoder_Position > StepsPerRotation * -1 THEN
+    EncoderPosition_Degrees := DINT_TO_REAL(GVL.AMP_Input_Assembly_0.Encoder_Position) / StepsPerRotation * 360;
+END_IF
+IF DINT_TO_REAL(GVL.AMP_Input_Assembly_0.Encoder_Position) < StepsPerRotation * -1 THEN
+    EncoderPosition_Degrees := ABS(OSCAT_BASIC.MODR(IN := DINT_TO_REAL(GVL.AMP_Input_Assembly_0.Encoder_Position), DIVI := StepsPerRotation)) / 20000 * 360;
+END_IF
+
+// ---- Network 7: alarm code decode (call every scan) ----
+GVL.AMP_Alarm_Code_0(Input := GVL.MOTOR_READ);
+
+// ---- Networks 8-10, 12-13: AMP command FB calls (call every scan, each wired
+//      from its own instance's command field — set elsewhere, e.g. by PLC_PRG) ----
+GVL.AMP_Alarm_Reset_0(Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE, Reset := GVL.AMP_Alarm_Reset_0.Reset);
+GVL.AMP_Motor_Enable_0(Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE, Enable := GVL.AMP_Motor_Enable_0.Enable);
+GVL.AMP_Motor_Disable_0(Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE, Disable := GVL.AMP_Motor_Disable_0.Disable);
+
+// ---- Network 11: acceleration/deceleration ----
+GVL.AMP_Relative_Move_0.Acc := Par_AccelDeccel;
+GVL.AMP_Relative_Move_0.Dec := Par_AccelDeccel;
+
+// ---- Network 12: the move FB itself ----
+GVL.AMP_Relative_Move_0(
+    Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE,
+    Start := GVL.AMP_Relative_Move_0.Start,
+    Distance := GVL.AMP_Relative_Move_0.Distance,
+    Speed := GVL.AMP_Relative_Move_0.Speed,
+    Acc := GVL.AMP_Relative_Move_0.Acc,
+    Dec := GVL.AMP_Relative_Move_0.Dec
+);
+
+// ---- Network 13: normal stop FB ----
+GVL.AMP_Normal_Stop_0(Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE, Stop := GVL.AMP_Normal_Stop_0.Stop);
+
+// ---- Networks 14-18: Sequence_ZeroPosition — re-zero encoder mini-sequencer ----
+IF Cmd_ZeroPosition AND (Sequence_ZeroPosition = 0) THEN
+    Sequence_ZeroPosition := 10;
+    Cmd_ZeroPosition := FALSE;
+END_IF
+
+GVL.AMP_SCL_0.Execute := (Sequence_ZeroPosition = 10);
+IF (Sequence_ZeroPosition = 10) AND NOT GVL.AMP_SCL_0.In_Progress THEN
+    Sequence_ZeroPosition := 20;
+END_IF
+IF (Sequence_ZeroPosition = 20) AND (GVL.AMP_SCL_0.Done OR GVL.AMP_SCL_0.Error) THEN
+    Sequence_ZeroPosition := 30;
+END_IF
+
+GVL.AMP_SCL_1.Execute := (Sequence_ZeroPosition = 30);
+IF (Sequence_ZeroPosition = 30) AND NOT GVL.AMP_SCL_1.In_Progress THEN
+    Sequence_ZeroPosition := 40;
+END_IF
+IF (Sequence_ZeroPosition = 40) AND (GVL.AMP_SCL_1.Done OR GVL.AMP_SCL_1.Error) THEN
+    Sequence_ZeroPosition := 0;
+END_IF
+
+// ---- Networks 19-20: SCL command FB calls ----
+GVL.AMP_SCL_0(Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE,
+              Execute := GVL.AMP_SCL_0.Execute, SCL_Cmd := 'EP', Reg1 := Par_SCL_Reg1, Reg2 := 0);
+GVL.AMP_SCL_1(Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE,
+              Execute := GVL.AMP_SCL_1.Execute, SCL_Cmd := 'SP', Reg1 := Par_SCL_Reg1, Reg2 := 0);
+```
+
+### `LIGHT_CYCLE` — the free-running color-cycle engine replaced
+
+Turned out to be a self-oscillating `Cmd_Light` counter (0/1/2, driven by a 1-second `TON`) cycling all three stack lights and two button LEDs together — not per-button mirroring as first guessed from the network comments alone. Disabled entirely (kept commented, not deleted) and replaced with direct passthrough from the `Cmd_*` bits `SEQ_SUPERVISOR`/`DEFECT_CHECK` set:
+
+```iecst
+PROGRAM LIGHT_CYCLE
+VAR
+    TON_0     : TON;
+    Cmd_Light : DINT;
+
+    RedStack, YellowStack, GreenStack : BOOL;
+    BlueButton, RedButton, GreenButton : BOOL;
+END_VAR
+
+// ---- Networks 1-4: Cmd_Light cycling engine — DISABLED ----
+// Replaced by SEQ_SUPERVISOR/DEFECT_CHECK-driven Cmd_* bits below.
+(*
+TON_0(IN := NOT TON_0.Q, PT := T#1S);
+IF TON_0.Q THEN
+    Cmd_Light := Cmd_Light + 1;
+    IF Cmd_Light = 3 THEN
+        Cmd_Light := 0;
+    END_IF
+END_IF
+
+IF Cmd_Light = 0 THEN
+    Out_Red_Stacklight.0 := TRUE;
+    Out_Blue_Button_LED.0 := TRUE;
+ELSE
+    Out_Red_Stacklight.0 := FALSE;
+    Out_Blue_Button_LED.0 := FALSE;
+END_IF
+
+IF Cmd_Light = 1 THEN
+    Out_Yellow_Stacklight.0 := TRUE;
+    Out_Red_Button_LED.0 := TRUE;
+ELSE
+    Out_Yellow_Stacklight.0 := FALSE;
+    Out_Red_Button_LED.0 := FALSE;
+END_IF
+
+IF Cmd_Light = 2 THEN
+    Out_Green_Stacklight.0 := TRUE;
+    Out_Green_Button_LED.0 := TRUE;
+ELSE
+    Out_Green_Stacklight.0 := FALSE;
+    Out_Green_Button_LED.0 := FALSE;
+END_IF
+*)
+
+// ---- Networks 1-4 replacement: drive lights from SEQ_SUPERVISOR/DEFECT_CHECK ----
 Out_Red_Stacklight.0    := GVL.Cmd_RedStack;
 Out_Yellow_Stacklight.0 := GVL.Cmd_YellowStackBlink;
 Out_Green_Stacklight.0  := GVL.Cmd_GreenStack;
 Out_Red_Button_LED.0    := GVL.Cmd_RedButtonLED;
 Out_Green_Button_LED.0  := GVL.Cmd_GreenButtonLEDBlink;
 Out_Blue_Button_LED.0   := FALSE;   // orphaned by disabling the cycling engine, nothing in the new design uses it
+
+// ---- Networks 5-10: read-back status mirrors — unchanged ----
+RedStack    := Out_Red_Stacklight.0;
+YellowStack := Out_Yellow_Stacklight.0;
+GreenStack  := Out_Green_Stacklight.0;
+BlueButton  := Out_Blue_Button_LED.0;
+RedButton   := Out_Red_Button_LED.0;
+GreenButton := Out_Green_Button_LED.0;
 ```
 
 ### Red Button — confirmed NC-wired
@@ -461,7 +885,6 @@ A handful of non-obvious CODESYS behaviors surfaced repeatedly while building th
 
 ### Known open issues
 
-- **Physical motion not yet confirmed.** `AMP_Relative_Move_0.Done` has fired successfully, but visually confirmed as *not* corresponding to real movement — most likely because the forced motion parameters (`StepsPerRotation`, `Par_SoftwareSpeed`, `Par_SoftwareDistance_Degrees`, `Par_AccelDeccel`) reverted to `0` after an application restart (forces don't survive a download — see above), and a zero-distance move apparently completes as `Done` rather than `Error` in at least some circumstances. Needs real initial values set in `MOTOR`'s declarations rather than relying on forces.
 - **No automatic recovery from an abnormal sequence end.** If `PLC_PRG`'s sequence terminates via a fault/error/timeout (jumping to `Sequence_Run=99`) rather than the normal `DEFECT_CHECK`-driven loop, `SEQ_SUPERVISOR` has nothing watching for that and stays stuck in `RUNNING` indefinitely — currently the only way out is a manual Stop (physical Red Button or the new MQTT `stop`, which is a workaround, not a fix for the underlying gap).
 - **A full Stop→Start cycle is sometimes needed after a fresh application restart** before the defect-check trigger actually fires on the first `Running` attempt. Not yet root-caused — may be related to the parameter-forcing issue above, or a separate first-call MQTT FB initialization quirk (same class of bug as the `xEnable`/`CLIENT_NOT_CONNECTED` issue, in a different spot).
 - **`IoDrvEtherNetIP`, `MQTT Client SL`, and `Web Socket Client SL` are all running unlicensed** (CodeMeter demo mode) on this `vplc` instance — fine for interactive testing, not viable for durable/unattended remote-lab use until real product licenses are activated.
