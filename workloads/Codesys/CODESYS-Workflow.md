@@ -4,10 +4,20 @@ This doc focuses on **Purdue Model Level 0 (physical process) and Level 1 (basic
 
 ## 1) What's in this folder
 
-- **`RedHat_Demo_MarketingStand_Working.xml`** — a plain-text CODESYS project export (`Project → Export`). This is the git-friendly artifact: diffable, reviewable, small enough to track normally. It contains the full device tree, task configuration, POUs, and global variables, but not compiled binaries or referenced libraries.
-- **`09_19_426pmRedHat_Demo_MarketingStand_Working.projectarchive`** — the full CODESYS project archive (`.projectarchive`), including referenced libraries and everything needed to reopen and rebuild the project as-is in the IDE. Large binary file — tracked via **Git LFS** (see the main [README.md](../../README.md#codesys-ide-win11-on-ocp-v), step 12).
+There are **two versions of the CODESYS project** tracked side by side in this folder — the original demo logic, and the current one described in [§7) Defect-check workflow (IMPROVED)](#7-defect-check-workflow-improved) below. Both are kept around: the previous version as a reference/rollback point, the `_IMPROVED` version as the one actually deployed to the `vplc` instance today. See [§6) Previous version of the application](#6-previous-version-of-the-application) for what the original logic did.
 
-Treat the `.xml` as the reviewable record of what the logic does; treat the `.projectarchive` as the thing you actually open in CODESYS IDE to keep working on it.
+**Previous version:**
+
+- **`RedHat_Demo_MarketingStand_Working.xml`** — a plain-text CODESYS project export (`Project → Export`). This is the git-friendly artifact: diffable, reviewable, small enough to track normally. It contains the full device tree, task configuration, POUs, and global variables, but not compiled binaries or referenced libraries.
+- **`RedHat_Demo_MarketingStand_Working.projectarchive`** — the full CODESYS project archive (`.projectarchive`), including referenced libraries and everything needed to reopen and rebuild the project as-is in the IDE. Large binary file — tracked via **Git LFS** (see the main [README.md](../../README.md#codesys-ide-win11-on-ocp-v), step 12).
+
+**Current (`_IMPROVED`) version:**
+
+- **`RedHat_Demo_MarketingStand_Working_IMPROVED.projectarchive`** — the full project archive for the current version, same role as above: the file to actually open in CODESYS IDE to keep working on the logic. Also tracked via Git LFS.
+- **`RedHat_Demo_MarketingStand_Working_IMPROVED.project`** — the native CODESYS project file (no bundled libraries) — a lighter-weight save of the same project, useful when the libraries it depends on are already installed in the IDE you're opening it with.
+- **`RedHat_Demo_MarketingStand_Working_IMPROVED.Device.Application.xml`** — a plain-text export scoped to just the `Device` → `Application` object (POUs and global variables), rather than the whole project/device tree — the practical git-diffable artifact for reviewing logic changes, since re-exporting just the application is quicker than a full project export on every change.
+
+Treat the `.xml`/`.Device.Application.xml` exports as the reviewable record of what the logic does; treat the `.projectarchive`/`.project` as the things you actually open in CODESYS IDE to keep working on it.
 
 ## 2) Level 0 — the physical process
 
@@ -36,13 +46,15 @@ IPC2 has **two network roles** split across separate interfaces:
 
 The container also exposes `4840` (OPC UA server) and `8080` (WebVisu/HTTP) alongside `11740`. Licensing runs through CodeMeter (WIBU-SYSTEMS) — the container's instance config points its `License Server` setting at `192.168.100.223`; the host itself also runs `codemeter.service` (installed via `images/ipc2/CodeMeter-lite-8.40.7131-502.x86_64.rpm`, see `images/ipc2/ContainerfileCodesys`).
 
-Inside the `Device` → `Application`, the project structure is:
+Inside the `Device` → `Application`, the project structure is built around the same core set of POUs in both versions of the project (see [§1](#1-whats-in-this-folder)) — what differs between them is what these POUs actually do internally, and (in the current version) two additional POUs layered on top. The core set:
 
 - **`PLC_PRG`** — the main program, cyclically scheduled by **`MainTask`**. It reads the Level 0 inputs (buttons, toggles, potentiometer), runs the demo logic, and writes the Level 0 outputs (LEDs, stack lights, motor commands).
-- **`FUNC_SCALE`** — scales the raw `Potentiometer` analog reading into an engineering-range value used elsewhere in the logic.
+- **`FUNC_SCALE`** — scales the raw `Potentiometer` analog reading into an engineering-range value used elsewhere in the logic. Unchanged between versions.
 - **`LIGHT_CYCLE`** — drives the red/yellow/green stack-light sequencing.
 - **`MOTOR`** — issues motion commands to the `TSM23XIP_XD` servo drive.
 - **`GVL`** — the global variable list binding these POUs to the actual I/O channel names shown in the table above.
+
+For what each of these actually does, see [§6) Previous version of the application](#6-previous-version-of-the-application) for the original logic, or [§7) Defect-check workflow (IMPROVED)](#7-defect-check-workflow-improved) — which also introduces `SEQ_SUPERVISOR` and `DEFECT_CHECK`, not present in the previous version — for the current one.
 
 The EtherNet/IP side of Level 1 is handled by the `Ethernet` → `EtherNet_IP_Scanner` device, which acts as the CIP **scanner** (connection originator) for all three Level 0 adapters, and by two dedicated tasks:
 
@@ -123,9 +135,9 @@ Start the application on VPLC
 Codemeter Licensing
 ![alt text](image-19.png)
 
-## 5) Target workflow: build → push → deploy (not yet implemented)
+## 5) Target deployment workflow: build → push → deploy (not yet implemented)
 
-§4 above is how the application is deployed **today**: manually, through the CODESYS IDE's device wizard, onto a long-lived `vplc` Podman container running the stock `codesyscontrol_virtuallinux` image on IPC2. The intended target workflow instead bakes the application *into* the container image itself, so a logic change ships as a new image rather than an IDE upload:
+[Workflow](#4-manual-deployment-of-the-codesys-application-to-softplc) above is how the application is deployed **today**: manually, through the CODESYS IDE's device wizard, onto a long-lived `vplc` Podman container running the stock `codesyscontrol_virtuallinux` image on IPC2. The intended target workflow instead bakes the application *into* the container image itself, so a logic change ships as a new image rather than an IDE upload:
 
 1. An engineer edits the logic in CODESYS IDE, opening the `.projectarchive` from this folder, and re-exports the project to `RedHat_Demo_MarketingStand_Working.xml` (re-saving the `.projectarchive` too) — both get committed back to this repo, so the demo logic stays version-controlled.
 2. A new container image is built on top of `images/ipc2/ContainerfileCodesys` (which already produces `quay.io/luferrar/sps:ipc-rh10-rt-codesys`, RHEL10 + the CodeMeter RPM), adding a layer that embeds the exported project into the CODESYS Virtual Control SL runtime. (This build step itself — how the project gets baked in — is not yet implemented.)
@@ -133,7 +145,7 @@ Codemeter Licensing
 4. On start, the containerized vPLC loads the project, `MainTask`/`PLC_PRG` begins cycling, and the EtherNet/IP scanner opens Class 1 connections to `Opto22_RIO1`, `Opto22_RIO2`, and `TSM23XIP_XD` over the dedicated `eno1`/`192.168.100.225` interface.
 5. Level 1 now closes the loop on Level 0 continuously: button/toggle/potentiometer state in, LED/stack-light/servo-motion commands out.
 
-## Diagram (§5 target workflow)
+## Diagram for [target workflow](#5-target-deployment-workflow-build--push--deploy-not-yet-implemented)
 
 ```mermaid
 flowchart LR
@@ -184,11 +196,23 @@ flowchart LR
   class RIO1,RIO2,SERVO,Stand field;
 ```
 
-## 6) Defect-check workflow (IMPROVED)
+## 6) Previous version of the application
+
+This is the original demo logic — `RedHat_Demo_MarketingStand_Working.xml`/`.projectarchive` — before the MQTT-gated defect-check workflow in [§7](#7-defect-check-workflow-improved) was added. Same core POUs as the current version (`PLC_PRG`, `FUNC_SCALE`, `LIGHT_CYCLE`, `MOTOR`, `GVL`), no `SEQ_SUPERVISOR`/`DEFECT_CHECK`, and no MQTT involved anywhere.
+
+- **`PLC_PRG`** — holding the Green Button latches `Cmd_Run` directly (no external supervisor involved); the Red Button is an unconditional Stop, full stop, with no other meaning. From there it runs the same underlying step-chain the current version still uses (fault check → enable the drive → issue a move → wait for it to finish → pause → loop back for the next move, or stop) — just without anything gating that loop-back on a camera result. Held down, the Green Button just keeps the disk indexing through its positions continuously, for demonstration purposes.
+- **`FUNC_SCALE`** — the same potentiometer scaling helper, unchanged between versions.
+- **`LIGHT_CYCLE`** — a small free-running engine: a single one-second timer cycles the stack light red → yellow → green (with two of the button LEDs riding along), on a loop, independent of anything else happening on the stand — just a visual effect, not tied to motor state or any analysis result.
+- **`MOTOR`** — issues the same kind of motion commands to the `TSM23XIP_XD` servo drive as today, with distance and speed driven by the toggle-switch selector and potentiometer rather than fixed software-defined values.
+- **`GVL`** — same binding role as today, without the additional `Cmd_*`/`Sts_*` variables the defect-check workflow later added.
+
+End to end: press Green Button, the disk cycles continuously through its four positions while the stack lights run their own independent light show, until the Red Button stops it. No camera, no AI analysis, no acknowledge gate for a defective piece — those all arrived with the version in [§7](#7-defect-check-workflow-improved).
+
+## 7) Defect-check workflow (IMPROVED)
 
 The MQTT-gated defect-check design from earlier revisions of this doc has been built and is running on the `vplc` instance. Both the control flow (Standby↔Running↔Stopping, MQTT trigger/result round-trip, defect ack) and physical motion (indexing, servo tuning, settle-before-trigger timing) have been validated end-to-end via extensive live testing against the real hardware. This section documents what's actually deployed, corrected for everything that turned out different from the original plan during implementation.
 
-### How the flow works (operator's view)
+### How the flow works (operator's POV)
 
 For anyone approaching the stand fresh, here's the end-to-end behavior without any code:
 
@@ -213,13 +237,45 @@ You might notice that the position of the pieces and the camera is not correctly
 - Watch the encoder complete its cycle. `Sequence_ZeroPosition` should progress 0 → 10 → 20 → 30 → 40 → 0. `GVL.AMP_SCL_0.Done` (the EP step) and `GVL.AMP_SCL_1.Done` (the SP step) should both go TRUE without `.Error` along the way
 - Now you can rerun the program, stop and restart the SoftPLC so that forced values are cleared completely from memory.
 
+### MQTT variables and others 
+
+The **official CODESYS "MQTT Client SL"** library depends on the **Memory Block Manager** library (`MBM` namespace) internally, which had to be added separately — its absence produces `C0086: No definition found for interface 'MBM.IDisposable'` at build time.
+
+Broker and topics, confirmed by live testing (not all were right on the first guess — see "Implementation notes" below):
+
+| Purpose | Topic | Payload | Notes |
+|---|---|---|---|
+| Broker | `192.168.100.245`, port `1883` | — | All default of this installation that can / need to be changed including credentials (`admin`/`password`). |
+| Analysis trigger (publish) | `defect_detection/control` | `'discrete-on'` | Discrete analysis control coming from the project [edge-defect-detector](https://github.com/lucamaf/edge-defect-detector) . |
+| Analysis result (subscribe) | `defect_detection/results` | `{"defective":bool,"confidence":real,"timestamp":string,"piece":int}` | To be updated. |
+| Remote start/stop (subscribe) | `plc_application/control` | `'start'` / `'stop'` | One shared topic/subscription rather than a separate one per command, to avoid adding a third simultaneous `MQTTSubscribe` instance while it's still unclear whether the unlicensed library caps concurrent subscriptions. |
+
+Beyond the topics themselves, other variables worth tweaking or double-checking before/while running this on different hardware or in a different environment:
+
+| Variable | Where | Current value | What it controls |
+|---|---|---|---|
+| `wsUsername` / `wsPassword` | `SEQ_SUPERVISOR.mqttClient` | `"admin"` / `"password"` | MQTT broker credentials — an unverified assumption that happens to work, per the broker row above; double-check against the actual broker config if this stops connecting. |
+| `xUseTLS` / `eCommunicationMode` / `eMQTTVersion` | `SEQ_SUPERVISOR.mqttClient` | `FALSE` / `TCP` / `V3_1_1` | Plain TCP, no TLS, MQTT 3.1.1 — matches this broker; would need changing for a broker requiring TLS or MQTT 5. |
+| `Par_SoftwareDistance_Degrees` | `MOTOR` | `90.0` | The per-index move distance. Matches the demo disk's 4 fixed positions (0/90/180/270°) — would need changing for a disk with a different number of positions or pieces positioned differently. |
+| `Par_SoftwareSpeed` / `Par_AccelDeccel` | `MOTOR` | `0.6` / `0.4` (rev/sec, rev/sec² — **not RPM**, see below) | The move's speed and acceleration/deceleration profile. Confirmed smooth at these values on this hardware; re-tune if the disk/payload changes. |
+| `StepsPerRotation` | `MOTOR` | `20000.0` | Steps per motor revolution — carried over from a forced value that worked, not independently re-verified against the drive's own electronic-gearing configuration. Double-check this against `TSM23XIP_XD`'s Step 1: Configuration in the Quick Tuner if distances start looking off. |
+| `IndexPauseMin` / `IndexPauseMax` | `PLC_PRG` | `500` / `5000` (ms) | The potentiometer-scaled pause between indices. Placeholder values, not tuned against the actual camera/analysis round-trip time or desired demo pacing. |
+| `TON_SettleDelay`'s `PT` | `PLC_PRG`, Network 9 | `T#1S` | How long to wait after the drive reports a move `Done` before arming the defect-check trigger, to let the disk's position-loop overshoot correction finish settling. Increase if the camera still triggers before the disk is visibly still; decrease to tighten cycle time if it's over-waiting. |
+| P Loop gains (`KP`/`KD`/`KE`) | Drive itself, not CODESYS — set via Applied Motion's Step-Servo Quick Tuner | `300` / `20` / `10` | Not a CODESYS variable at all, but worth listing here since it directly affects the same settle behavior `TON_SettleDelay` compensates for — see "Servo tuning" below. Re-tuning the drive (or swapping drives) means re-checking these. |
+| SW CCW/CW position limits | Drive itself, via Quick Tuner | should be **cleared/disabled** | Used temporarily during servo tuning to bound test moves — must be cleared before normal operation, since the demo's indexing doesn't respect them and will fault if left too narrow. Nothing in the PLC checks for or clears these automatically; see "Servo tuning" below. |
+
 ### Architecture
 
-Two new POUs, plus one new named type, plus targeted patches to `PLC_PRG` and `LIGHT_CYCLE`:
+The current application is built from seven POUs plus one named type, working together as follows:
 
-- **`E_DefectState`** (DUT, named enum) — `(IDLE, WAITING_RESULT, GREEN_DELAY, AWAIT_ACK)`. Has to be a separately-named `TYPE`, not inline/anonymous — CODESYS scopes anonymous enum literals to their declaring POU only, so `DEFECT_CHECK`'s own `state` field wouldn't have been referenceable from `SEQ_SUPERVISOR` otherwise.
-- **`DEFECT_CHECK`** (FB) — the per-cycle defect-check state machine: publishes the analysis trigger, waits for the result, drives the green-delay-and-continue or red-hold-for-ack outcome.
-- **`SEQ_SUPERVISOR`** (PRG) — the top-level Standby/Running/Stopping supervisor. Owns the MQTT client connection, the Standby blink, the remote start/stop listener, and one `DEFECT_CHECK` instance. Wired into `MainTask` alongside `MOTOR`/`PLC_PRG`/`LIGHT_CYCLE`.
+- **`SEQ_SUPERVISOR`** (PRG) — the top-level Standby/Running/Stopping supervisor, and the entry point for how the demo actually starts and stops. Owns the MQTT client connection, the Standby blink, the remote start/stop listener, and one `DEFECT_CHECK` instance. Wired into `MainTask` alongside `MOTOR`/`PLC_PRG`/`LIGHT_CYCLE`.
+- **`DEFECT_CHECK`** (FB) — the per-cycle defect-check state machine: publishes the analysis trigger once the disk has settled into position, waits for the camera/AI result over MQTT, and drives either the green-delay-and-continue outcome or the red-hold-for-acknowledge outcome.
+- **`PLC_PRG`** — the motion sequencer. Started/stopped externally by `SEQ_SUPERVISOR` rather than latching the Green Button itself, it steps the drive through fault-check → enable → issue the move → wait for it to finish and settle → pause (gated on `DEFECT_CHECK` having released the current index) → loop back for the next move, or stop.
+- **`MOTOR`** — issues the actual motion commands to the `TSM23XIP_XD` servo drive: distance, speed, acceleration/deceleration, plus the zero-position mini-sequencer described above.
+- **`LIGHT_CYCLE`** — drives the stack lights and button LEDs directly from the `Cmd_*` bits `SEQ_SUPERVISOR`/`DEFECT_CHECK` set, rather than running its own independent cycle.
+- **`FUNC_SCALE`** — the potentiometer scaling helper, used the same way as in the previous version.
+- **`GVL`** — the global variable list binding all of the above to the real I/O channel names, plus the `Cmd_*`/`Sts_*` coordination variables the defect-check workflow uses to talk between POUs.
+- **`E_DefectState`** (DUT, named enum) — `(IDLE, WAITING_RESULT, GREEN_DELAY, AWAIT_ACK)`, `DEFECT_CHECK`'s state values. Has to be a separately-named `TYPE`, not inline/anonymous — CODESYS scopes anonymous enum literals to their declaring POU only, so `DEFECT_CHECK`'s own `state` field wouldn't be referenceable from `SEQ_SUPERVISOR` otherwise.
 
 ```iecst
 TYPE E_DefectState :
@@ -418,18 +474,7 @@ CASE machineState OF
 END_CASE
 ```
 
-### MQTT: library, broker, topics
 
-The **official CODESYS "MQTT Client SL"** library ended up being used (first-party, CODESYS Store), not the Janz Tec library originally proposed — found already referenced in an example project pulled from the CODESYS Store, and adopted since it's the vendor-native option. It depends on the **Memory Block Manager** library (`MBM` namespace) internally, which had to be added separately — its absence produces `C0086: No definition found for interface 'MBM.IDisposable'` at build time.
-
-Broker and topics, confirmed by live testing (not all were right on the first guess — see "Implementation notes" below):
-
-| Purpose | Topic | Payload | Notes |
-|---|---|---|---|
-| Broker | `192.168.100.245`, port `1883` | — | Found in `workloads/xentara/model.json`. Port/credentials (`admin`/`password`) are still an unverified assumption that happens to work. |
-| Analysis trigger (publish) | `defect_detection/control` | `'discrete-on'` | Corrected twice — first guessed `discrete_active` per the [edge-defect-detector](https://github.com/lucamaf/edge-defect-detector) README's documented vocabulary (wrong), then `discrete_active` again per explicit user confirmation (also wrong), finally corrected to `discrete-on` from live testing. The README's documented control vocabulary doesn't match the actual running Jetson code. |
-| Analysis result (subscribe) | `defect_detection/results` | `{"defective":bool,"confidence":real,"timestamp":string,"piece":int}` | Matches both the detector's own README and the field mapping in `workloads/xentara/model.json` — this one was right from the start. |
-| Remote start/stop (subscribe) | `plc_application/control` | `'start'` / `'stop'` | One shared topic/subscription rather than a separate one per command, to avoid adding a third simultaneous `MQTTSubscribe` instance while it's still unclear whether the unlicensed library caps concurrent subscriptions. |
 
 ### `PLC_PRG` — translated from ladder to Structured Text, patched
 
@@ -949,7 +994,7 @@ stateDiagram-v2
   state RUNNING {
     [*] --> IDLE
 
-    IDLE --> WAITING_RESULT : Sts_PositionReached<br/>publish "discrete-on" to defect_detection/control
+    IDLE --> WAITING_RESULT : Sts_PositionReached<br/>(Done + ~1.2s settle delay)<br/>publish "discrete-on" to defect_detection/control
     WAITING_RESULT --> GREEN_DELAY : result received<br/>defective = false<br/>Cmd_GreenStack = TRUE
     WAITING_RESULT --> AWAIT_ACK : result received<br/>defective = true<br/>Cmd_RedStack / Cmd_RedButtonLED = TRUE
 
@@ -967,8 +1012,11 @@ stateDiagram-v2
   }
 
   RUNNING --> STOPPING : Red Button OR MQTT "stop"<br/>(not in AWAIT_ACK)<br/>Cmd_Run = FALSE
+  RUNNING --> STOPPING : abnormal sequence end<br/>(fault/timeout inside PLC_PRG)<br/>Sts_SequenceDone rising edge<br/>Cmd_Run = FALSE
   STOPPING --> STANDBY : TON 5s elapsed<br/>clear all indicators<br/>resume blinking
 ```
+
+The second `RUNNING → STOPPING` transition is the auto-recovery path: if `PLC_PRG`'s sequence terminates abnormally (a fault or timeout jumping to `Sequence_Run=99`) rather than via the normal `DEFECT_CHECK`-driven loop, `SEQ_SUPERVISOR` catches it and returns to `STANDBY` on its own — no manual Stop needed. It's deliberately edge-triggered (a genuine transition to done *during this run*), not a level check, so a leftover `Sts_SequenceDone` from the tail end of the *previous* run can't immediately abort a session that just started.
 
 ### Implementation notes — CODESYS specifics worth remembering
 
