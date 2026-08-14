@@ -551,7 +551,7 @@ Windows VM creation adapted from [here](https://github.com/kubevirt/kubevirt-tek
 In case you cannot connect, make sure to check this blog entry to terminate installation offline: https://medium.com/@zorozeri/windows-11-arm-having-no-network-connection-on-vmware-fusion-pro-5b06e894811e  
 
 ####  3.3.5. <a name='CodesysApplication'></a>Codesys Application
-On opening the project with Codesys IDE, do not update any library (as suggested) and download the missing devices description (with right click).
+On opening the [projectarchive](workloads/Codesys/RedHat_Demo_MarketingStand_Working_IMPROVED.projectarchive) with Codesys IDE, do not update any library (as suggested) and download the missing devices description (with right click).
 For Groov RIO you can find the missing Codesys package in the [Opto22 store](https://www.opto22.com/support/resources-tools/downloads/opto-22-library-package-for-codesys-development-sy)  
 Install it and the then right-click and perform an **Update device**, keep the preselected one, and click **Update**  
 
@@ -561,6 +561,7 @@ For the AppliedMotion servo, install the [EDS](workloads/ETH-IP-StepServoDrive/T
 
 ![alt text](image-15.png)
 
+Once these steps are completed you can move to the dedicated documentation on [how to operate](workloads/Codesys/CODESYS-Workflow.md#how-the-flow-works-operators-view) Codesys Application and how to [deploy it manually](workloads/Codesys/CODESYS-Workflow.md#4-manual-deployment-of-the-codesys-application-to-softplc) as a container to an IPC
 
 ####  3.3.6. <a name='FTView-Win2019VM'></a>FTView - Win2019 VM
 You can find the zipped image here: https://drive.google.com/file/d/15HqzSuJ-Bt8H59C7CkSe4P1LT49a9kGi/view?ts=6920940b

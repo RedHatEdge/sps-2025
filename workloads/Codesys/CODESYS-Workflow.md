@@ -184,7 +184,7 @@ flowchart LR
   class RIO1,RIO2,SERVO,Stand field;
 ```
 
-## 6) Defect-check workflow (implemented)
+## 6) Defect-check workflow (IMPROVED)
 
 The MQTT-gated defect-check design from earlier revisions of this doc has been built and is running on the `vplc` instance. Both the control flow (Standby↔Running↔Stopping, MQTT trigger/result round-trip, defect ack) and physical motion (indexing, servo tuning, settle-before-trigger timing) have been validated end-to-end via extensive live testing against the real hardware. This section documents what's actually deployed, corrected for everything that turned out different from the original plan during implementation.
 
