@@ -602,11 +602,9 @@ You can find the relative manifests in the [folder](workloads/defect-rec-sim/)
 Installed the ISM container on ACP to provide more detailed information about the server and running OS to iDrac.
 
 
-
-
 ##  4. <a name='AccesstosystemsforSPS2025'></a>Access to systems for SPS 2025  
 
-Please check the repo [here](https://github.com/RedHatEdge/sps-2025-systems)
+Please check the repo to find all systems credentials and licensing information [here](https://github.com/RedHatEdge/sps-2025-systems)
 
 >[!IMPORTANT]
 > **ON RESTART**, when connecting to a new WAN network remember to change the `/etc/microshift/manifests.d/dns/configmap.yaml` with the correct local nameservers assigned by the public WAN on IPC4
