@@ -2,10 +2,10 @@
 FROM quay.io/luferrar/sps:ipc-rh10-rt
 
 # copy rpms to the image
-COPY CodeMeter-lite-8.40.7131-502.x86_64.rpm  /tmp/
+COPY *.rpm /tmp/
 
 # install codemeter rpm
-RUN dnf -y install /tmp/CodeMeter-lite-8.40.7131-502.x86_64.rpm && \
+RUN dnf -y install /tmp/*.rpm && \
     dnf clean all
 
 # Lint the build
