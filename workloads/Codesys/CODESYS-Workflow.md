@@ -14,7 +14,7 @@ There are **two versions of the CODESYS project** tracked side by side in this f
 **Current (`_IMPROVED`) version:**
 
 - **`RedHat_Demo_MarketingStand_Working_IMPROVED.projectarchive`** — the full project archive for the current version, same role as above: the file to actually open in CODESYS IDE to keep working on the logic. Also tracked via Git LFS.
-- **`RedHat_Demo_MarketingStand_Working_IMPROVED.project`** — the native CODESYS project file (no bundled libraries) — a lighter-weight save of the same project, useful when the libraries it depends on are already installed in the IDE you're opening it with.
+- **`RedHat_Demo_MarketingStand_Working_IMPROVED.project`** — the native CODESYS project file (no bundled libraries) — a lighter-weight save of the same project, useful when the libraries it depends on are already installed in the IDE you're opening it with. You can find a versioned repo for the changes that brought the project from previous to current version [here](https://github.com/RedHatEdge/sps-2025-codesys/tree/main)
 - **`RedHat_Demo_MarketingStand_Working_IMPROVED.Device.Application.xml`** — a plain-text export scoped to just the `Device` → `Application` object (POUs and global variables), rather than the whole project/device tree — the practical git-diffable artifact for reviewing logic changes, since re-exporting just the application is quicker than a full project export on every change.
 
 Treat the `.xml`/`.Device.Application.xml` exports as the reviewable record of what the logic does; treat the `.projectarchive`/`.project` as the things you actually open in CODESYS IDE to keep working on it.
