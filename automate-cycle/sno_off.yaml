@@ -1,0 +1,72 @@
+---
+- name: Gracefully stop OpenShift Virtualization VMs before the host shuts down
+  hosts: localhost
+  connection: local
+  become: false
+  gather_facts: no
+  vars:
+    # Path to the SNO (ACP) kubeconfig on the host running this playbook (IPC3).
+    # Adjust to match wherever it's actually kept — see README §2.3 for how it's obtained.
+    kubeconfig_path: "/home/admin/.kube/config"
+    vm_stop_timeout_seconds: 300
+    vm_stop_poll_seconds: 15
+
+  tasks:
+    - name: Get all VirtualMachine objects across the cluster
+      kubernetes.core.k8s_info:
+        kubeconfig: "{{ kubeconfig_path }}"
+        api_version: kubevirt.io/v1
+        kind: VirtualMachine
+      register: all_vms
+
+    - name: Build the list of currently-running VMs
+      set_fact:
+        running_vms: "{{ all_vms.resources | selectattr('spec.running', 'defined') | selectattr('spec.running') | list }}"
+
+    - name: Report which VMs will be stopped
+      debug:
+        msg: "{{ running_vms | map(attribute='metadata.name') | list }}"
+
+    - name: Request a graceful shutdown for every running VM
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        api_version: kubevirt.io/v1
+        kind: VirtualMachine
+        namespace: "{{ item.metadata.namespace }}"
+        name: "{{ item.metadata.name }}"
+        merge_type: merge
+        definition:
+          spec:
+            running: false
+      loop: "{{ running_vms }}"
+      loop_control:
+        label: "{{ item.metadata.namespace }}/{{ item.metadata.name }}"
+
+    - name: Wait for each VM to actually report Stopped
+      kubernetes.core.k8s_info:
+        kubeconfig: "{{ kubeconfig_path }}"
+        api_version: kubevirt.io/v1
+        kind: VirtualMachine
+        namespace: "{{ item.metadata.namespace }}"
+        name: "{{ item.metadata.name }}"
+      loop: "{{ running_vms }}"
+      loop_control:
+        label: "{{ item.metadata.namespace }}/{{ item.metadata.name }}"
+      register: vm_status_check
+      until: vm_status_check.resources[0].status.printableStatus == "Stopped"
+      retries: "{{ (vm_stop_timeout_seconds / vm_stop_poll_seconds) | int }}"
+      delay: "{{ vm_stop_poll_seconds }}"
+
+- name: Gracefully shutdown host
+  hosts: sno_hosts
+  become: false
+  gather_facts: no
+
+  tasks:
+    - name: Gracefully shutdown the host
+      become: true
+      shell: shutdown -h +5 "System shutting down gracefully in 5 minutes"
+      async: 1
+      poll: 0
+      vars:
+        ansible_user: core

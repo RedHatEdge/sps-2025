@@ -1,0 +1,9 @@
+[Unit]
+Description=Run sno_on ansible playbook daily in the morning
+
+[Timer]
+OnCalendar=Mon..Fri 10:00:00 Europe/Paris
+Unit=sno_on.service
+
+[Install]
+WantedBy=timers.target

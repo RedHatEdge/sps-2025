@@ -1,0 +1,10 @@
+[Unit]
+Description=Run sno_off ansible playbook daily at night
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=ANSIBLE_CONFIG=/home/admin/Scripts/ansible.cfg
+ExecStart=/usr/bin/ansible-playbook -i /home/admin/Scripts/inventory.ini /home/admin/Scripts/sno_off.yaml
+RemainAfterExit=false

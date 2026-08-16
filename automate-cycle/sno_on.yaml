@@ -1,0 +1,61 @@
+- name: Register targets and power on via IPMI
+  hosts: localhost
+  connection: local
+  become: false
+  gather_facts: no
+  vars:
+    ipmi_user: root
+    ipmi_pass: R3dh4t123!
+    ipmi_host: 192.168.100.60  # Replace with the BMC/IPMI IP of the target host
+    ssh_host: 192.168.100.10   # IP of the actual host after it boots
+    ssh_user: core        # Username for SSH
+
+  tasks:
+    - name: Add BMC (IPMI) host to inventory
+      add_host:
+        name: "{{ ipmi_host }}"
+        groups: ipmi_runtime
+        ansible_host: "{{ ipmi_host }}"
+
+    - name: Add target host to inventory
+      add_host:
+        name: "{{ ssh_host }}"
+        groups: ssh_runtime
+        ansible_host: "{{ ssh_host }}"
+        ansible_user: "{{ ssh_user }}"
+
+    - name: Power on the host via IPMI
+      community.general.ipmi_power:
+        name: "{{ ipmi_host }}"
+        user: "{{ ipmi_user }}"
+        password: "{{ ipmi_pass }}"
+        state: on
+      register: ipmi_poweron
+
+    - name: Wait for host to become reachable via SSH
+      wait_for:
+        host: "{{ ssh_host }}"
+        port: 22
+        timeout: 300
+        state: started
+
+- name: Check OCP health
+  become: false
+  gather_facts: no
+  hosts: localhost
+  connection: local
+
+  tasks:
+    - name: Pause for 10 minute to wait for Dell server slow startup
+      ansible.builtin.pause:
+        minutes: 10
+
+    - name: Check that OCP API on port 6443 is healthy
+      uri:
+        url: "https://api.acp.sps2025.com:6443/healthz"
+        validate_certs: no
+        status_code: 200
+      register: api_health
+      retries: 10
+      delay: 15
+      until: (api_health.status | default(api_health.status_code)) == 200

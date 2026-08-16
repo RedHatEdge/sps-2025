@@ -14,6 +14,7 @@ This repository contains setup information/automation for the Red Hat demos for 
 	* 2.4. [Setup Nvidia Jetson device](#SetupNvidiaJetsondevice)
 	* 2.5. [Setup Groov IO Modules - GRV-R7-MM1001](#SetupGroovIOModules-GRV-R7-MM1001)
 	* 2.6. [Setup AppliedMotion Servo Drive - TSM23X3B-IP](#SetupAppliedMotionServoDrive-TSM23X3B-IP)
+	* 2.7. [Automating the SNO (ACP) power cycle](#AutomatingtheSNOACPpowercycle)
 * 3. [Workloads](#Workloads)
 	* 3.1. [IPC4](#IPC4)
 		* 3.1.1. [GitOps & Gitea manual deployment](#GitOpsGiteamanualdeployment)
@@ -326,7 +327,7 @@ Some additional tweaks:
 - Disabled cluster updates checks: cleared `spec.channel` in the ClusterVersion object
 - configured NTP in disconnected environment with [MachineConfig](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/machine_configuration/machine-configs-configure#installation-special-config-chrony_machine-configs-configure), pointing at IPC4 NTP service running on Microshift (UDP:123) Master `MachineConfig` is [required](images/ntp/99-master-chrony.bu)
 - added local users using [htpasswd identity provider](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/configuring-identity-providers). You can check the systems credentials repo for a list of created users.
-- I also setup for good practice a Script that wakes up and shutdowns ACP Monday to Friday (office hours), using IPMI, ssh and Ansible. You can find such scripts on IPC3 under `Script` directory. The systemd services are triggered by timer, on local admin user.  
+- I also setup for good practice a Script that wakes up and shutdowns ACP Monday to Friday (office hours), using IPMI, ssh and Ansible — see [§2.7](#AutomatingtheSNOACPpowercycle) for the full setup.  
 - I added Flightctl on IPC4 to manage any Bootc image in this environment. You can find that at https://ui.apps.ipc4.sps2025.com accessible from IPC3 browser. To login you can generate a service account token like this: `oc create token flightctl-admin -n flightctl --duration=24h` directly on IPC4 which is running *Microshift* and *Flightctl*. Flightctl cli tool is also found on IPC4 so you can generate the config and the token like this:  
   ```bash
   $ oc create token flightctl-admin -n flightctl --duration=100h
@@ -379,6 +380,45 @@ You can change the IP address in the following interface, by first selecting whi
 
 ![alt text](image-9.png)
 ![alt text](image-10.png)
+
+###  2.7. <a name='AutomatingtheSNOACPpowercycle'></a>Automating the SNO (ACP) power cycle
+
+The Dell server running the SNO (ACP) doesn't need to be powered on outside working hours, so it's cycled automatically Monday-Friday via a pair of Ansible playbooks, each triggered by its own systemd timer. Everything is in the [automate-cycle](automate-cycle/) folder, run from IPC3 (same host referenced in [§2.1](#Basicsetup)):
+
+| File | Role |
+|---|---|
+| `sno_on.yaml` | Powers the host on via IPMI and waits for OpenShift to come back healthy |
+| `sno_off.yaml` | Gracefully shuts the host down |
+| `sno_on.timer` / `sno_on.service` | Runs `sno_on.yaml` Mon-Fri at 10:00 (`Europe/Paris`) |
+| `sno_off.timer` / `sno_off.service` | Runs `sno_off.yaml` Mon-Fri at 18:00 (`Europe/Paris`) |
+| `inventory.ini` | `[sno_hosts]` (the CoreOS node itself) and `[ipmi_hosts]` (unused by the current plays, kept for reference) — gitignored, environment-specific |
+| `ansible.cfg` | Points Ansible's log output at `/home/admin/.ansible/logs/sno_on.log` |
+
+**`sno_on.yaml`** runs as two plays:
+
+1. Against `localhost` — registers the BMC/IPMI address (`192.168.100.60`) and the node's real SSH address (`192.168.100.10`) as in-memory inventory hosts, powers the host on via `community.general.ipmi_power`, then waits (up to 5 minutes) for SSH to come up on the node.
+2. Also against `localhost` — pauses a further 10 minutes to cover the Dell hardware's slow POST/boot sequence, then polls `https://api.acp.sps2025.com:6443/healthz` (up to 10 retries, 15s apart) until the OpenShift API reports healthy.
+
+**`sno_off.yaml`** runs as two plays:
+
+1. Against `localhost` — queries the cluster for every `VirtualMachine` object (OpenShift Virtualization/KubeVirt), finds the ones currently running (this cluster hosts the Windows VMs from [§3.3.4](#CodesysIDEwin11onOCP-V)/[§3.3.6](#FTView-Win2019VM)), and patches each to `spec.running: false` — the KubeVirt-native way to request a graceful ACPI shutdown of the guest OS, equivalent to `virtctl stop`. It then polls each VM's status and waits for it to actually report `Stopped` (up to 5 minutes per VM) before moving on, so the host shutdown below never races a VM that's still mid-shutdown.
+2. Against `sno_hosts` — connects to the node as user `core` and issues `shutdown -h +5` (a 5-minute graceful delay), fired asynchronously so the playbook doesn't block waiting for the host to actually go down.
+
+> [!NOTE]
+> The VM-shutdown play needs the `kubernetes.core` Ansible collection (`ansible-galaxy collection install kubernetes.core`) and a working kubeconfig for the SNO cluster on whatever host runs the playbook (IPC3) — the `kubeconfig_path` variable at the top of `sno_off.yaml` defaults to `/home/admin/.kube/config`, adjust it to match wherever that's actually kept (see [§2.3](#SetuptheSNOACP) for how the kubeconfig is obtained). It stops *every* running VM cluster-wide rather than a hardcoded list, so it doesn't need updating if VMs are added or renamed later.
+
+> [!NOTE]
+> The `sno_on.service`/`sno_off.service` units as written reference `/home/admin/Scripts/{ansible.cfg,inventory.ini,sno_on.yaml,sno_off.yaml}` rather than this repo's `automate-cycle/` path — that's where they're actually deployed on IPC3 today. Keep that in mind if you redeploy from this repo: either update the `ExecStart`/`ANSIBLE_CONFIG` paths in the unit files to point at `automate-cycle/`, or copy/symlink the folder's contents into `/home/admin/Scripts/` to match what's currently installed.
+
+To install from scratch on a host that will run the timers:
+
+```bash
+$ cp automate-cycle/sno_on.service automate-cycle/sno_on.timer \
+     automate-cycle/sno_off.service automate-cycle/sno_off.timer \
+     ~/.config/systemd/user/   # or /etc/systemd/system/ for a system-wide unit, adjusting paths in the .service files accordingly
+$ systemctl --user daemon-reload
+$ systemctl --user enable --now sno_on.timer sno_off.timer
+```
 
 
 ##  3. <a name='Workloads'></a>Workloads
