@@ -506,13 +506,25 @@ The correct, currently-working model file is tracked in this repo at [`workloads
 
 ![alt text](image-17.png)
 
-> **NOTICE**  
+> [!NOTE]  
 > Given the model was trained with different light conditions (most likely) I suggest to lower the minimum confidence and deploy the defect-detector application with the following environment variable values:  
 >`Environment=PIECE_MIN_CONFIDENCE=0.3`  
 >`Environment=YOLO_IOU_THRESHOLD=0.3`  
 >`Environment=PIECE_CLASS_NAME='red-hat'`  
 >`Environment=DEFECT_CLASS_NAME='scratch'`  
 
+The resulting payload sent to `defect_detection/results` topic is in this format:  
+
+```json
+{
+  "piece_present": true, 
+  "piece_count": 1, 
+  "defective": true, 
+  "confidence": 0.659, 
+  "timestamp": "2026-08-17T13:10:13", 
+  "piece": 3
+}
+```
 ###  3.3. <a name='SingleNodeOpenshiftACP'></a>Single Node Openshift (ACP)  
 ####  3.3.1. <a name='MESCriticalManufacturing'></a>MES Critical Manufacturing
 

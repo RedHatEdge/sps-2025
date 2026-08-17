@@ -135,7 +135,7 @@ Start the application on VPLC
 Codemeter Licensing
 ![alt text](image-19.png)
 
-## 5) Target deployment workflow: build → push → deploy (not yet implemented)
+## 5) Target deployment workflow: build → push → deploy (NOT YET implemented)
 
 [Workflow](#4-manual-deployment-of-the-codesys-application-to-softplc) above is how the application is deployed **today**: manually, through the CODESYS IDE's device wizard, onto a long-lived `vplc` Podman container running the stock `codesyscontrol_virtuallinux` image on IPC2. The intended target workflow instead bakes the application *into* the container image itself, so a logic change ships as a new image rather than an IDE upload:
 
@@ -220,21 +220,23 @@ For anyone approaching the stand fresh, here's the end-to-end behavior without a
 2. **Press Green Button (or send `'start'` to the `plc_application/control` MQTT topic)** — the blinking stops, and the demo starts running continuously.
 3. **Each cycle** — the motor indexes the disk to the next of its 4 fixed positions, waits briefly for the disk to physically settle (a fast index move overshoots slightly and needs a moment to stop swinging before the camera can trust its own position), then triggers the camera/AI analysis over MQTT.
 4. **If the piece is good** — the green stack light comes on for 3 seconds, then the cycle repeats automatically. No operator action needed.
-5. **If the piece is defective** — the red stack light and Red Button LED come on and *stay* on. The sequence deliberately pauses here: an operator must press the Red Button to acknowledge before the cycle continues.
-6. **Press Red Button (or send `'stop'`) at any other time** — stops the run. The stand finishes whatever it's mid-doing safely (it won't abandon the disk at a random angle between fixed positions), then returns to Standby after a short pause.
-7. Everything above also works identically over MQTT (`plc_application/control`, payloads `'start'`/`'stop'`) for remote/lab operation, in addition to the physical buttons.
+5. **If the piece is defective** — the red stack light and Red Button LED come on and *stay* on. The sequence deliberately pauses here: press the Red Button (or send `'continue'` to `plc_application/control` over MQTT) to acknowledge before the cycle continues.
+6. **Press Red Button outside a defective-piece hold, or send `'stop'` over MQTT at any time** — stops the run. `'stop'` always stops the run, including while a defective piece is being held — it does not also act as an acknowledge. The stand finishes whatever it's mid-doing safely (it won't abandon the disk at a random angle between fixed positions), then returns to Standby after a short pause.
+7. The physical Red Button and the MQTT commands aren't fully symmetric: the button's meaning is contextual — Stop normally, Acknowledge during a defective-piece hold, since there's only the one physical button — while over MQTT (`plc_application/control`) each action is its own dedicated command: `'start'`, `'stop'` (always stops), `'continue'` (acknowledge a hold).
 
 Two design choices worth calling out explicitly: the settle-before-trigger delay exists because the servo visibly overshoots and corrects after a fast index move, and triggering the camera before that settles produces an unreliable image; and the defective-piece pause is deliberate, not a bug — it's there so a human has to actively clear a flagged piece rather than the line quietly continuing past it.
 
 ### Fixing the Zero Position of the motor 
-You might notice that the position of the pieces and the camera is not correctly aligned, to correct this you can leverage a function inside the Application Logic. These are the steps:
+You might notice that the position of the pieces and the camera is not correctly aligned, to correct this you can leverage a function inside the Application Logic. Since normal indexing now commands an **absolute** move (self-correcting quarter-turn target, see `Par_UseAbsoluteIndexing` in the Architecture section below), the manual nudge below has to temporarily switch `MOTOR` back to **relative** moves — otherwise `Sequence_Run = 50` would compute a fresh absolute quarter-turn target instead of honoring your small forced nudge. These are the steps:
+- Force `MOTOR.Par_UseAbsoluteIndexing := FALSE` first. This routes `Sequence_Run = 50`'s move through `AMP_Relative_Move_0` (the relative-move FB) instead of `AMP_Absolute_Move_0`, so the nudge below actually takes effect. Only toggle this flag while `Sequence_Run = 0` (idle) — don't flip it mid-cycle.
 - Force `Par_SoftwareDistance_Degrees` to a small nudge value — e.g. 5 (or -5 for the opposite direction, if you overshoot). Nothing else writes to this one, so it'll hold reliably.  
 - Force `PLC_PRG.Sequence_Run := 10` . Starting from 10 lets the real fault-check/alarm-reset/enable logic run naturally (handles a residual fault automatically via its own 20 step if one's present, skips it if not), rather than risking a skipped precondition by jumping straight to the energize step. It'll progress on its own: 10 → 30 → 40 (energize, if needed) → 50 (issues the move using your forced 5°) → 55 (waits for Done) → 56.
-- Watch it complete — `GVL.AMP_Relative_Move_0.Done` should fire, and you should see the small nudge happen physically.
+- Watch it complete — `GVL.Sts_MoveDone` (the unified status bit `PLC_PRG` actually watches — mirrors `AMP_Relative_Move_0.Done` while `Par_UseAbsoluteIndexing = FALSE`) should fire, and you should see the small nudge happen physically.
 - Force `Sequence_Run := 0` to release it back to idle before the next nudge.
 - When happy with the alignment, set the target position value. Force `Par_SCL_Reg1 := 0` with set+F7.
 - Trigger the zero/save sequence, forcing `Cmd_ZeroPosition := TRUE` once. MOTOR's existing Sequence_ZeroPosition mini-sequencer runs automatically from there — no new code needed.
 - Watch the encoder complete its cycle. `Sequence_ZeroPosition` should progress 0 → 10 → 20 → 30 → 40 → 0. `GVL.AMP_SCL_0.Done` (the EP step) and `GVL.AMP_SCL_1.Done` (the SP step) should both go TRUE without `.Error` along the way
+- **Force `MOTOR.Par_UseAbsoluteIndexing := TRUE` again** before resuming normal operation — while `Sequence_Run = 0`, same as before. Skipping this leaves the automatic cycle issuing relative moves instead of self-correcting absolute ones.
 - Now you can rerun the program, stop and restart the SoftPLC so that forced values are cleared completely from memory.
 
 ### MQTT variables and others 
@@ -248,7 +250,7 @@ Broker and topics, confirmed by live testing (not all were right on the first gu
 | Broker | `192.168.100.245`, port `1883` | — | All default of this installation that can / need to be changed including credentials (`admin`/`password`). |
 | Analysis trigger (publish) | `defect_detection/control` | `'discrete-on'` | Discrete analysis control coming from the project [edge-defect-detector](https://github.com/lucamaf/edge-defect-detector) . |
 | Analysis result (subscribe) | `defect_detection/results` | `{"defective":bool,"confidence":real,"timestamp":string,"piece":int}` | To be updated. |
-| Remote start/stop (subscribe) | `plc_application/control` | `'start'` / `'stop'` | One shared topic/subscription rather than a separate one per command, to avoid adding a third simultaneous `MQTTSubscribe` instance while it's still unclear whether the unlicensed library caps concurrent subscriptions. |
+| Remote start/stop/continue (subscribe) | `plc_application/control` | `'start'` / `'stop'` / `'continue'` | One shared topic/subscription rather than one per command, to avoid a third simultaneous `MQTTSubscribe` instance while it's still unclear whether the unlicensed library caps concurrent subscriptions. `'stop'` always stops the run, including mid-hold on a defective piece; `'continue'` is the dedicated remote acknowledge for a defective-piece hold (`AWAIT_ACK`) — kept as its own variable specifically so it doesn't share state with `'stop'` (see "Implementation notes"). |
 
 Beyond the topics themselves, other variables worth tweaking or double-checking before/while running this on different hardware or in a different environment:
 
@@ -291,8 +293,8 @@ END_TYPE
 ```iecst
 FUNCTION_BLOCK DEFECT_CHECK
 VAR_INPUT
-    state       : E_DefectState := E_DefectState.IDLE;
-    xRemoteStop : BOOL;
+    state           : E_DefectState := E_DefectState.IDLE;
+    xRemoteContinue : BOOL;
 END_VAR
 VAR_IN_OUT
     mqttClient : MQTT.MQTTClient;
@@ -338,7 +340,7 @@ CASE state OF
 
     E_DefectState.WAITING_RESULT:
         IF mqttSubscriber.xReceived THEN
-            defective := FIND(sResultBuffer, '"defective":true') > 0;
+            defective := FIND(sResultBuffer, '"defective": true') > 0;
             IF defective THEN
                 GVL.Cmd_RedStack     := TRUE;
                 GVL.Cmd_RedButtonLED := TRUE;
@@ -360,7 +362,7 @@ CASE state OF
         END_IF
 
     E_DefectState.AWAIT_ACK:
-        IF NOT Inp_Red_Button.State OR xRemoteStop THEN
+        IF NOT Inp_Red_Button.State OR xRemoteContinue THEN
             GVL.Cmd_RedStack     := FALSE;
             GVL.Cmd_RedButtonLED := FALSE;
             GVL.Cmd_NextIndex    := TRUE;
@@ -386,6 +388,7 @@ VAR
     sRemoteControlBuffer : STRING(255);
     xRemoteStart          : BOOL;
     xRemoteStop            : BOOL;
+    xRemoteContinue         : BOOL;
 END_VAR
 
 // MQTT connection maintained continuously, independent of machineState
@@ -410,13 +413,17 @@ remoteControlSub(
     mqttClient        := mqttClient,
     wsTopicFilter     := wsRemoteControlTopic
 );
-xRemoteStart := remoteControlSub.xReceived AND FIND(sRemoteControlBuffer, 'start') > 0;
-xRemoteStop  := remoteControlSub.xReceived AND FIND(sRemoteControlBuffer, 'stop') > 0;
+xRemoteStart    := remoteControlSub.xReceived AND FIND(sRemoteControlBuffer, 'start') > 0;
+xRemoteStop     := remoteControlSub.xReceived AND FIND(sRemoteControlBuffer, 'stop') > 0;
+xRemoteContinue := remoteControlSub.xReceived AND FIND(sRemoteControlBuffer, 'continue') > 0;
 
 // called unconditionally every scan, regardless of machineState — keeps the
 // MQTT publisher/subscriber warm across Stopping/Standby instead of going
-// cold and needing a fresh reconnect on the next Running session
-defectCheck(mqttClient := mqttClient, xRemoteStop := xRemoteStop);
+// cold and needing a fresh reconnect on the next Running session.
+// xRemoteContinue (not xRemoteStop) feeds DEFECT_CHECK deliberately — see
+// the call-order gotcha in "Implementation notes" below for why sharing
+// xRemoteStop between here and the RUNNING case caused a real bug.
+defectCheck(mqttClient := mqttClient, xRemoteContinue := xRemoteContinue);
 
 // edge-triggered on purpose — PLC_PRG.Sts_SequenceDone can still be sitting
 // TRUE (stale, from the tail end of the previous run) at the exact moment a
@@ -451,7 +458,11 @@ CASE machineState OF
         END_IF
 
     RUNNING:
-        IF (NOT Inp_Red_Button.State OR xRemoteStop) AND defectCheck.state <> E_DefectState.AWAIT_ACK THEN
+        // Physical Red Button keeps its contextual dual-meaning (Stop outside
+        // AWAIT_ACK, Acknowledge inside it, handled by DEFECT_CHECK). Remote
+        // 'stop' is unconditional on purpose — always stops, even mid-hold —
+        // so a remote operator gets predictable behavior regardless of state.
+        IF (NOT Inp_Red_Button.State AND defectCheck.state <> E_DefectState.AWAIT_ACK) OR xRemoteStop THEN
             PLC_PRG.Cmd_Run := FALSE;
             tonStopRecovery(IN := TRUE, PT := T#5S);
             machineState := STOPPING;
@@ -980,7 +991,9 @@ GreenButton := Out_Green_Button_LED.0;
 
 ### Red Button — confirmed NC-wired
 
-`Inp_Red_Button.State` reads `TRUE` at rest and `FALSE` when physically pressed (a fail-safe convention — a broken wire reads the same as "pressed"). Every check in `SEQ_SUPERVISOR`/`DEFECT_CHECK` above uses `NOT Inp_Red_Button.State` to mean "pressed" accordingly. Contextual three-way role, unchanged from the original design: no-op in `STANDBY`, Stop in `RUNNING`, Acknowledge in `AWAIT_ACK` — now also mirrored by the remote `stop` MQTT command via `xRemoteStop`.
+`Inp_Red_Button.State` reads `TRUE` at rest and `FALSE` when physically pressed (a fail-safe convention — a broken wire reads the same as "pressed"). Every check in `SEQ_SUPERVISOR`/`DEFECT_CHECK` above uses `NOT Inp_Red_Button.State` to mean "pressed" accordingly. Contextual three-way role, unchanged from the original design: no-op in `STANDBY`, Stop in `RUNNING`, Acknowledge in `AWAIT_ACK`.
+
+The remote MQTT equivalents are deliberately **not** symmetric with the physical button anymore: `'stop'` always stops (even during a hold), while acknowledging a defect remotely is a separate, dedicated `'continue'` command — see "Implementation notes" for why sharing one variable between both roles caused a real bug.
 
 ### State diagram
 
@@ -1000,23 +1013,25 @@ stateDiagram-v2
 
     GREEN_DELAY --> IDLE : TON 3s elapsed<br/>Cmd_GreenStack = FALSE<br/>Cmd_NextIndex = TRUE
 
-    AWAIT_ACK --> IDLE : Red Button OR MQTT "stop" (ack)<br/>Cmd_RedStack / Cmd_RedButtonLED = FALSE<br/>Cmd_NextIndex = TRUE
+    AWAIT_ACK --> IDLE : Red Button OR MQTT "continue" (ack)<br/>Cmd_RedStack / Cmd_RedButtonLED = FALSE<br/>Cmd_NextIndex = TRUE
 
     note right of AWAIT_ACK
       Inp_Red_Button is Stop everywhere
       else in RUNNING — only read as
       "acknowledge" in this state.
-      MQTT "stop" mirrors the same
-      contextual behavior.
+      MQTT "continue" is the dedicated
+      remote acknowledge — not "stop".
     end note
   }
 
-  RUNNING --> STOPPING : Red Button OR MQTT "stop"<br/>(not in AWAIT_ACK)<br/>Cmd_Run = FALSE
+  RUNNING --> STOPPING : Red Button (not in AWAIT_ACK)<br/>OR MQTT "stop" (always, even in AWAIT_ACK)<br/>Cmd_Run = FALSE
   RUNNING --> STOPPING : abnormal sequence end<br/>(fault/timeout inside PLC_PRG)<br/>Sts_SequenceDone rising edge<br/>Cmd_Run = FALSE
   STOPPING --> STANDBY : TON 5s elapsed<br/>clear all indicators<br/>resume blinking
 ```
 
 The second `RUNNING → STOPPING` transition is the auto-recovery path: if `PLC_PRG`'s sequence terminates abnormally (a fault or timeout jumping to `Sequence_Run=99`) rather than via the normal `DEFECT_CHECK`-driven loop, `SEQ_SUPERVISOR` catches it and returns to `STANDBY` on its own — no manual Stop needed. It's deliberately edge-triggered (a genuine transition to done *during this run*), not a level check, so a leftover `Sts_SequenceDone` from the tail end of the *previous* run can't immediately abort a session that just started.
+
+MQTT `'stop'` reaching `STOPPING` from `AWAIT_ACK` is intentional, not a corner case slipping through — a remote operator should always be able to halt the run regardless of what `DEFECT_CHECK` is doing. The physical Red Button's own `RUNNING → STOPPING` edge still explicitly excludes `AWAIT_ACK`, preserving its existing contextual Stop/Acknowledge split.
 
 ### Implementation notes — CODESYS specifics worth remembering
 
@@ -1033,10 +1048,16 @@ A handful of non-obvious CODESYS behaviors surfaced repeatedly while building th
 - **A `TON` gated on a condition that itself changes as a side effect of that same network can starve the timer.** `TON_SettleDelay`'s `IN` was first written as `(Sequence_Run = 55) AND Done` — but `Sequence_Run` advances to `56` the same/next scan `Done` goes true, in the very next lines of the same network, killing the timer's `IN` before it could ever count up to its `PT`. Decoupling the timer from `Sequence_Run` (arming it off a `Done` edge instead, independent of what the sequence state has already moved on to) fixed it.
 - **Vendor FB parameter units aren't always what the field name implies.** `AMP_Relative_Move_0`'s `Speed`/`Acc`/`Dec` are rev/sec and rev/sec² per Applied Motion's own FB documentation, not RPM — cost real time before being caught, since "5.0" and "1.0" look like plausible RPM-ish values for a demo motor and the FB compiled and ran without complaint either way.
 - **Servo-side PID tuning is a separate concern from PLC-side motion parameters**, and symptoms from the two can look identical (both present as "the motor oscillates"). Fixing the units mistake above visibly improved things but didn't fully resolve the overshoot — that needed actual P-loop gain/filter tuning on the drive itself, done outside CODESYS entirely via Applied Motion's Quick Tuner (see "Servo tuning" above).
+- **Sharing one variable between two logically-different meanings, read at two different points in the same scan, is a real race — not just a style nitpick.** `xRemoteStop` used to feed both `SEQ_SUPERVISOR`'s stop-check (guarded by `defectCheck.state <> AWAIT_ACK`) and `DEFECT_CHECK`'s own `AWAIT_ACK` acknowledge check. Since `SEQ_SUPERVISOR` calls `defectCheck(...)` *before* evaluating its own `CASE machineState`, a `'stop'` arriving during `AWAIT_ACK` let `DEFECT_CHECK` clear the hold (`state := IDLE`) first, and by the time the stop-check's guard read `defectCheck.state` moments later in the same scan, it was no longer `AWAIT_ACK` — so the guard that was supposed to protect the hold was already defeated, and both the acknowledge *and* a full stop fired together. Confirmed by observing a `'stop'` sent mid-hold jump straight to `STANDBY` instead of just clearing the defect. Fixed by giving the remote acknowledge its own dedicated variable (`xRemoteContinue`) instead of overloading `xRemoteStop`.
 
 ### Known open issues
 
 - **`IoDrvEtherNetIP`, `MQTT Client SL`, and `Web Socket Client SL` are all running unlicensed** (CodeMeter demo mode) on this `vplc` instance — fine for interactive testing, not viable for durable/unattended remote-lab use until real product licenses are activated.
 - **SW CCW/CW position limits set on the drive during Quick Tuner sessions need to be manually cleared** before resuming normal operation (see "Servo tuning" above) — nothing in `PLC_PRG`/`SEQ_SUPERVISOR` checks for or clears these automatically.
 - **`IndexPauseMin`/`IndexPauseMax` (`500`/`5000` ms) are placeholder values**, not tuned against the actual camera/analysis round-trip time or desired demo pacing — revisit once the full cycle's real timing is better understood.
-- **ML defect-detection model accuracy** — the camera/AI pipeline recognizes pieces but has not reliably flagged the known-defective one among the four demo pieces; possibly related to the lighting change made above the camera. Explicitly deferred, not investigated further yet.
+
+Resolved:
+
+- ~~`DEFECT_CHECK`'s defective-result parsing doesn't match the actual MQTT payload format~~ — `FIND(sResultBuffer, '"defective":true')` was searching for no space after the colon, but the detector's JSON always serializes as `"defective": true` (space after colon, confirmed against a live payload: `{"piece_present": true, "piece_count": 1, "defective": true, "confidence": 0.659, "timestamp": "2026-08-17T13:10:13", "piece": 3}`). Fixed by adding the space to the `FIND` target. This bug was masked for a while by the model-accuracy issue below (never getting a real `true` to fail on), and only surfaced once that was fixed. Confirmed working by live testing.
+
+- ~~ML defect-detection model accuracy~~ — root-caused to the wrong `.pt` model file being deployed; fixed by deploying the correct model (tracked at [`workloads/defect-detector-jetson/models/best.pt`](../defect-detector-jetson/models/best.pt) in this repo, see [README §3.2.1](../../README.md#Defectdetectorapplication) for how it's loaded/swapped) and lowering the minimum confidence threshold. Confirmed working by live testing.
