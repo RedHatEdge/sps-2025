@@ -494,6 +494,15 @@ You can either use Flightctl to deploy Quadlets for autostarting Defect Detector
 
 ![alt text](image-16.png)  
 
+**Using the correct model**: the app loads its YOLO weights from `models/best.pt` by default (overridable via the `MODEL_PATH` environment variable), and that folder is **bind-mounted** into the container at runtime (`-v "$(pwd)/models":/app/models` in the manual run command, or the equivalent volume in the Quadlet unit) rather than baked into the image — so switching models is just a matter of replacing the file on the host, no rebuild required. **`app.py` itself does not need any changes** for this — the model-loading mechanism already supports swapping weights this way.
+
+The correct, currently-working model file is tracked in this repo at [`workloads/defect-detector-jetson/models/best-hat.pt`](workloads/defect-detector-jetson/models/best-hat.pt) (`best.pt` also found in the same repo, classifies defective metal pieces instead). To use it:
+
+1. Copy/sync `workloads/defect-detector-jetson/models/best-hat.pt` to the `models/` directory the container/Quadlet actually mounts on the Jetson (i.e. wherever you run the `podman run`/Quadlet command from — see the [build/run instructions](https://github.com/lucamaf/edge-defect-detector#how-to-build-and-run-the-container) for the exact working directory).
+2. Adjust the env variables **PIECE_CLASS_NAME** and **DEFECT_CLASS_NAME** accordingly
+3. **Restart** the Defect Detector Application container/service — the model is loaded once at process startup, not hot-reloaded, so replacing the file alone isn't enough; the running process needs to pick it up on a fresh start.
+
+![alt text](image-17.png)
 
 ###  3.3. <a name='SingleNodeOpenshiftACP'></a>Single Node Openshift (ACP)  
 ####  3.3.1. <a name='MESCriticalManufacturing'></a>MES Critical Manufacturing
