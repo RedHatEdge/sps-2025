@@ -39,6 +39,10 @@ This repository contains setup information/automation for the Red Hat demos for 
 	/vscode-markdown-toc-config -->
 <!-- /vscode-markdown-toc -->
 
+## 0. Physical setup
+
+
+
 ##  1. <a name='DemoArchitecture'></a>Demo Architecture
 
 The diagram below shows the main systems involved: ACP, IPC4, IPC3, and an NVIDIA Jetson edge device.
@@ -631,7 +635,56 @@ For the AppliedMotion servo, install the [EDS](workloads/ETH-IP-StepServoDrive/T
 
 ![alt text](image-15.png)
 
-Once these steps are completed you can move to the dedicated documentation on [how to operate](workloads/Codesys/CODESYS-Workflow.md#how-the-flow-works-operators-view) Codesys Application and how to [deploy it manually](workloads/Codesys/CODESYS-Workflow.md#4-manual-deployment-of-the-codesys-application-to-softplc) as a container to an IPC
+Once these steps are completed you can move to the dedicated documentation on [how to operate](workloads/Codesys/CODESYS-Workflow.md#how-the-flow-works-operators-pov) Codesys Application and how to [deploy it manually](workloads/Codesys/CODESYS-Workflow.md#4-manual-deployment-of-the-codesys-application-to-softplc) as a container to an IPC
+
+**Operator's-eye view of the running application** — the physical stand and what each part does:
+
+![Demo stand annotated](image-18.png)  
+*[original diagram](https://app.diagrams.net/#G1nafMcz4oA_08DUpREM1S5jCziQ4VeVl_#%7B%22pageId%22%3A%22oqdLFQcAnJ3wYx7_nz2n%22%7D)*
+
+- **Camera** — inspects each piece once the disk stops moving.
+- **Disk** — holds 4 pieces at 4 fixed positions, indexes one position per cycle.
+- **Stack Light** — Yellow blinking = Standby, Green (3s) = piece OK, Red = defective piece, hold for acknowledge.
+- **Buttons** — Green starts the run; Red stops it, and also doubles as the acknowledge button while a defective piece is being held (red light on).
+
+And the flow those parts go through, start to stop:
+
+```mermaid
+flowchart TD
+    STANDBY["🟡 STANDBY&nbsp;&nbsp;&nbsp;Yellow stack light blinking&nbsp;&nbsp;&nbsp;Green button LED blinking"]
+    START(["Press Green Button&nbsp;&nbsp;or send MQTT 'start'"])
+
+    subgraph RUNNING["RUNNING — repeats automatically"]
+        direction TB
+        INDEX["Motor indexes to the next position"]
+        SETTLE["Brief pause &mdash; disk settles before the camera looks"]
+        ANALYZE["Camera + AI checks the piece"]
+        GOODCHECK{"Defective?"}
+        GOOD["🟢 Green light &mdash; 3 seconds"]
+        BAD["🔴 Red light + Red button LED stay ON &mdash; cycle paused"]
+        ACK(["Press Red Button&nbsp;&nbsp;or send MQTT 'continue'"])
+
+        INDEX --> SETTLE --> ANALYZE --> GOODCHECK
+        GOODCHECK -- "No, piece OK" --> GOOD --> INDEX
+        GOODCHECK -- "Yes, defective" --> BAD --> ACK --> INDEX
+    end
+
+    STOP(["Press Red Button (outside a hold)&nbsp;&nbsp;or send MQTT 'stop' &mdash; any time"])
+
+    STANDBY --> START --> RUNNING
+    RUNNING -.-> STOP -.-> STANDBY
+
+    classDef standby fill:#fff9c4,stroke:#f9a825;
+    classDef good fill:#c8e6c9,stroke:#2e7d32;
+    classDef bad fill:#ffcdd2,stroke:#c62828;
+    classDef action fill:#e3f2fd,stroke:#1565c0;
+    class STANDBY standby;
+    class GOOD good;
+    class BAD bad;
+    class START,ACK,STOP action;
+```
+
+`'stop'` can be sent at any point during `RUNNING` — including while a defective piece is being held — and always stops the run. The physical Red Button is contextual instead (Stop normally, Acknowledge during a hold), since there's only the one button; `'continue'` is the dedicated MQTT equivalent of acknowledging a hold. Full detail, including the underlying state machine and MQTT topics, is in [CODESYS-Workflow.md](workloads/Codesys/CODESYS-Workflow.md#7-defect-check-workflow-improved).
 
 ####  3.3.6. <a name='FTView-Win2019VM'></a>FTView - Win2019 VM
 You can find the zipped image here: https://drive.google.com/file/d/15HqzSuJ-Bt8H59C7CkSe4P1LT49a9kGi/view?ts=6920940b

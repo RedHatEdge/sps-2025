@@ -495,8 +495,8 @@ The defect-check patch itself, against the real (ST-translated) ladder networks:
 
 - **Network 1** (safe-state/`Cmd_Stop`): removed the `NOT Inp_Red_Button.State` term specifically — kept `Sts_FirstScanBit`/`Sts_SequenceDone`/`Force_Stop`/`eState<>8`. Left in, it would force `Cmd_Stop` on every Red Button press, including during `DEFECT_CHECK`'s `AWAIT_ACK`.
 - **Network 2** (Green Button → `Cmd_Run` latch): disabled entirely — `Cmd_Run` is now set externally by `SEQ_SUPERVISOR`.
-- **Network 8** (issue the move): the `Error` check originally fired immediately, on every scan, with no grace period — unlike the `.Sent` success check right above it, which correctly waits for `TON_MotorDataDelay[2]`'s 20ms delay before checking. A stale `AMP_Relative_Move_0.Error` left over from a previous session (confirmed still `TRUE` at idle, before a fresh run even started) was being caught on the very first scan of `Sequence_Run=50`, aborting the run before the drive had any chance to process the fresh `Start` and clear its own stale error — this was the actual root cause of the "needs 2-3 start attempts" symptom, hiding underneath several other real-but-secondary bugs (see "Known open issues", now resolved, below). Fixed by gating the `Error` check behind the same `TON_MotorDataDelay[2].Q` the success path already uses.
-- **Network 9** (wait for move done): added `TON_SettleDelay`, gated on a genuine rising edge of `AMP_Relative_Move_0.Done` (via `trigMoveDone`/`SettleArm`, not `Done`'s raw level — a stale level held over from a previous move would otherwise arm a phantom defect-check with no real motion behind it), driving `GVL.Sts_PositionReached` through `trigPositionReached`. This is the actual hook that starts the defect-check cycle, now correctly delayed until the disk has physically stopped oscillating rather than firing the instant the drive's trajectory generator reports `Done` (which happens before the position loop's own overshoot-correction finishes).
+- **Network 8** (issue the move): the `Error` check originally fired immediately, on every scan, with no grace period — unlike the `.Sent` success check right above it, which correctly waits for `TON_MotorDataDelay[2]`'s 20ms delay before checking. A stale `AMP_Relative_Move_0.Error` left over from a previous session (confirmed still `TRUE` at idle, before a fresh run even started) was being caught on the very first scan of `Sequence_Run=50`, aborting the run before the drive had any chance to process the fresh `Start` and clear its own stale error — this was the actual root cause of the "needs 2-3 start attempts" symptom, hiding underneath several other real-but-secondary bugs (see "Known open issues", now resolved, below). Fixed by gating the `Error` check behind the same `TON_MotorDataDelay[2].Q` the success path already uses. Also now issues the move via `GVL.Cmd_MoveStart` and checks the unified `GVL.Sts_MoveSent`/`GVL.Sts_MoveError` bits instead of touching `AMP_Relative_Move_0` directly — see `MOTOR`'s `Par_UseAbsoluteIndexing` routing below for why.
+- **Network 9** (wait for move done): added `TON_SettleDelay`, gated on a genuine rising edge of the move (via `trigMoveDone`/`SettleArm`, not a raw `Done` level — a stale level held over from a previous move would otherwise arm a phantom defect-check with no real motion behind it), driving `GVL.Sts_PositionReached` through `trigPositionReached`. This is the actual hook that starts the defect-check cycle, now correctly delayed until the disk has physically stopped oscillating rather than firing the instant the drive's trajectory generator reports `Done` (which happens before the position loop's own overshoot-correction finishes). Watches `GVL.Sts_MoveDone`/`GVL.Cmd_MoveStart` (the unified bits) rather than `AMP_Relative_Move_0` directly, same reason as Network 8.
 - **Network 10** (the real loop-back — a genuine loop, not a straight-through pause as first assumed from the network comments alone): AND-gated the existing `TON_IndexPauseDelay.Q`-driven loop-back on `GVL.Cmd_NextIndex`, with a reset once consumed, so the sequencer holds at the paused step until `DEFECT_CHECK` releases it. `IndexPauseMin`/`IndexPauseMax` (feeding the potentiometer-scaled `Par_IndexPause`) were left at their implicit `0` default in the original translation — meaning the pause was always `0ms` regardless of pot position — fixed with real declared values.
 
 Full current source:
@@ -620,9 +620,9 @@ IF TON_Timeout_Enable.Q THEN
 END_IF
 
 // ---- Network 8: Sequence_Run=50 — issue the move ----
-GVL.AMP_Relative_Move_0.Start := (Sequence_Run = 50);
+GVL.Cmd_MoveStart := (Sequence_Run = 50);
 TON_MotorDataDelay[2](IN := (Sequence_Run = 50), PT := T#20MS);
-IF TON_MotorDataDelay[2].Q AND GVL.AMP_Relative_Move_0.Sent THEN
+IF TON_MotorDataDelay[2].Q AND GVL.Sts_MoveSent THEN
     Sequence_Run := 55;
 END_IF
 // Gated behind the same 20ms grace period as the success check above — a
@@ -630,7 +630,7 @@ END_IF
 // once a fresh Start is actually processed by MOTOR's FB call; checking
 // immediately (the original behavior) caught the stale flag before the
 // drive had any chance to prove the new attempt actually failed.
-IF TON_MotorDataDelay[2].Q AND GVL.AMP_Relative_Move_0.Error THEN
+IF TON_MotorDataDelay[2].Q AND GVL.Sts_MoveError THEN
     Sequence_Run := 99;
 END_IF
 TON_Timeout_Move1(IN := (Sequence_Run = 50), PT := T#2S);
@@ -649,11 +649,11 @@ END_IF
 // earlier attempt gated it that way and the timer never got the chance to
 // finish counting, since Sequence_Run itself advances to 56 the same scan
 // Done goes true, killing the gate before the 1.2s could elapse.
-trigMoveDone(CLK := GVL.AMP_Relative_Move_0.Done);
+trigMoveDone(CLK := GVL.Sts_MoveDone);
 IF trigMoveDone.Q THEN
     SettleArm := TRUE;
 END_IF
-IF GVL.AMP_Relative_Move_0.Start THEN
+IF GVL.Cmd_MoveStart THEN
     SettleArm := FALSE;
 END_IF
 
@@ -662,7 +662,7 @@ trigPositionReached(CLK := TON_SettleDelay.Q);
 GVL.Sts_PositionReached := trigPositionReached.Q;
 
 IF Sequence_Run = 55 THEN
-    IF GVL.AMP_Relative_Move_0.Done THEN
+    IF GVL.Sts_MoveDone THEN
         Sequence_Run := 56;
     END_IF
     (* Removed: aborting mid-move via Normal_Stop left the disk stopped at an
@@ -778,6 +778,8 @@ Also rewritten from ladder to ST. `MotorDistance_Steps` is `DINT` (a physical st
 
 **`AMP_Relative_Move_0`'s `Speed`/`Acc`/`Dec` inputs are in rev/sec and rev/sec², not RPM** — confirmed directly against Applied Motion's own function block documentation ("Application Note #61: EtherNet I/P Function Blocks for CODESYS"), which was not obvious from the field names alone and cost real debugging time: `Par_SoftwareSpeed := 5.0`/`Par_AccelDeccel := 1.0` (the original values) were actually commanding **300 rpm at 60 rpm/s²**, and an early attempt to fix perceived sluggishness by bumping both to `10` made it **600 rpm at 600 rpm/s²** — 20x faster than intended, and the direct cause of what looked like "completely uncontrolled" motor oscillation. Corrected to `0.6`/`0.4` (36 rpm / 24 rpm/s²) below, confirmed smooth by physical observation and cross-checked against the servo's own tuning captures (see "Servo tuning" below).
 
+**Automatic indexing now uses an absolute move instead of a relative one, and it's self-correcting.** `AMP_Relative_Move_0` accumulates off wherever the disk currently is — fine as long as a move is never interrupted mid-flight, but anything that lands the disk off a valid position (a restart mid-move, for instance) would silently compound from there with no way to recover on its own. `AMP_Absolute_Move_0` (drive command `FP`, confirmed against the same Applied Motion FB reference — `Position: DINT` "motor/encoder steps, negative = reverse", otherwise the same `Speed`/`Acc`/`Dec`/`Sent`/`Done`/`Error`/`In_Progress`/`State` shape as `Relative_Move`) is used for the normal automatic cycle instead, computing a fresh target on every move: round the *current* raw encoder position to the nearest valid quarter-turn, then add one more quarter-turn's worth of steps. This makes every move self-correcting — any accumulated drift gets snapped back onto a valid position on the very next index, not just prevented from compounding further. `Par_UseAbsoluteIndexing` (`BOOL`, default `TRUE`) is a mode flag: `MOTOR` internally routes `Start` to whichever FB is currently selected and merges their `Sent`/`Done`/`Error` outputs into unified `GVL.Sts_Move*` bits, which `PLC_PRG` reads instead of touching either FB directly. `AMP_Relative_Move_0` is kept around specifically for the "Fixing the Zero Position" manual nudge procedure above, which needs a small *relative* nudge rather than a computed absolute target — set `Par_UseAbsoluteIndexing := FALSE` before nudging, `TRUE` again before resuming normal operation, only while `Sequence_Run = 0`.
+
 Full current source:
 
 ```iecst
@@ -797,6 +799,10 @@ VAR
     Par_SoftwareSpeed         : REAL := 0.6;   // rev/sec (NOT rpm) — 0.6 rev/s = 36 rpm
     Par_AccelDeccel           : REAL := 0.4;   // rev/sec² (NOT rpm/s) — 0.4 rev/s² = 24 rpm/s
 
+    Par_UseAbsoluteIndexing : BOOL := TRUE;   // TRUE = automatic cycle (absolute move), FALSE = manual nudge (relative move) — only toggle while Sequence_Run = 0
+    StepsPerQuarter         : REAL;
+    NearestQuarterIndex     : DINT;
+
     EncoderPosition_Degrees : REAL;
     Par_SCL_Reg1            : DINT;
     Cmd_ZeroPosition        : BOOL;
@@ -805,15 +811,23 @@ VAR
     TON_MotorDataDelay : TON;   // declared in the original interface but not used in any network shown here
 END_VAR
 
-// ---- Network 1: move speed — potentiometer-scaled or manual override ----
+// ---- Network 1: move speed — potentiometer-scaled or manual override — feeds both move FBs ----
 IF NOT Par_SoftwareSpeedEnable THEN
     GVL.AMP_Relative_Move_0.Speed := FUNC_SCALE(Inp_Potentiometer.EU, 0, 10, Par_PotentiometerMinSpeed, Par_PotentiometerMaxSpeed);
+    GVL.AMP_Absolute_Move_0.Speed := FUNC_SCALE(Inp_Potentiometer.EU, 0, 10, Par_PotentiometerMinSpeed, Par_PotentiometerMaxSpeed);
 END_IF
 IF Par_SoftwareSpeedEnable THEN
     GVL.AMP_Relative_Move_0.Speed := Par_SoftwareSpeed;
+    GVL.AMP_Absolute_Move_0.Speed := Par_SoftwareSpeed;
 END_IF
 
-// ---- Network 3: move distance — 3-position toggle selector or manual override ----
+// ---- Network 3: move target — self-correcting absolute quarter-turn advance
+//      (automatic cycling, Par_UseAbsoluteIndexing = TRUE), plus the relative
+//      distance still computed for the manual nudge/alignment procedure ----
+StepsPerQuarter := StepsPerRotation / 4.0;
+NearestQuarterIndex := REAL_TO_DINT(DINT_TO_REAL(GVL.AMP_Input_Assembly_0.Encoder_Position) / StepsPerQuarter);
+GVL.AMP_Absolute_Move_0.Position := (NearestQuarterIndex + 1) * REAL_TO_DINT(StepsPerQuarter);
+
 IF NOT Par_SoftwareDistanceEnable THEN
     IF NOT Inp_Toggle_1.State AND NOT Inp_Toggle_2.State THEN
         MotorDistance_Steps := REAL_TO_DINT(Par_SelectorDistance1_Degrees / 360 * StepsPerRotation);
@@ -857,11 +871,21 @@ GVL.AMP_Alarm_Reset_0(Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE, Reset 
 GVL.AMP_Motor_Enable_0(Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE, Enable := GVL.AMP_Motor_Enable_0.Enable);
 GVL.AMP_Motor_Disable_0(Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE, Disable := GVL.AMP_Motor_Disable_0.Disable);
 
-// ---- Network 11: acceleration/deceleration ----
+// ---- Network 11: acceleration/deceleration — feeds both move FBs ----
 GVL.AMP_Relative_Move_0.Acc := Par_AccelDeccel;
 GVL.AMP_Relative_Move_0.Dec := Par_AccelDeccel;
+GVL.AMP_Absolute_Move_0.Acc := Par_AccelDeccel;
+GVL.AMP_Absolute_Move_0.Dec := Par_AccelDeccel;
 
-// ---- Network 12: the move FB itself ----
+// ---- Network 12: the move FBs — Start routed by Par_UseAbsoluteIndexing from
+//      the unified GVL.Cmd_MoveStart, Sent/Done/Error merged back into
+//      unified GVL.Sts_Move* bits that PLC_PRG actually reads. Both FBs are
+//      called every scan regardless of which is active, matching the AMP
+//      library's usual cyclic-call convention — only the active one's Start
+//      ever pulses, so the inactive FB just sits idle. ----
+GVL.AMP_Relative_Move_0.Start := GVL.Cmd_MoveStart AND NOT Par_UseAbsoluteIndexing;
+GVL.AMP_Absolute_Move_0.Start := GVL.Cmd_MoveStart AND Par_UseAbsoluteIndexing;
+
 GVL.AMP_Relative_Move_0(
     Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE,
     Start := GVL.AMP_Relative_Move_0.Start,
@@ -870,6 +894,24 @@ GVL.AMP_Relative_Move_0(
     Acc := GVL.AMP_Relative_Move_0.Acc,
     Dec := GVL.AMP_Relative_Move_0.Dec
 );
+GVL.AMP_Absolute_Move_0(
+    Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE,
+    Start := GVL.AMP_Absolute_Move_0.Start,
+    Position := GVL.AMP_Absolute_Move_0.Position,
+    Speed := GVL.AMP_Absolute_Move_0.Speed,
+    Acc := GVL.AMP_Absolute_Move_0.Acc,
+    Dec := GVL.AMP_Absolute_Move_0.Dec
+);
+
+IF Par_UseAbsoluteIndexing THEN
+    GVL.Sts_MoveSent  := GVL.AMP_Absolute_Move_0.Sent;
+    GVL.Sts_MoveDone  := GVL.AMP_Absolute_Move_0.Done;
+    GVL.Sts_MoveError := GVL.AMP_Absolute_Move_0.Error;
+ELSE
+    GVL.Sts_MoveSent  := GVL.AMP_Relative_Move_0.Sent;
+    GVL.Sts_MoveDone  := GVL.AMP_Relative_Move_0.Done;
+    GVL.Sts_MoveError := GVL.AMP_Relative_Move_0.Error;
+END_IF
 
 // ---- Network 13: normal stop FB ----
 GVL.AMP_Normal_Stop_0(Input := GVL.MOTOR_READ, Output := GVL.MOTOR_WRITE, Stop := GVL.AMP_Normal_Stop_0.Stop);
