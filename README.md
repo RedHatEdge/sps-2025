@@ -490,6 +490,8 @@ For Device flashing you can find the instructions [here](https://github.com/luca
 
 For building the Defect Detector Application you can find the instructions [here](https://github.com/lucamaf/edge-defect-detector#how-to-build-and-run-the-container)  
 
+The training of the model based on the annotated images was already executed using [LabelStudio as explained](https://github.com/lucamaf/edge-defect-detector/tree/main#how-to-train-the-model) and the dataset of images is [here in case you want to train more the model](workloads/defect-detector-jetson/annotated-images-yolo-31082024/)
+
 You can either use Flightctl to deploy Quadlets for autostarting Defect Detector Application and AMQ Artemis or [manually deploy them](https://github.com/lucamaf/edge-defect-detector#how-to-start-everything-automatically-at-system-boot)  
 
 ![alt text](image-16.png)  
