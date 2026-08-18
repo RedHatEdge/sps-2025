@@ -480,6 +480,7 @@ CASE machineState OF
             GVL.Cmd_GreenStack   := FALSE;
             GVL.Cmd_RedStack     := FALSE;
             GVL.Cmd_RedButtonLED := FALSE;
+            defectCheck.state    := E_DefectState.IDLE;
             machineState := STANDBY;
         END_IF
 END_CASE
@@ -1068,7 +1069,7 @@ stateDiagram-v2
 
   RUNNING --> STOPPING : Red Button (not in AWAIT_ACK)<br/>OR MQTT "stop" (always, even in AWAIT_ACK)<br/>Cmd_Run = FALSE
   RUNNING --> STOPPING : abnormal sequence end<br/>(fault/timeout inside PLC_PRG)<br/>Sts_SequenceDone rising edge<br/>Cmd_Run = FALSE
-  STOPPING --> STANDBY : TON 5s elapsed<br/>clear all indicators<br/>resume blinking
+  STOPPING --> STANDBY : TON 5s elapsed<br/>clear all indicators<br/>reset defectCheck.state to IDLE<br/>resume blinking
 ```
 
 The second `RUNNING → STOPPING` transition is the auto-recovery path: if `PLC_PRG`'s sequence terminates abnormally (a fault or timeout jumping to `Sequence_Run=99`) rather than via the normal `DEFECT_CHECK`-driven loop, `SEQ_SUPERVISOR` catches it and returns to `STANDBY` on its own — no manual Stop needed. It's deliberately edge-triggered (a genuine transition to done *during this run*), not a level check, so a leftover `Sts_SequenceDone` from the tail end of the *previous* run can't immediately abort a session that just started.
@@ -1091,6 +1092,7 @@ A handful of non-obvious CODESYS behaviors surfaced repeatedly while building th
 - **Vendor FB parameter units aren't always what the field name implies.** `AMP_Relative_Move_0`'s `Speed`/`Acc`/`Dec` are rev/sec and rev/sec² per Applied Motion's own FB documentation, not RPM — cost real time before being caught, since "5.0" and "1.0" look like plausible RPM-ish values for a demo motor and the FB compiled and ran without complaint either way.
 - **Servo-side PID tuning is a separate concern from PLC-side motion parameters**, and symptoms from the two can look identical (both present as "the motor oscillates"). Fixing the units mistake above visibly improved things but didn't fully resolve the overshoot — that needed actual P-loop gain/filter tuning on the drive itself, done outside CODESYS entirely via Applied Motion's Quick Tuner (see "Servo tuning" above).
 - **Sharing one variable between two logically-different meanings, read at two different points in the same scan, is a real race — not just a style nitpick.** `xRemoteStop` used to feed both `SEQ_SUPERVISOR`'s stop-check (guarded by `defectCheck.state <> AWAIT_ACK`) and `DEFECT_CHECK`'s own `AWAIT_ACK` acknowledge check. Since `SEQ_SUPERVISOR` calls `defectCheck(...)` *before* evaluating its own `CASE machineState`, a `'stop'` arriving during `AWAIT_ACK` let `DEFECT_CHECK` clear the hold (`state := IDLE`) first, and by the time the stop-check's guard read `defectCheck.state` moments later in the same scan, it was no longer `AWAIT_ACK` — so the guard that was supposed to protect the hold was already defeated, and both the acknowledge *and* a full stop fired together. Confirmed by observing a `'stop'` sent mid-hold jump straight to `STANDBY` instead of just clearing the defect. Fixed by giving the remote acknowledge its own dedicated variable (`xRemoteContinue`) instead of overloading `xRemoteStop`.
+- **State reset needs to be symmetric on both sides of a transition, not just the side that was obviously broken.** `STANDBY`'s button-press branch resets `defectCheck.state := E_DefectState.IDLE` before entering `RUNNING` — but `STOPPING`'s transition back into `STANDBY` never did the same. Sending `'stop'` while a defect was being held (`AWAIT_ACK`) left `defectCheck.state` stuck at `AWAIT_ACK` even after `machineState` reached `STANDBY` — self-healing on the *next* start (thanks to the reset above), but genuinely inconsistent state in the meantime, and confusing to watch. Fixed by resetting `defectCheck.state := E_DefectState.IDLE` in `STOPPING`'s transition too, alongside the existing `Cmd_GreenStack`/`Cmd_RedStack`/`Cmd_RedButtonLED` clears.
 
 ### Known open issues
 
