@@ -353,7 +353,8 @@ Some additional tweaks:
 You can follow the instructions [here](https://github.com/lucamaf/edge-defect-detector#flashing-your-nvidia-device-to-latest-jetpack) to flash the device and then build a Bootc Image for it.  
 
 ###  3.5. <a name='SetupGroovIOModules-GRV-R7-MM1001'></a>Setup Groov IO Modules - GRV-R7-MM1001
-Detailed [specs and manual](workloads/ETH-IP-IO-Module/2324_groov_RIO_Users_Guide.pdf) for GroovIO Opto22.
+Detailed [specs and manual](workloads/ETH-IP-IO-Module/2324_groov_RIO_Users_Guide.pdf) for GroovIO Opto22.  
+Additional [quick start online](https://corsosystems.com/posts/configuring-an-opto22-groov-rio)  
 
 To find the IO on the network install [groov find](workloads/ETH-IP-IO-Module/groovFind.exe)
 
