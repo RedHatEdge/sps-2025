@@ -2,48 +2,50 @@
 This repository contains setup information/automation for the Red Hat demos for SPS 2025. It is provided "as-is", for educational and informative reasons only.
 
 <!-- vscode-markdown-toc -->
-* 1. [Demo Architecture](#DemoArchitecture)
-* 2. [Setup](#Setup)
-	* 2.1. [Basic setup](#Basicsetup)
-		* 2.1.1. [Setting basic variables](#Settingbasicvariables)
-	* 2.2. [Setup bootstrap on IPC4](#SetupbootstraponIPC4)
-	* 2.3. [Setup the SNO (ACP)](#SetuptheSNOACP)
-		* 2.3.1. [Setup ACP Operator Catalog for disconnected scenario](#SetupACPOperatorCatalogfordisconnectedscenario)
-		* 2.3.2. [Adding / mirroring new container image on ACP](#AddingmirroringnewcontainerimageonACP)
-		* 2.3.3. [Additional disconnected procedures](#Additionaldisconnectedprocedures)
-	* 2.4. [Setup Nvidia Jetson device](#SetupNvidiaJetsondevice)
-	* 2.5. [Setup Groov IO Modules - GRV-R7-MM1001](#SetupGroovIOModules-GRV-R7-MM1001)
-	* 2.6. [Setup AppliedMotion Servo Drive - TSM23X3B-IP](#SetupAppliedMotionServoDrive-TSM23X3B-IP)
-	* 2.7. [Automating the SNO (ACP) power cycle](#AutomatingtheSNOACPpowercycle)
-* 3. [Workloads](#Workloads)
-	* 3.1. [IPC4](#IPC4)
-		* 3.1.1. [GitOps & Gitea manual deployment](#GitOpsGiteamanualdeployment)
-	* 3.2. [Nvidia Jetson](#NvidiaJetson)
-		* 3.2.1. [Defect detector application](#Defectdetectorapplication)
-	* 3.3. [Single Node Openshift (ACP)](#SingleNodeOpenshiftACP)
-		* 3.3.1. [MES Critical Manufacturing](#MESCriticalManufacturing)
-		* 3.3.2. [German Edge Cloud Oncite](#GermanEdgeCloudOncite)
-		* 3.3.3. [MQTT Broker](#MQTTBroker)
-		* 3.3.4. [Codesys IDE (win11 on OCP-V)](#CodesysIDEwin11onOCP-V)
-		* 3.3.5. [Codesys Application](#CodesysApplication)
-		* 3.3.6. [FTView - Win2019 VM](#FTView-Win2019VM)
-		* 3.3.7. [OPCUA Manufacturing Server (simulated process)](#OPCUAManufacturingServersimulatedprocess)
-		* 3.3.8. [OPCUA / MQTT gateway (Takebishi)](#OPCUAMQTTgatewayTakebishi)
-		* 3.3.9. [Defect recognition application (simulated process)](#Defectrecognitionapplicationsimulatedprocess)
-		* 3.3.10. [HMI open source connected to MQTT Broker](#HMIopensourceconnectedtoMQTTBroker)
-		* 3.3.11. [Dell iDrac Service Module](#DelliDracServiceModule)
-* 4. [Access to systems for SPS 2025](#AccesstosystemsforSPS2025)
+* 1. [0. Physical setup](#Physicalsetup)
+* 2. [Demo Architecture](#DemoArchitecture)
+* 3. [Setup](#Setup)
+	* 3.1. [Basic setup](#Basicsetup)
+		* 3.1.1. [Setting basic variables](#Settingbasicvariables)
+	* 3.2. [Setup bootstrap on IPC4](#SetupbootstraponIPC4)
+	* 3.3. [Setup the SNO (ACP)](#SetuptheSNOACP)
+		* 3.3.1. [Setup ACP Operator Catalog for disconnected scenario](#SetupACPOperatorCatalogfordisconnectedscenario)
+		* 3.3.2. [Adding / mirroring new container image on ACP](#AddingmirroringnewcontainerimageonACP)
+		* 3.3.3. [Additional disconnected procedures](#Additionaldisconnectedprocedures)
+	* 3.4. [Setup Nvidia Jetson device](#SetupNvidiaJetsondevice)
+	* 3.5. [Setup Groov IO Modules - GRV-R7-MM1001](#SetupGroovIOModules-GRV-R7-MM1001)
+	* 3.6. [Setup AppliedMotion Servo Drive - TSM23X3B-IP](#SetupAppliedMotionServoDrive-TSM23X3B-IP)
+	* 3.7. [Automating the SNO (ACP) power cycle](#AutomatingtheSNOACPpowercycle)
+* 4. [Workloads](#Workloads)
+	* 4.1. [IPC4](#IPC4)
+		* 4.1.1. [GitOps & Gitea manual deployment](#GitOpsGiteamanualdeployment)
+	* 4.2. [Nvidia Jetson](#NvidiaJetson)
+		* 4.2.1. [Defect detector application](#Defectdetectorapplication)
+	* 4.3. [Single Node Openshift (ACP)](#SingleNodeOpenshiftACP)
+		* 4.3.1. [MES Critical Manufacturing](#MESCriticalManufacturing)
+		* 4.3.2. [German Edge Cloud Oncite](#GermanEdgeCloudOncite)
+		* 4.3.3. [MQTT Broker](#MQTTBroker)
+		* 4.3.4. [Codesys IDE - Win11 on OCP-V](#CodesysIDE-Win11onOCP-V)
+		* 4.3.5. [Codesys Application](#CodesysApplication)
+		* 4.3.6. [FTView - Win2019 VM](#FTView-Win2019VM)
+		* 4.3.7. [OPCUA Manufacturing Server (simulated process)](#OPCUAManufacturingServersimulatedprocess)
+		* 4.3.8. [OPCUA / MQTT gateway (Takebishi)](#OPCUAMQTTgatewayTakebishi)
+		* 4.3.9. [Defect recognition application (simulated process)](#Defectrecognitionapplicationsimulatedprocess)
+		* 4.3.10. [HMI open source connected to MQTT Broker](#HMIopensourceconnectedtoMQTTBroker)
+		* 4.3.11. [Dell iDrac Service Module](#DelliDracServiceModule)
+* 5. [Access to systems for SPS 2025](#AccesstosystemsforSPS2025)
+
 <!-- vscode-markdown-toc-config
 	numbering=true
 	autoSave=true
 	/vscode-markdown-toc-config -->
 <!-- /vscode-markdown-toc -->
 
-## 0. Physical setup
+##  1. <a name='Physicalsetup'></a>0. Physical setup
 
 
 
-##  1. <a name='DemoArchitecture'></a>Demo Architecture
+##  2. <a name='DemoArchitecture'></a>Demo Architecture
 
 The diagram below shows the main systems involved: ACP, IPC4, IPC3, and an NVIDIA Jetson edge device.
 
@@ -71,7 +73,7 @@ flowchart LR
   class IPC4,IPC3,Jetson edge;
 ```
 
-##  2. <a name='Setup'></a>Setup
+##  3. <a name='Setup'></a>Setup
 The setup for this demo is broken up into several parts:
 
 0. Basic setup
@@ -79,14 +81,19 @@ The setup for this demo is broken up into several parts:
 2. Setup the ACP
 3. Setup the NVIDIA Jetson
 
-###  2.1. <a name='Basicsetup'></a>Basic setup
+###  3.1. <a name='Basicsetup'></a>Basic setup
 A basic x86 Linux-ish system with sufficient disk space and podman should be able to handle the setup of the demos. You will also need a flash drive, or method to mount installation ISOs to devices.
 
-> In this case we decided to use another IPC sitting in same architecture: **IPC3**  
-> This is running standard RHEL9.x with *RDP* enabled to access Firefox and be able to visualize the OpenShift console.  
-> Tailscale client is also installed and port **UDP:41641** is open on the Firewalld to allow direct, peer-to-peer WireGuard tunnels between devices, reducing latency and avoiding relay servers
 
-####  2.1.1. <a name='Settingbasicvariables'></a>Setting basic variables
+#### Setting up bastion host IPC3
+
+Installed RHEL9.8 RPM on **IPC3** and enabled RDP.  
+Firefox is also installed to provide a visual access to OpenShift Console and the rest of the graphical Applications.  
+Tailscale Mesh VPN client is installed too (port **UDP:41641** is open on the Firewalld to allow direct, peer-to-peer WireGuard tunnels between devices, reducing latency and avoiding relay servers).  
+The system is registered with Red Hat to be able to pull bootc and bootc-image-builder images.  
+
+
+####  3.1.1. <a name='Settingbasicvariables'></a>Setting basic variables
 Create a copy of the `build-args.txt.example` file, and populate it with your information:
 
 ```
@@ -110,7 +117,7 @@ ACP_INTERFACE_MAC_ADDRESS=11:22:33:44:55:66
 COREOS_SSH_KEY=ssh-ed25519 blahblahblah you@your-computer
 ```
 
-###  2.2. <a name='SetupbootstraponIPC4'></a>Setup bootstrap on IPC4
+###  3.2. <a name='SetupbootstraponIPC4'></a>Setup bootstrap on IPC4
 Assuming your values are correct in your args file, all that needs to be done is to build the IPC4 image and install the device - all other steps are handled through containers on Microshift.
 
 To build the image, run:
@@ -191,7 +198,7 @@ openshift-storage                      vg-manager-nlrqd                         
 
 At this point, connect your computer to the internal demo network - you should get an address in the `192.168.100.0/24` subnet, and have internet access.
 
-###  2.3. <a name='SetuptheSNOACP'></a>Setup the SNO (ACP)
+###  3.3. <a name='SetuptheSNOACP'></a>Setup the SNO (ACP)
 The ACP setup is an agent-based install using a local mirror registry located on IPC4. A job on IPC4 will generate the installation ISO for you, all you need to do is download it, mount it to the target installation device, and boot from it. The install should happen automatically from there.
 
 To download the installation ISO, grab it from IPC4:
@@ -225,7 +232,7 @@ You can easily access the cluster from IPC3 (copying over `kubeconfig` file) whi
 > `$ export KUBECONFIG=/etc/kubernetes/static-pod-resources/kube-apiserver-certs/secrets/node-kubeconfigs/lb-ext.kubeconfig` 
 > here is also the KCS on how to regenerate a valid `kubeconfig`:  https://access.redhat.com/solutions/7137471
 
-####  2.3.1. <a name='SetupACPOperatorCatalogfordisconnectedscenario'></a>Setup ACP Operator Catalog for disconnected scenario
+####  3.3.1. <a name='SetupACPOperatorCatalogfordisconnectedscenario'></a>Setup ACP Operator Catalog for disconnected scenario
 Based on a [blog entry](https://www.redhat.com/en/blog/deploying-red-hat-openshift-operators-disconnected-environment) we can now disable the default OpenShift catalogs, which otherwise in a disconnected environment would just trigger unnecessary errors. Let's disable the default OperatorHub catalog sources first:
 
 ```bash
@@ -307,7 +314,7 @@ spec:
 >sh-5.1# pvremove /dev/nvme0n1
 >```
 
-####  2.3.2. <a name='AddingmirroringnewcontainerimageonACP'></a>Adding / mirroring new container image on ACP
+####  3.3.2. <a name='AddingmirroringnewcontainerimageonACP'></a>Adding / mirroring new container image on ACP
 How to use a new image not included in the original ACP Mirror installation:
 
 - build the image and push it to a public repo (like Quay.io)
@@ -323,7 +330,7 @@ jq -r '.metadata.annotations."kubectl.kubernetes.io/last-applied-configuration"'
 oc -n oc-mirror replace --save-config --force -f -
 ```
 
-####  2.3.3. <a name='Additionaldisconnectedprocedures'></a>Additional disconnected procedures
+####  3.3.3. <a name='Additionaldisconnectedprocedures'></a>Additional disconnected procedures
 
 Some additional tweaks:
 
@@ -342,10 +349,10 @@ Some additional tweaks:
 - Flightctl manages IPC4 itself
   ![alt text](image-4.png)
 
-###  2.4. <a name='SetupNvidiaJetsondevice'></a>Setup Nvidia Jetson device
+###  3.4. <a name='SetupNvidiaJetsondevice'></a>Setup Nvidia Jetson device
 You can follow the instructions [here](https://github.com/lucamaf/edge-defect-detector#flashing-your-nvidia-device-to-latest-jetpack) to flash the device and then build a Bootc Image for it.  
 
-###  2.5. <a name='SetupGroovIOModules-GRV-R7-MM1001'></a>Setup Groov IO Modules - GRV-R7-MM1001
+###  3.5. <a name='SetupGroovIOModules-GRV-R7-MM1001'></a>Setup Groov IO Modules - GRV-R7-MM1001
 Detailed [specs and manual](workloads/ETH-IP-IO-Module/2324_groov_RIO_Users_Guide.pdf) for GroovIO Opto22.
 
 To find the IO on the network install [groov find](workloads/ETH-IP-IO-Module/groovFind.exe)
@@ -367,7 +374,7 @@ Inside the web console you can also change the IP address of the IO Module.
 ![alt text](image-12.png)
 
 
-###  2.6. <a name='SetupAppliedMotionServoDrive-TSM23X3B-IP'></a>Setup AppliedMotion Servo Drive - TSM23X3B-IP
+###  3.6. <a name='SetupAppliedMotionServoDrive-TSM23X3B-IP'></a>Setup AppliedMotion Servo Drive - TSM23X3B-IP
 ![alt text](image-14.png)  
 
 Detailed [specs and manual](workloads/ETH-IP-StepServoDrive/TSM23XB-IP-Hardware-Manual-920-0155B.pdf) for TSM23X3B-IP 
@@ -385,7 +392,7 @@ You can change the IP address in the following interface, by first selecting whi
 ![alt text](image-9.png)
 ![alt text](image-10.png)
 
-###  2.7. <a name='AutomatingtheSNOACPpowercycle'></a>Automating the SNO (ACP) power cycle
+###  3.7. <a name='AutomatingtheSNOACPpowercycle'></a>Automating the SNO (ACP) power cycle
 
 The Dell server running the SNO (ACP) doesn't need to be powered on outside working hours, so it's cycled automatically Monday-Friday via a pair of Ansible playbooks, each triggered by its own systemd timer. Everything is in the [automate-cycle](automate-cycle/) folder, run from IPC3 (same host referenced in [§2.1](#Basicsetup)):
 
@@ -425,11 +432,11 @@ $ systemctl --user enable --now sno_on.timer sno_off.timer
 ```
 
 
-##  3. <a name='Workloads'></a>Workloads
+##  4. <a name='Workloads'></a>Workloads
 Basically eveything under [this folder](workloads/)
 
-###  3.1. <a name='IPC4'></a>IPC4
-####  3.1.1. <a name='GitOpsGiteamanualdeployment'></a>GitOps & Gitea manual deployment 
+###  4.1. <a name='IPC4'></a>IPC4
+####  4.1.1. <a name='GitOpsGiteamanualdeployment'></a>GitOps & Gitea manual deployment 
 
 Gitea and GitOps are preinstalled, but we will add the steps here in case you want to reproduce the gitops style deployment somewhere else.
 
@@ -488,8 +495,8 @@ In case you want to deploy applications across different spoke / managed cluster
 We can now create helm charts and / or kustomize files to sync Applications to managed clusters.  
 The basic ACP services have already been deployed and the source can be found [here](https://github.com/RedHatEdge/acp-standard-services-public/tree/dev)  
 
-###  3.2. <a name='NvidiaJetson'></a>Nvidia Jetson  
-####  3.2.1. <a name='Defectdetectorapplication'></a>Defect detector application  
+###  4.2. <a name='NvidiaJetson'></a>Nvidia Jetson  
+####  4.2.1. <a name='Defectdetectorapplication'></a>Defect detector application  
 For Device flashing you can find the instructions [here](https://github.com/lucamaf/edge-defect-detector#installing-rhel-imagemode-98-on-nvidia-jetson)  
 
 For building the Defect Detector Application you can find the instructions [here](https://github.com/lucamaf/edge-defect-detector#how-to-build-and-run-the-container)  
@@ -529,8 +536,8 @@ The resulting payload sent to `defect_detection/results` topic is in this format
   "piece": 3
 }
 ```
-###  3.3. <a name='SingleNodeOpenshiftACP'></a>Single Node Openshift (ACP)  
-####  3.3.1. <a name='MESCriticalManufacturing'></a>MES Critical Manufacturing
+###  4.3. <a name='SingleNodeOpenshiftACP'></a>Single Node Openshift (ACP)  
+####  4.3.1. <a name='MESCriticalManufacturing'></a>MES Critical Manufacturing
 
 The [oc-mirror job](images/ipc4/oc-mirror/) mirrors all required CM MES images to the local registry on ipc4 for disconnected installation.
 
@@ -548,7 +555,7 @@ The [oc-mirror job](images/ipc4/oc-mirror/) mirrors all required CM MES images t
 2. Update the pull secret as above if the CM credentials have changed.
 3. Restart MicroShift to re-run the oc-mirror job.
 
-####  3.3.2. <a name='GermanEdgeCloudOncite'></a>German Edge Cloud Oncite
+####  4.3.2. <a name='GermanEdgeCloudOncite'></a>German Edge Cloud Oncite
 
 - Pull Secret: add pull secret from GEC to `run-oc-mirror-configjson-secret` secret under `oc-mirror` namespace. To do that modify it at the origin under `/etc/microshift/manifests.d/oc-mirror/secret.yaml` and restart Microshift
 - Image list: update the list of mirrored images under `/etc/microshift/manifests.d/oc-mirror/configmap.yaml` with the [images listed](workloads/GEC/HelmCharts/oncite-container-refs.txt), delete the ran job (`run-oc-mirror`) and restart Microshift to let the mirror job run
@@ -570,7 +577,7 @@ The [oc-mirror job](images/ipc4/oc-mirror/) mirrors all required CM MES images t
 - installed **acme.sh** on **IPC3** to generate a valid certificate for the SPA [application Ingress](https://oncite.apps.acp.sps2025.com). Had to buy a valid domain (**sps2025.com**) to perform validation on AWS Route53
 
 
-####  3.3.3. <a name='MQTTBroker'></a>MQTT Broker
+####  4.3.3. <a name='MQTTBroker'></a>MQTT Broker
 
 We will be using Mosquitto as MQTT Broker, you can find the related manifests in the [folder](workloads/mqtt-broker/)
 These can be pushed to our Gitea repo and synced as ArgoCD Application.
@@ -587,7 +594,7 @@ You can now access the broker using a client like [MQTT5 Explorer](https://githu
 
 ![mqtt explorer](workloads/mqtt-broker/mqtt-explorer.png)
 
-####  3.3.4. <a name='CodesysIDEwin11onOCP-V'></a>Codesys IDE - Win11 on OCP-V
+####  4.3.4. <a name='CodesysIDE-Win11onOCP-V'></a>Codesys IDE - Win11 on OCP-V
 
 Windows VM creation adapted from [here](https://github.com/kubevirt/kubevirt-tekton-tasks/tree/main/templates-pipelines/windows-efi-installer)
 
@@ -624,7 +631,7 @@ Windows VM creation adapted from [here](https://github.com/kubevirt/kubevirt-tek
 
 In case you cannot connect, make sure to check this blog entry to terminate installation offline: https://medium.com/@zorozeri/windows-11-arm-having-no-network-connection-on-vmware-fusion-pro-5b06e894811e  
 
-####  3.3.5. <a name='CodesysApplication'></a>Codesys Application
+####  4.3.5. <a name='CodesysApplication'></a>Codesys Application
 On opening the [projectarchive](workloads/Codesys/RedHat_Demo_MarketingStand_Working_IMPROVED-ABSOLUTE.projectarchive) with Codesys IDE, do not update any library (as suggested) and download the missing devices description (with right click).
 For Groov RIO you can find the missing Codesys package in the [Opto22 store](https://www.opto22.com/support/resources-tools/downloads/opto-22-library-package-for-codesys-development-sy)  
 Install it and the then right-click and perform an **Update device**, keep the preselected one, and click **Update**  
@@ -686,17 +693,17 @@ flowchart TD
 
 `'stop'` can be sent at any point during `RUNNING` — including while a defective piece is being held — and always stops the run. The physical Red Button is contextual instead (Stop normally, Acknowledge during a hold), since there's only the one button; `'continue'` is the dedicated MQTT equivalent of acknowledging a hold. Full detail, including the underlying state machine and MQTT topics, is in [CODESYS-Workflow.md](workloads/Codesys/CODESYS-Workflow.md#7-defect-check-workflow-improved).
 
-####  3.3.6. <a name='FTView-Win2019VM'></a>FTView - Win2019 VM
+####  4.3.6. <a name='FTView-Win2019VM'></a>FTView - Win2019 VM
 You can find the zipped image here: https://drive.google.com/file/d/15HqzSuJ-Bt8H59C7CkSe4P1LT49a9kGi/view?ts=6920940b
 Unzip it with: `$ gzip -d SPS/sps-2025/workloads/FTView-VM/export-ftview-win2019.img.gz`
 
-####  3.3.7. <a name='OPCUAManufacturingServersimulatedprocess'></a>OPCUA Manufacturing Server (simulated process)
+####  4.3.7. <a name='OPCUAManufacturingServersimulatedprocess'></a>OPCUA Manufacturing Server (simulated process)
 
 Based on [this](https://github.com/lucamaf/edge-manufacturing-server?tab=readme-ov-file) we will be deploying a NOdeRED based OPCUA server, which simulates a process with multiple sensors.
 
-####  3.3.8. <a name='OPCUAMQTTgatewayTakebishi'></a>OPCUA / MQTT gateway (Takebishi)
+####  4.3.8. <a name='OPCUAMQTTgatewayTakebishi'></a>OPCUA / MQTT gateway (Takebishi)
 
-####  3.3.9. <a name='Defectrecognitionapplicationsimulatedprocess'></a>Defect recognition application (simulated process)
+####  4.3.9. <a name='Defectrecognitionapplicationsimulatedprocess'></a>Defect recognition application (simulated process)
 
 This will run on ACP and will be simulating the defects recognition machine learning app (that should be running on Nvidia GPU). Based on random function it will be providing an output on a **MQTT Broker** topic following this [source](https://medium.com/@API4AI/mes-integration-real-time-defect-feeds-to-erp-a54c9243bdfc):  
 
@@ -717,16 +724,16 @@ You can find the relative manifests in the [folder](workloads/defect-rec-sim/)
 
 ![app logs](workloads/defect-rec-sim/app-logs.png)
 
-####  3.3.10. <a name='HMIopensourceconnectedtoMQTTBroker'></a>HMI open source connected to MQTT Broker
+####  4.3.10. <a name='HMIopensourceconnectedtoMQTTBroker'></a>HMI open source connected to MQTT Broker
 
 
 
-####  3.3.11. <a name='DelliDracServiceModule'></a>Dell iDrac Service Module
+####  4.3.11. <a name='DelliDracServiceModule'></a>Dell iDrac Service Module
 
 Installed the ISM container on ACP to provide more detailed information about the server and running OS to iDrac.
 
 
-##  4. <a name='AccesstosystemsforSPS2025'></a>Access to systems for SPS 2025  
+##  5. <a name='AccesstosystemsforSPS2025'></a>Access to systems for SPS 2025  
 
 Please check the repo to find all systems credentials and licensing information [here](https://github.com/RedHatEdge/sps-2025-systems)
 
