@@ -65,6 +65,8 @@ So if using, say, **Ch 6**: the "+" pin (18) gets the S75's white wire (Pin 2, N
 
 Channels 0–7 are genuinely universal — each is individually software-assigned to whatever input or output type is needed. `do_sinking` (what the S75's trigger needs) is available on any of them. Channels 8–9 are hardwired as mechanical relay outputs only.
 
+To make sure you are using the correct channel and pin from above table, doublecheck beginning and ending of ferrules going into RIO2 (like could be seen in [image](IMG_3524.jpg))   
+
 ## Finding a free channel
 
 **This can't be reliably determined from the wiring photos**, even now that the pin/channel map is known. The `GRV-TEX-26F6` cable is a fixed 26-wire bundle, all wires pre-ferruled and inserted at assembly — so essentially all 26 physical pins have a wire seated in them regardless of whether that channel is actually configured and used in software. A wire present in a pin doesn't mean that channel is in use; it just means that strand of the cable is physically terminated, same as every other strand. Physical wiring and logical channel configuration are two different things here, and only the configuration says what's free.
