@@ -1,0 +1,14 @@
+[Unit]
+Description=Add local user to the realtime group after first boot (user created by kickstart)
+After=systemd-sysusers.service
+Requires=systemd-sysusers.service
+ConditionPathExists=!/var/lib/realtime-group-first-boot.done
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/add-realtime-group.sh
+ExecStartPost=/usr/bin/touch /var/lib/realtime-group-first-boot.done
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

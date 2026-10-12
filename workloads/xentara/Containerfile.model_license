@@ -1,0 +1,15 @@
+# Adding xentara model and licence
+# This image will be tagged as quay.io/luferrar/part5:rh10-005rtLIC
+FROM quay.io/luferrar/part5:rh10-005rt
+
+# adding model file /etc/xdg/xentara
+RUN mkdir -p /etc/xdg/xentara/
+COPY model.json /etc/xdg/xentara/model.json
+#RUN systemctl enable xentara@admin.service
+
+# adding licence file
+RUN mkdir -p /usr/local/share/xentara/licence
+COPY licence.json /usr/local/share/xentara/licence/licence.json
+
+# Lint the build
+RUN bootc container lint

@@ -1,0 +1,57 @@
+{
+    "licence": {
+        "id": "8a9568e9-b691-43de-b096-56e9f2d6be59",
+        "licensee": "Red Hat, LLC",
+        "expires": "2027-08-11"
+    },
+    "nodes": [
+        {
+            "id": "/ZWU1YG3Hd65a9Q3fLH+RonhG/bTpcFdijtNCVphUdgWKickkxiYcIPvjDE6pLDunb0QWAzg1G8JBGsE7Ex1NkM=",
+            "licence": "8a9568e9-b691-43de-b096-56e9f2d6be59",
+            "expires": "2027-08-11"
+        }
+    ],
+    "skills": [
+        {
+            "name": "CoE",
+            "licence": "8a9568e9-b691-43de-b096-56e9f2d6be59",
+            "expires": "2027-08-11"
+        },
+        {
+            "name": "InfluxDB",
+            "licence": "8a9568e9-b691-43de-b096-56e9f2d6be59",
+            "expires": "2027-08-11"
+        },
+        {
+            "name": "Modbus",
+            "licence": "8a9568e9-b691-43de-b096-56e9f2d6be59",
+            "expires": "2027-08-11"
+        },
+        {
+            "name": "MQTT",
+            "licence": "8a9568e9-b691-43de-b096-56e9f2d6be59",
+            "expires": "2027-08-11"
+        },
+        {
+            "name": "ONNX",
+            "licence": "8a9568e9-b691-43de-b096-56e9f2d6be59",
+            "expires": "2027-08-11"
+        },
+        {
+            "name": "OPCUAServer",
+            "licence": "8a9568e9-b691-43de-b096-56e9f2d6be59",
+            "expires": "2027-08-11"
+        },
+        {
+            "name": "CPP",
+            "licence": "8a9568e9-b691-43de-b096-56e9f2d6be59",
+            "expires": "2027-08-11"
+        },
+        {
+            "name": "TimingMeasurement",
+            "licence": "8a9568e9-b691-43de-b096-56e9f2d6be59",
+            "expires": "2027-08-11"
+        }
+    ],
+    "signature": "MEUCIAIulhWsy8XVrYE66LUNiwZssJAGiY1v/kgiLnBIguwHAiEA4okVA3jHej1YibGk0GoAMdyMmifwaGEV36XdxkjjbVQ="
+}

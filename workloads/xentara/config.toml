@@ -1,0 +1,42 @@
+# This section contains the kickstart configuration for the installer.
+# It includes network settings, partitioning, and other installation options.
+[customizations.installer.kickstart]
+contents = """
+text --non-interactive
+lang en_US.UTF-8
+keyboard us
+
+rootpw --lock
+
+timezone Europe/Rome --utc
+
+zerombr
+clearpart --all --initlabel --disklabel=gpt
+part /boot/efi --fstype=efi --size=500
+part /boot --fstype=xfs --asprimary --size=1024
+part pv.01 --grow
+volgroup rhel pv.01
+logvol / --vgname=rhel --fstype=xfs --percent=40 --name=root
+logvol /var/home --vgname=rhel --fstype=xfs --percent=20 --name=home
+
+network --bootproto=dhcp --hostname=control1-rt.sps2025 --activate --onboot=on
+
+# This command will eject the CD/DVD and then reboot the system
+reboot
+
+user --name=admin --password=R3dh4t123! --plaintext --groups=wheel
+
+%post
+bootc switch --mutate-in-place --transport registry quay.io/luferrar/part5:rh10-005rt
+
+# Configure systemd journal service to persist logs between boots and limit their size to 1G
+sudo mkdir -p /etc/systemd/journald.conf.d
+cat > /etc/systemd/journald.conf.d/microshift.conf <<EOF
+[Journal]
+Storage=persistent
+SystemMaxUse=1G
+RuntimeMaxUse=1G
+EOF
+
+%end
+"""
